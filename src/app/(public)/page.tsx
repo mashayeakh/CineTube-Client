@@ -15,8 +15,8 @@ import React from 'react'
 export default function HomePage() {
   return (
     <div>
-      <Heading />
-      <Navbar />
+      {/* <Heading />
+      <Navbar /> */}
       <SearchField />
       {/* <Hero /> */}
       <HeroSection />

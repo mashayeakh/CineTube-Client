@@ -59,7 +59,7 @@ const Navbar = ({ className }: { className?: string }) => {
           title: "Popular",
           description: "Latest movies",
           icon: <Book className="size-5" />,
-          url: "#",
+          url: "/movie/popular",
         },
         {
           title: "Upcoming",
@@ -136,7 +136,7 @@ const Navbar = ({ className }: { className?: string }) => {
       <div className="container mx-auto px-4 py-3">
 
         {/* Desktop */}
-        <nav className="hidden lg:grid lg:grid-cols-3 items-center body-font">
+        <nav className="hidden lg:grid lg:grid-cols-3 items-center body-font font-bold">
 
           {/* Logo */}
           <div className="flex items-center">
@@ -146,9 +146,9 @@ const Navbar = ({ className }: { className?: string }) => {
           </div>
 
           {/* Menu */}
-          <div className="flex justify-center">
+          <div className="flex justify-center ">
             <NavigationMenu>
-              <NavigationMenuList>
+              <NavigationMenuList className={"font-bold"}>
                 {menu.map((item) => renderMenuItem(item))}
               </NavigationMenuList>
             </NavigationMenu>
@@ -223,9 +223,9 @@ const renderMenuItem = (item: MenuItem) => {
   if (item.items) {
     return (
       <NavigationMenuItem key={item.title}>
-        <NavigationMenuTrigger>{item.title}</NavigationMenuTrigger>
+        <NavigationMenuTrigger className="font-bold">{item.title}</NavigationMenuTrigger>
         <NavigationMenuContent>
-          <ul className="grid w-fit gap-2 p-4">
+          <ul className="grid w-fit gap-2 p-4 body-font font-bold">
             {item.items.map((sub) => (
               <li key={sub.title}>
                 <Link href={sub.url}>{sub.title}</Link>
@@ -239,7 +239,7 @@ const renderMenuItem = (item: MenuItem) => {
 
   return (
     <NavigationMenuItem key={item.title}>
-      <NavigationMenuLink render={<Link href={item.url}>{item.title}</Link>}></NavigationMenuLink>
+      <NavigationMenuLink render={<Link href={item.url} className="font-bold">{item.title}</Link>}></NavigationMenuLink>
     </NavigationMenuItem>
   );
 };
@@ -249,7 +249,7 @@ const renderMobileMenuItem = (item: MenuItem) => {
   if (item.items) {
     return (
       <AccordionItem key={item.title} value={item.title}>
-        <AccordionTrigger>{item.title}</AccordionTrigger>
+        <AccordionTrigger className="font-bold">{item.title}</AccordionTrigger>
         <AccordionContent>
           {item.items.map((sub) => (
             <Link key={sub.title} href={sub.url} className="block py-1">
@@ -262,7 +262,7 @@ const renderMobileMenuItem = (item: MenuItem) => {
   }
 
   return (
-    <Link key={item.title} href={item.url} className="block py-2">
+    <Link key={item.title} href={item.url} className="block py-2 font-bold">
       {item.title}
     </Link>
   );
