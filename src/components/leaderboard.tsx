@@ -177,11 +177,11 @@ const Leaderboard = ({
         ))}
 
         {/* Footer */}
-        <div className="pt-4 text-center border-t border-border/50">
+        {/* <div className="pt-4 text-center border-t border-border/50">
           <p className="text-sm text-muted-foreground">
             Updated daily • Based on contributions
           </p>
-        </div>
+        </div> */}
       </CardContent>
     </section>
   );
