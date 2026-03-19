@@ -37,7 +37,8 @@ export default function RootLayout({
 }>) {
   return (
     <html className={`${funnelSans.variable} ${lato.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">
+      {/* <body className="min-h-full flex flex-col bg-[#F6F930]"> */}
+      <body className="min-h-full flex flex-col ">
         {/* <Navbar /> */}
         {children}
       </body>
