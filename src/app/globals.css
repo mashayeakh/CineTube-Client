@@ -12,6 +12,14 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading); 
 }
 
+.heading-font {
+  font-family: var(--font-heading);
+}
+
+.body-font {
+  font-family: var(--font-body);
+}
+
 @theme inline {
   --font-sans: var(--font-body);
   --font-heading: var(--font-heading);
