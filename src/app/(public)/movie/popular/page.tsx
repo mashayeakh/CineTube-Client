@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+
 import Image from 'next/image';
 import {
     Film,
@@ -41,6 +42,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
+import { movies } from '@/app/data/movies';
 
 // Movie interface
 interface Movie {
@@ -48,154 +50,286 @@ interface Movie {
     title: string;
     releaseDate: string;
     posterPath: string;
+    backdropPath?: string;
     rating: number;
     language: string;
     duration: string;
     genre: string[];
     isNew?: boolean;
     votes: number;
+    certification?: string;
+    tagline?: string;
+    overview?: string;
+    director?: {
+        name: string;
+        role: string;
+    };
+    writers?: {
+        name: string;
+        role: string;
+    }[];
+    cast?: {
+        name: string;
+        character: string;
+        avatar?: string;
+    }[];
 }
 
 // Sample movie data
-const movies: Movie[] = [
-    {
-        id: 1,
-        title: "Haangor",
-        releaseDate: "Mar 19, 2026",
-        posterPath: "https://images.unsplash.com/photo-1534447677768-be436bb4a87c?q=80&w=1794&auto=format&fit=crop",
-        rating: 8.4,
-        language: "Bengali",
-        duration: "2h 15m",
-        genre: ["Drama", "History"],
-        isNew: true,
-        votes: 2450
-    },
-    {
-        id: 2,
-        title: "Durban",
-        releaseDate: "Mar 19, 2026",
-        posterPath: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070&auto=format&fit=crop",
-        rating: 7.9,
-        language: "Bengali",
-        duration: "2h 30m",
-        genre: ["Action", "Thriller"],
-        votes: 1890
-    },
-    {
-        id: 3,
-        title: "Bonolota Express",
-        releaseDate: "Mar 21, 2026",
-        posterPath: "https://images.unsplash.com/photo-1543536448-1a76fc6e4f25?q=80&w=2070&auto=format&fit=crop",
-        rating: 8.2,
-        language: "Bengali",
-        duration: "2h 45m",
-        genre: ["Romance", "Drama"],
-        isNew: true,
-        votes: 3120
-    },
-    {
-        id: 4,
-        title: "Maalik",
-        releaseDate: "Mar 19, 2026",
-        posterPath: "https://images.unsplash.com/photo-1509347528160-9a47e3cd61b7?q=80&w=2070&auto=format&fit=crop",
-        rating: 8.7,
-        language: "Bengali",
-        duration: "2h 20m",
-        genre: ["Crime", "Drama"],
-        votes: 4230
-    },
-    {
-        id: 5,
-        title: "Prince: Once Upon a Time in Dhaka",
-        releaseDate: "Mar 21, 2026",
-        posterPath: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=2070&auto=format&fit=crop",
-        rating: 8.9,
-        language: "Bengali",
-        duration: "2h 50m",
-        genre: ["Biography", "Drama"],
-        isNew: true,
-        votes: 5670
-    },
-    {
-        id: 6,
-        title: "Rakkhosh",
-        releaseDate: "Mar 21, 2026",
-        posterPath: "https://images.unsplash.com/photo-1533923156502-be31530547da?q=80&w=1974&auto=format&fit=crop",
-        rating: 7.8,
-        language: "Bengali",
-        duration: "2h 10m",
-        genre: ["Horror", "Thriller"],
-        votes: 1560
-    },
-    {
-        id: 7,
-        title: "Pinik",
-        releaseDate: "Mar 19, 2026",
-        posterPath: "https://images.unsplash.com/photo-1485846234645-a62644f84728?q=80&w=2059&auto=format&fit=crop",
-        rating: 8.1,
-        language: "Bengali",
-        duration: "2h 25m",
-        genre: ["Comedy", "Drama"],
-        votes: 2780
-    },
-    {
-        id: 8,
-        title: "Domm",
-        releaseDate: "Mar 21, 2026",
-        posterPath: "https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?q=80&w=2056&auto=format&fit=crop",
-        rating: 8.3,
-        language: "Bengali",
-        duration: "2h 35m",
-        genre: ["Action", "Crime"],
-        isNew: true,
-        votes: 3450
-    },
-    {
-        id: 9,
-        title: "Chorki",
-        releaseDate: "Mar 22, 2026",
-        posterPath: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=2070&auto=format&fit=crop",
-        rating: 8.0,
-        language: "Bengali",
-        duration: "2h 5m",
-        genre: ["Drama", "Sports"],
-        votes: 1230
-    },
-    {
-        id: 10,
-        title: "Maya",
-        releaseDate: "Mar 23, 2026",
-        posterPath: "https://images.unsplash.com/photo-1534447677768-be436bb4a87c?q=80&w=1794&auto=format&fit=crop",
-        rating: 8.6,
-        language: "Bengali",
-        duration: "2h 20m",
-        genre: ["Mystery", "Thriller"],
-        isNew: true,
-        votes: 2890
-    },
-    {
-        id: 11,
-        title: "Poddoja",
-        releaseDate: "Mar 24, 2026",
-        posterPath: "https://images.unsplash.com/photo-1543536448-1a76fc6e4f25?q=80&w=2070&auto=format&fit=crop",
-        rating: 7.7,
-        language: "Bengali",
-        duration: "2h 15m",
-        genre: ["Drama", "Family"],
-        votes: 980
-    },
-    {
-        id: 12,
-        title: "Bishwoshundori",
-        releaseDate: "Mar 25, 2026",
-        posterPath: "https://images.unsplash.com/photo-1509347528160-9a47e3cd61b7?q=80&w=2070&auto=format&fit=crop",
-        rating: 8.5,
-        language: "Bengali",
-        duration: "2h 40m",
-        genre: ["Romance", "Comedy"],
-        votes: 4120
-    }
-];
+// const movies: Movie[] = [
+//     // {
+//     //     id: 1,
+//     //     title: "Haangor",
+//     //     releaseDate: "Mar 19, 2026",
+//     //     posterPath: "https://images.unsplash.com/photo-1534447677768-be436bb4a87c?q=80&w=1794&auto=format&fit=crop",
+//     //     rating: 8.4,
+//     //     language: "Bengali",
+//     //     duration: "2h 15m",
+//     //     genre: ["Drama", "History"],
+//     //     isNew: true,
+//     //     votes: 2450
+//     // },
+//     // {
+//     //     id: 2,
+//     //     title: "Durban",
+//     //     releaseDate: "Mar 19, 2026",
+//     //     posterPath: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070&auto=format&fit=crop",
+//     //     rating: 7.9,
+//     //     language: "Bengali",
+//     //     duration: "2h 30m",
+//     //     genre: ["Action", "Thriller"],
+//     //     votes: 1890
+//     // },
+//     // {
+//     //     id: 3,
+//     //     title: "Bonolota Express",
+//     //     releaseDate: "Mar 21, 2026",
+//     //     posterPath: "https://images.unsplash.com/photo-1543536448-1a76fc6e4f25?q=80&w=2070&auto=format&fit=crop",
+//     //     rating: 8.2,
+//     //     language: "Bengali",
+//     //     duration: "2h 45m",
+//     //     genre: ["Romance", "Drama"],
+//     //     isNew: true,
+//     //     votes: 3120
+//     // },
+//     // {
+//     //     id: 4,
+//     //     title: "Maalik",
+//     //     releaseDate: "Mar 19, 2026",
+//     //     posterPath: "https://images.unsplash.com/photo-1509347528160-9a47e3cd61b7?q=80&w=2070&auto=format&fit=crop",
+//     //     rating: 8.7,
+//     //     language: "Bengali",
+//     //     duration: "2h 20m",
+//     //     genre: ["Crime", "Drama"],
+//     //     votes: 4230
+//     // },
+//     // {
+//     //     id: 5,
+//     //     title: "Prince: Once Upon a Time in Dhaka",
+//     //     releaseDate: "Mar 21, 2026",
+//     //     posterPath: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=2070&auto=format&fit=crop",
+//     //     rating: 8.9,
+//     //     language: "Bengali",
+//     //     duration: "2h 50m",
+//     //     genre: ["Biography", "Drama"],
+//     //     isNew: true,
+//     //     votes: 5670
+//     // },
+//     // {
+//     //     id: 6,
+//     //     title: "Rakkhosh",
+//     //     releaseDate: "Mar 21, 2026",
+//     //     posterPath: "https://images.unsplash.com/photo-1533923156502-be31530547da?q=80&w=1974&auto=format&fit=crop",
+//     //     rating: 7.8,
+//     //     language: "Bengali",
+//     //     duration: "2h 10m",
+//     //     genre: ["Horror", "Thriller"],
+//     //     votes: 1560
+//     // },
+//     // {
+//     //     id: 7,
+//     //     title: "Pinik",
+//     //     releaseDate: "Mar 19, 2026",
+//     //     posterPath: "https://images.unsplash.com/photo-1485846234645-a62644f84728?q=80&w=2059&auto=format&fit=crop",
+//     //     rating: 8.1,
+//     //     language: "Bengali",
+//     //     duration: "2h 25m",
+//     //     genre: ["Comedy", "Drama"],
+//     //     votes: 2780
+//     // },
+//     // {
+//     //     id: 8,
+//     //     title: "Domm",
+//     //     releaseDate: "Mar 21, 2026",
+//     //     posterPath: "https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?q=80&w=2056&auto=format&fit=crop",
+//     //     rating: 8.3,
+//     //     language: "Bengali",
+//     //     duration: "2h 35m",
+//     //     genre: ["Action", "Crime"],
+//     //     isNew: true,
+//     //     votes: 3450
+//     // },
+//     // {
+//     //     id: 9,
+//     //     title: "Chorki",
+//     //     releaseDate: "Mar 22, 2026",
+//     //     posterPath: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=2070&auto=format&fit=crop",
+//     //     rating: 8.0,
+//     //     language: "Bengali",
+//     //     duration: "2h 5m",
+//     //     genre: ["Drama", "Sports"],
+//     //     votes: 1230
+//     // },
+//     // {
+//     //     id: 10,
+//     //     title: "Maya",
+//     //     releaseDate: "Mar 23, 2026",
+//     //     posterPath: "https://images.unsplash.com/photo-1534447677768-be436bb4a87c?q=80&w=1794&auto=format&fit=crop",
+//     //     rating: 8.6,
+//     //     language: "Bengali",
+//     //     duration: "2h 20m",
+//     //     genre: ["Mystery", "Thriller"],
+//     //     isNew: true,
+//     //     votes: 2890
+//     // },
+//     // {
+//     //     id: 11,
+//     //     title: "Poddoja",
+//     //     releaseDate: "Mar 24, 2026",
+//     //     posterPath: "https://images.unsplash.com/photo-1543536448-1a76fc6e4f25?q=80&w=2070&auto=format&fit=crop",
+//     //     rating: 7.7,
+//     //     language: "Bengali",
+//     //     duration: "2h 15m",
+//     //     genre: ["Drama", "Family"],
+//     //     votes: 980
+//     // },
+//     // {
+//     //     id: 12,
+//     //     title: "Bishwoshundori",
+//     //     releaseDate: "Mar 25, 2026",
+//     //     posterPath: "https://images.unsplash.com/photo-1509347528160-9a47e3cd61b7?q=80&w=2070&auto=format&fit=crop",
+//     //     rating: 8.5,
+//     //     language: "Bengali",
+//     //     duration: "2h 40m",
+//     //     genre: ["Romance", "Comedy"],
+//     //     votes: 4120
+//     // }
+
+//     {
+//         id: 1,
+//         title: "Haangor",
+//         releaseDate: "Mar 19, 2026",
+//         posterPath: "https://images.unsplash.com/photo-1534447677768-be436bb4a87c?q=80&w=1794&auto=format&fit=crop",
+//         backdropPath: "https://images.unsplash.com/photo-1534447677768-be436bb4a87c?q=80&w=1794&auto=format&fit=crop",
+//         rating: 8.4,
+//         language: "Bengali",
+//         duration: "2h 15m",
+//         genre: ["Drama", "History"],
+//         isNew: true,
+//         votes: 2450,
+//         certification: "MA 15+",
+//         tagline: "A journey through time and memory",
+//         overview: "Set against the backdrop of historical Bengal, Haangor tells the story of a fisherman's struggle against societal oppression and his quest for dignity in a changing world.",
+//         director: {
+//             name: "Tanvir Ahmed",
+//             role: "Director"
+//         },
+//         writers: [
+//             { name: "Tanvir Ahmed", role: "Screenplay" },
+//             { name: "Humayun Ahmed", role: "Story" }
+//         ],
+//         cast: [
+//             { name: "Chanchal Chowdhury", character: "Haangor", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1887&auto=format&fit=crop" },
+//             { name: "Jaya Ahsan", character: "Rohima", avatar: "https://images.unsplash.com/photo-1494790108777-385d4003c8b1?q=80&w=1887&auto=format&fit=crop" },
+//             { name: "Fazlur Rahman", character: "Landlord", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1887&auto=format&fit=crop" }
+//         ]
+//     },
+//     {
+//         id: 2,
+//         title: "Durban",
+//         releaseDate: "Mar 19, 2026",
+//         posterPath: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070&auto=format&fit=crop",
+//         backdropPath: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070&auto=format&fit=crop",
+//         rating: 7.9,
+//         language: "Bengali",
+//         duration: "2h 30m",
+//         genre: ["Action", "Thriller"],
+//         votes: 1890,
+//         certification: "MA 15+",
+//         tagline: "The city never sleeps. Neither does danger.",
+//         overview: "A gritty action thriller set in the underbelly of Dhaka, where a former elite force operative must come out of retirement to rescue his kidnapped daughter from a powerful crime syndicate.",
+//         director: {
+//             name: "Ashiqur Rahman",
+//             role: "Director"
+//         },
+//         writers: [
+//             { name: "Ashiqur Rahman", role: "Screenplay" },
+//             { name: "Shahidul Islam", role: "Story" }
+//         ],
+//         cast: [
+//             { name: "Arifin Shuvoo", character: "Kazi", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1887&auto=format&fit=crop" },
+//             { name: "Puja Cherry", character: "Zara", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1964&auto=format&fit=crop" },
+//             { name: "Iresh Zaker", character: "Villain", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=2070&auto=format&fit=crop" }
+//         ]
+//     },
+//     {
+//         id: 3,
+//         title: "Haangor",
+//         releaseDate: "Mar 19, 2026",
+//         posterPath: "https://images.unsplash.com/photo-1534447677768-be436bb4a87c?q=80&w=1794&auto=format&fit=crop",
+//         backdropPath: "https://images.unsplash.com/photo-1534447677768-be436bb4a87c?q=80&w=1794&auto=format&fit=crop",
+//         rating: 8.4,
+//         language: "Bengali",
+//         duration: "2h 15m",
+//         genre: ["Drama", "History"],
+//         isNew: true,
+//         votes: 2450,
+//         certification: "MA 15+",
+//         tagline: "A journey through time and memory",
+//         overview: "Set against the backdrop of historical Bengal, Haangor tells the story of a fisherman's struggle against societal oppression and his quest for dignity in a changing world.",
+//         director: {
+//             name: "Tanvir Ahmed",
+//             role: "Director"
+//         },
+//         writers: [
+//             { name: "Tanvir Ahmed", role: "Screenplay" },
+//             { name: "Humayun Ahmed", role: "Story" }
+//         ],
+//         cast: [
+//             { name: "Chanchal Chowdhury", character: "Haangor", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1887&auto=format&fit=crop" },
+//             { name: "Jaya Ahsan", character: "Rohima", avatar: "https://images.unsplash.com/photo-1494790108777-385d4003c8b1?q=80&w=1887&auto=format&fit=crop" },
+//             { name: "Fazlur Rahman", character: "Landlord", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1887&auto=format&fit=crop" }
+//         ]
+//     },
+//     {
+//         id: 4,
+//         title: "Durban",
+//         releaseDate: "Mar 19, 2026",
+//         posterPath: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070&auto=format&fit=crop",
+//         backdropPath: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070&auto=format&fit=crop",
+//         rating: 7.9,
+//         language: "Bengali",
+//         duration: "2h 30m",
+//         genre: ["Action", "Thriller"],
+//         votes: 1890,
+//         certification: "MA 15+",
+//         tagline: "The city never sleeps. Neither does danger.",
+//         overview: "A gritty action thriller set in the underbelly of Dhaka, where a former elite force operative must come out of retirement to rescue his kidnapped daughter from a powerful crime syndicate.",
+//         director: {
+//             name: "Ashiqur Rahman",
+//             role: "Director"
+//         },
+//         writers: [
+//             { name: "Ashiqur Rahman", role: "Screenplay" },
+//             { name: "Shahidul Islam", role: "Story" }
+//         ],
+//         cast: [
+//             { name: "Arifin Shuvoo", character: "Kazi", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1887&auto=format&fit=crop" },
+//             { name: "Puja Cherry", character: "Zara", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1964&auto=format&fit=crop" },
+//             { name: "Iresh Zaker", character: "Villain", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=2070&auto=format&fit=crop" }
+//         ]
+//     },
+// ];
 
 // Genre options
 const genres = [
