@@ -36,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html className={`${funnelSans.variable} ${lato.variable} h-full antialiased`}>
+    <html className={`${funnelSans.variable} ${lato.variable} h-full antialiased `}>
       {/* <body className="min-h-full flex flex-col bg-[#F6F930]"> */}
       <body className="min-h-full flex flex-col ">
         {/* <Navbar /> */}
