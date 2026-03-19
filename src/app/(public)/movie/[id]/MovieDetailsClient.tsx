@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -64,22 +65,26 @@ export default function MovieDetailsClient({ movie }: { movie: Movie }) {
 
     return (
         <div className="min-h-screen bg-linear-to-b from-background to-muted/10">
-            <div className="container mx-auto px-4 py-4">
-                <Button variant="ghost" size="sm" onClick={() => router.back()} className="gap-2 hover:bg-primary/10">
+            <div className="relative h-[60vh] min-h-125 w-full">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => router.back()}
+                    className="absolute top-4 left-4 z-30 rounded-full text-black hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/40"
+                >
                     <ChevronLeft className="size-4" />
                     Back
                 </Button>
-            </div>
-
-            <div className="relative h-[60vh] min-h-125 w-full">
                 <div className="absolute inset-0">
+
+
                     <img src={movie.backdropPath || movie.posterPath} alt={movie.title} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-linear-to-t from-background via-background/80 to-transparent" />
                     <div className="absolute inset-0 bg-linear-to-r from-background via-transparent to-transparent" />
                 </div>
                 <div className="absolute bottom-0 left-0 right-0 container mx-auto px-4 pb-16">
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row gap-8 items-end">
-                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="hidden md:block w-64 rounded-2xl overflow-hidden shadow-2xl border-4 border-background">
+                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="hidden md:block w-100 rounded-2xl overflow-hidden shadow-2xl border-4 border-background">
                             <img src={movie.posterPath} alt={movie.title} className="w-full h-full object-cover" />
                         </motion.div>
                         <div className="flex-1 space-y-4">
