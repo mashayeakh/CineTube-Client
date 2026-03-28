@@ -142,7 +142,7 @@ export default function SearchField({
                 <Button
                     type="submit"
                     size="sm"
-                    className="rounded-full px-6 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-md hover:shadow-lg transition-all duration-300"
+                    className="rounded-full px-6 bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-md hover:shadow-lg transition-all duration-300"
                 >
                     Search
                 </Button>
