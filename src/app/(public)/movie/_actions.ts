@@ -5,3 +5,4 @@ export const getMovies = async () => {
     console.log("all ", allMovies.result)
     return allMovies.result.data
 }
+

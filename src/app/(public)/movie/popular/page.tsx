@@ -1,11 +1,11 @@
 /* eslint-disable @next/next/no-img-element */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
-import Image from 'next/image';
 import {
     Film,
     Star,
@@ -13,8 +13,6 @@ import {
     Clock,
     Filter,
     SlidersHorizontal,
-    X,
-    ChevronDown,
     Search,
     Heart,
     Eye,
@@ -42,11 +40,12 @@ import {
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
-import { movies } from '@/app/data/movies';
+import { useQuery } from '@tanstack/react-query';
+import { getPopularMovies } from '../_actions/popular';
 
 // Movie interface
 interface Movie {
-    id: number;
+    id: string;
     title: string;
     releaseDate: string;
     posterPath: string;
@@ -338,8 +337,6 @@ const genres = [
     "Sports", "Family"
 ];
 
-// Language options
-const languages = ["Bengali", "Hindi", "English", "Tamil", "Telugu"];
 
 // Sort options
 const sortOptions = [
@@ -351,6 +348,35 @@ const sortOptions = [
     { value: "title-desc", label: "Title (Z-A)" }
 ];
 
+// Backend shape → Movie mapper
+function mapToMovie(data: any): Movie {
+    const reviews: any[] = data.reviews ?? [];
+    const approved = reviews.filter((r: any) => r.status === 'APPROVED');
+    const avgRating =
+        approved.length > 0
+            ? Number(
+                (
+                    approved.reduce((s: number, r: any) => s + (r.rating ?? 0), 0) /
+                    approved.length
+                ).toFixed(1)
+            )
+            : 0;
+    return {
+        id: data.id as string,
+        title: (data.title as string) ?? '',
+        releaseDate: data.releaseYear ? `${data.releaseYear}-01-01` : new Date().toISOString(),
+        posterPath:
+            (data.poster as string) ||
+            'https://images.unsplash.com/photo-1534809027769-b00d750a2883',
+        rating: avgRating,
+        language: 'N/A',
+        duration: 'N/A',
+        genre: [],
+        votes: approved.length,
+        overview: (data.description as string) ?? '',
+    };
+}
+
 export default function PopularMoviesPage() {
     // State for filters
     const [searchQuery, setSearchQuery] = useState("");
@@ -360,10 +386,16 @@ export default function PopularMoviesPage() {
     const [yearRange, setYearRange] = useState([2020, 2026]);
     const [sortBy, setSortBy] = useState("popularity");
     const [showNewOnly, setShowNewOnly] = useState(false);
-    const [favorites, setFavorites] = useState<number[]>([]);
+    const [favorites, setFavorites] = useState<string[]>([]);
+
+    const { data: apiData = [], isLoading } = useQuery({
+        queryKey: ['popular-movies'],
+        queryFn: getPopularMovies,
+    });
+    const apiMovies: Movie[] = (apiData as any[]).map(mapToMovie);
 
     // Filter and sort movies
-    const filteredMovies = movies
+    const filteredMovies = apiMovies
         .filter(movie => {
             // Search filter
             if (searchQuery && !movie.title.toLowerCase().includes(searchQuery.toLowerCase())) {
@@ -409,7 +441,7 @@ export default function PopularMoviesPage() {
             }
         });
 
-    const toggleFavorite = (id: number, e: React.MouseEvent) => {
+    const toggleFavorite = (id: string, e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
         setFavorites(prev =>
@@ -420,12 +452,6 @@ export default function PopularMoviesPage() {
     const toggleGenre = (genre: string) => {
         setSelectedGenres(prev =>
             prev.includes(genre) ? prev.filter(g => g !== genre) : [...prev, genre]
-        );
-    };
-
-    const toggleLanguage = (language: string) => {
-        setSelectedLanguages(prev =>
-            prev.includes(language) ? prev.filter(l => l !== language) : [...prev, language]
         );
     };
 
@@ -486,8 +512,6 @@ export default function PopularMoviesPage() {
                                     setSearchQuery={setSearchQuery}
                                     selectedGenres={selectedGenres}
                                     toggleGenre={toggleGenre}
-                                    selectedLanguages={selectedLanguages}
-                                    toggleLanguage={toggleLanguage}
                                     ratingRange={ratingRange}
                                     setRatingRange={setRatingRange}
                                     yearRange={yearRange}
@@ -496,7 +520,6 @@ export default function PopularMoviesPage() {
                                     setShowNewOnly={setShowNewOnly}
                                     clearAllFilters={clearAllFilters}
                                     genres={genres}
-                                    languages={languages}
                                     activeFiltersCount={activeFiltersCount}
                                 />
                             </SheetContent>
@@ -515,8 +538,6 @@ export default function PopularMoviesPage() {
                                 setSearchQuery={setSearchQuery}
                                 selectedGenres={selectedGenres}
                                 toggleGenre={toggleGenre}
-                                selectedLanguages={selectedLanguages}
-                                toggleLanguage={toggleLanguage}
                                 ratingRange={ratingRange}
                                 setRatingRange={setRatingRange}
                                 yearRange={yearRange}
@@ -525,7 +546,6 @@ export default function PopularMoviesPage() {
                                 setShowNewOnly={setShowNewOnly}
                                 clearAllFilters={clearAllFilters}
                                 genres={genres}
-                                languages={languages}
                                 activeFiltersCount={activeFiltersCount}
                             />
                         </div>
@@ -566,6 +586,12 @@ export default function PopularMoviesPage() {
                         </div>
 
                         {/* Movies Grid */}
+                        {isLoading && (
+                            <div className="flex items-center justify-center py-20 text-muted-foreground">
+                                <TrendingUp className="size-6 animate-pulse mr-3" />
+                                <span>Loading movies…</span>
+                            </div>
+                        )}
                         <AnimatePresence mode="wait">
 
 
@@ -580,19 +606,13 @@ export default function PopularMoviesPage() {
                                     className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                                 >
                                     {filteredMovies.map((movie, index) => (
-                                        <Link
+                                        <MovieCard
                                             key={movie.id}
-                                            href={`/movies/${movie.id}`}
-                                            className="border rounded-lg overflow-hidden hover:shadow-lg transition"
-                                        >
-                                            <MovieCard
-                                                key={movie.id}
-                                                movie={movie}
-                                                index={index}
-                                                isFavorite={favorites.includes(movie.id)}
-                                                onFavoriteToggle={(e) => toggleFavorite(movie.id, e)}
-                                            />
-                                        </Link>
+                                            movie={movie}
+                                            index={index}
+                                            isFavorite={favorites.includes(movie.id)}
+                                            onFavoriteToggle={(e) => toggleFavorite(movie.id, e)}
+                                        />
                                     ))}
                                 </motion.div>
                             ) : (
@@ -616,14 +636,7 @@ export default function PopularMoviesPage() {
                             )}
                         </AnimatePresence>
 
-                        {/* Load More Button */}
-                        {filteredMovies.length > 0 && filteredMovies.length < movies.length && (
-                            <div className="flex justify-center mt-10">
-                                <Button variant="outline" className="px-8">
-                                    Load More
-                                </Button>
-                            </div>
-                        )}
+
                     </div>
                 </div>
             </div>
@@ -637,8 +650,6 @@ interface FilterSidebarProps {
     setSearchQuery: (value: string) => void;
     selectedGenres: string[];
     toggleGenre: (genre: string) => void;
-    selectedLanguages: string[];
-    toggleLanguage: (language: string) => void;
     ratingRange: number[];
     setRatingRange: (value: number[]) => void;
     yearRange: number[];
@@ -647,7 +658,6 @@ interface FilterSidebarProps {
     setShowNewOnly: (value: boolean) => void;
     clearAllFilters: () => void;
     genres: string[];
-    languages: string[];
     activeFiltersCount: number;
 }
 
@@ -656,8 +666,6 @@ const FilterSidebar = ({
     setSearchQuery,
     selectedGenres,
     toggleGenre,
-    selectedLanguages,
-    toggleLanguage,
     ratingRange,
     setRatingRange,
     yearRange,
@@ -666,7 +674,6 @@ const FilterSidebar = ({
     setShowNewOnly,
     clearAllFilters,
     genres,
-    languages,
     activeFiltersCount
 }: FilterSidebarProps) => {
     return (

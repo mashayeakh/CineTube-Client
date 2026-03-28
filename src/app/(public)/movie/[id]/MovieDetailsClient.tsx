@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import {
     ChevronLeft,
@@ -23,28 +23,49 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { movies } from "@/app/data/movies";
+
+interface ReviewComment {
+    id: string;
+    userId: string;
+    content: string;
+    isSpoiler: boolean;
+    createdAt: string;
+}
+
+interface Review {
+    id: string;
+    userId: string;
+    rating: number;
+    content: string;
+    isSpoiler: boolean;
+    tags: string[];
+    status: string;
+    createdAt: string;
+    comments: ReviewComment[];
+}
 
 interface Movie {
-    id: number;
+    id: string;
     title: string;
     releaseDate: string;
     posterPath: string;
     backdropPath?: string;
     rating: number;
     language: string;
-    duration: string;
+    // duration: string;
     genre: string[];
     isNew?: boolean;
     votes: number;
     certification?: string;
     tagline?: string;
     overview?: string;
+    ageGroup?: string;
+    priceType?: string;
     director?: { name: string; role: string };
     writers?: { name: string; role: string }[];
     cast?: { name: string; character: string; avatar?: string }[];
+    reviews?: Review[];
 }
 
 function formatReleaseDate(dateStr: string) {
@@ -78,7 +99,7 @@ export default function MovieDetailsClient({ movie }: { movie: Movie }) {
                 <div className="absolute inset-0">
 
 
-                    <img src={movie.backdropPath || movie.posterPath} alt={movie.title} className="w-full h-full object-cover" />
+                    <img src={movie.backdropPath || movie.posterPath} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-linear-to-t from-background via-background/80 to-transparent" />
                     <div className="absolute inset-0 bg-linear-to-r from-background via-transparent to-transparent" />
                 </div>
@@ -106,10 +127,10 @@ export default function MovieDetailsClient({ movie }: { movie: Movie }) {
                                 <span>•</span>
                                 <span>{movie.genre.join(', ')}</span>
                                 <span>•</span>
-                                <span className="flex items-center gap-1">
+                                {/* <span className="flex items-center gap-1">
                                     <Clock className="size-4" />
                                     {movie.duration}
-                                </span>
+                                </span> */}
                             </div>
                             <div className="flex items-center gap-6 flex-wrap">
                                 <div className="flex items-center gap-3">
@@ -298,32 +319,122 @@ export default function MovieDetailsClient({ movie }: { movie: Movie }) {
                     </TabsContent>
 
                     <TabsContent value="reviews">
-                        <div className="text-center py-20 text-muted-foreground">
-                            <Star className="size-12 mx-auto mb-4 opacity-50" />
-                            <p>No reviews yet</p>
-                        </div>
+                        {(!movie.reviews || movie.reviews.length === 0) ? (
+                            <div className="text-center py-20 text-muted-foreground">
+                                <Star className="size-12 mx-auto mb-4 opacity-50" />
+                                <p>No reviews yet</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                <p className="text-sm text-muted-foreground">{movie.reviews.length} review{movie.reviews.length !== 1 ? 's' : ''}</p>
+                                {movie.reviews.map((review) => (
+                                    <motion.div
+                                        key={review.id}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="bg-card border border-border/50 rounded-2xl p-6 space-y-4"
+                                    >
+                                        {/* Header */}
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div className="flex items-center gap-3">
+                                                <Avatar className="w-10 h-10">
+                                                    <AvatarFallback>{review.userId.slice(0, 2).toUpperCase()}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <p className="font-semibold text-sm">{review.userId.slice(0, 8)}…</p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {new Date(review.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                {/* Rating */}
+                                                <div className="flex items-center gap-1 px-2 py-1 bg-yellow-500/10 rounded-full">
+                                                    {Array.from({ length: 5 }).map((_, i) => (
+                                                        <Star
+                                                            key={i}
+                                                            className={cn(
+                                                                "size-3",
+                                                                i < review.rating
+                                                                    ? "fill-yellow-400 text-yellow-400"
+                                                                    : "text-muted-foreground/30"
+                                                            )}
+                                                        />
+                                                    ))}
+                                                    <span className="text-xs font-medium ml-1">{review.rating}/5</span>
+                                                </div>
+                                                {/* Status badge */}
+                                                <Badge
+                                                    variant={review.status === 'APPROVED' ? 'default' : 'secondary'}
+                                                    className={cn(
+                                                        "text-xs",
+                                                        review.status === 'APPROVED'
+                                                            ? 'bg-green-500/10 text-green-600 border-green-500/30'
+                                                            : 'bg-red-500/10 text-red-500 border-red-500/30'
+                                                    )}
+                                                >
+                                                    {review.status}
+                                                </Badge>
+                                            </div>
+                                        </div>
+
+                                        {/* Spoiler warning */}
+                                        {review.isSpoiler && (
+                                            <div className="flex items-center gap-2 px-3 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm text-yellow-600">
+                                                <Sparkles className="size-4" />
+                                                <span>This review may contain spoilers</span>
+                                            </div>
+                                        )}
+
+                                        {/* Content */}
+                                        <p className="text-muted-foreground leading-relaxed">{review.content}</p>
+
+                                        {/* Tags */}
+                                        {review.tags.length > 0 && (
+                                            <div className="flex flex-wrap gap-2">
+                                                {review.tags.map((tag) => (
+                                                    <Badge key={tag} variant="secondary" className="text-xs">
+                                                        #{tag}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Comments */}
+                                        {review.comments.length > 0 && (
+                                            <div className="mt-4 pl-4 border-l-2 border-border space-y-3">
+                                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                                    {review.comments.length} Comment{review.comments.length !== 1 ? 's' : ''}
+                                                </p>
+                                                {review.comments.map((comment) => (
+                                                    <div key={comment.id} className="flex items-start gap-3">
+                                                        <Avatar className="w-7 h-7 shrink-0">
+                                                            <AvatarFallback className="text-xs">{comment.userId.slice(0, 2).toUpperCase()}</AvatarFallback>
+                                                        </Avatar>
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xs font-semibold">{comment.userId.slice(0, 8)}…</span>
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    {new Date(comment.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                                </span>
+                                                                {comment.isSpoiler && (
+                                                                    <Badge variant="secondary" className="text-xs py-0">spoiler</Badge>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-sm text-muted-foreground">{comment.content}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                ))}
+                            </div>
+                        )}
                     </TabsContent>
                 </Tabs>
             </div>
 
-            <div className="container mx-auto px-4 py-12 border-t border-border/50">
-                <h3 className="text-2xl font-bold mb-6">You might also like</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                    {movies
-                        .filter((m) => m.id !== movie.id)
-                        .slice(0, 6)
-                        .map((m) => (
-                            <Link key={m.id} href={`/movie/${m.id}`}>
-                                <motion.div whileHover={{ scale: 1.05 }} className="aspect-[2/3] bg-muted rounded-xl overflow-hidden relative group">
-                                    <img src={m.posterPath} alt={m.title} className="w-full h-full object-cover" />
-                                    <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-3">
-                                        <p className="text-white text-sm font-medium line-clamp-2">{m.title}</p>
-                                    </div>
-                                </motion.div>
-                            </Link>
-                        ))}
-                </div>
-            </div>
         </div>
     );
 }

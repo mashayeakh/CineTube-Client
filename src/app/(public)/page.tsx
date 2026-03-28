@@ -10,9 +10,9 @@ import TrendingSection from '@/components/ui/modules/home/trendingSection'
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query'
 import React from 'react'
 import { getMovies } from './movie/_actions'
-import MovieList from '@/components/modules/Movies/MovieList'
 
 // import { Navbar } from '@/src/components/layout/navbar';
+import MovieList from './../../components/modules/Landing/movieList';
 
 export default async function HomePage() {
 
@@ -30,17 +30,17 @@ export default async function HomePage() {
       <Navbar /> */}
 
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <MovieList />
+        {/* <MovieList /> */}
+
+
+        <SearchField />
+        {/* <Hero /> */}
+        <HeroSection />
+        <TrendingSection />
+        <PopularSection />
+        <JoinSection />
+        <LeaderboardSection />
       </HydrationBoundary>
-
-
-      <SearchField />
-      {/* <Hero /> */}
-      <HeroSection />
-      <TrendingSection />
-      <PopularSection />
-      <JoinSection />
-      <LeaderboardSection />
     </div>
   )
 }
