@@ -1,0 +1,355 @@
+"use client"
+
+import Link from "next/link"
+import { useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
+import { AnimatePresence, motion } from "framer-motion"
+import {
+    ArrowLeft,
+    Check,
+    Clapperboard,
+    Eye,
+    EyeOff,
+    Film,
+    Lock,
+    Mail,
+    Play,
+    ShieldCheck,
+    User,
+} from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
+
+type AuthMode = "login" | "signup"
+
+export function AuthFlipShell({ initialMode }: { initialMode: AuthMode }) {
+    const router = useRouter()
+    const [mode, setMode] = useState<AuthMode>(initialMode)
+    const [showPassword, setShowPassword] = useState(false)
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+    const [password, setPassword] = useState("")
+
+    const isSignup = mode === "signup"
+
+    const passwordChecks = useMemo(
+        () => [
+            {
+                label: "At least 8 characters",
+                passed: password.length >= 8,
+            },
+            {
+                label: "At least one number or symbol",
+                passed: /[0-9\W_]/.test(password),
+            },
+            {
+                label: "Uppercase and lowercase letters",
+                passed: /[A-Z]/.test(password) && /[a-z]/.test(password),
+            },
+        ],
+        [password]
+    )
+
+    const switchMode = (nextMode: AuthMode) => {
+        setMode(nextMode)
+        router.replace(nextMode === "login" ? "/login" : "/signup", { scroll: false })
+    }
+
+    return (
+        <main className="h-svh overflow-hidden bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.18),transparent_35%),linear-gradient(135deg,#e7eeff_0%,#f7f8fc_45%,#eef4ff_100%)]">
+            <div className="flex h-full w-full overflow-hidden bg-white/92 backdrop-blur">
+                <section className="relative flex w-full flex-col justify-between px-6 py-3 sm:px-8 sm:py-4 lg:w-[60%] lg:px-10 lg:py-5">
+                    <div className="flex items-center justify-between gap-4">
+                        <Link
+                            href="/"
+                            className="inline-flex size-11 items-center justify-center rounded-full border border-border/70 bg-background text-foreground transition-colors hover:bg-muted"
+                        >
+                            <ArrowLeft className="size-4" />
+                        </Link>
+
+                        <div className="text-sm text-muted-foreground">
+                            {isSignup ? "Already a member?" : "New here?"}{" "}
+                            <button
+                                type="button"
+                                onClick={() => switchMode(isSignup ? "login" : "signup")}
+                                className="font-semibold text-indigo-600 transition-colors hover:text-indigo-500"
+                            >
+                                {isSignup ? "Sign in" : "Create account"}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center py-2 lg:py-0">
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={mode}
+                                initial={{ opacity: 0, rotateX: -8, y: 18 }}
+                                animate={{ opacity: 1, rotateX: 0, y: 0 }}
+                                exit={{ opacity: 0, rotateX: 8, y: -12 }}
+                                transition={{ duration: 0.35, ease: "easeOut" }}
+                                className="origin-top"
+                            >
+                                <div className="mb-4 space-y-2">
+                                    <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">
+                                        <Clapperboard className="size-3.5" />
+                                        {isSignup ? "Join CineTube" : "Welcome back"}
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <h1 className="text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
+                                            {isSignup ? "Sign Up" : "Sign In"}
+                                        </h1>
+                                        <p className="max-w-md text-sm text-slate-400">
+                                            {isSignup
+                                                ? "Create your CineTube profile to rate films, build watchlists, and join the discussion."
+                                                : "Sign in to continue your reviews, ratings, and saved movie collections."}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <form className="space-y-3">
+                                    {isSignup && (
+                                        <FieldShell icon={<User className="size-4" />} label="Full name">
+                                            <Input placeholder="Daniel Ahmadi" className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0" />
+                                        </FieldShell>
+                                    )}
+
+                                    <FieldShell icon={<Mail className="size-4" />} label="Email address">
+                                        <Input placeholder="name@example.com" type="email" className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0" />
+                                    </FieldShell>
+
+                                    <FieldShell
+                                        icon={<Lock className="size-4" />}
+                                        label="Password"
+                                        trailing={
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword((current) => !current)}
+                                                className="text-slate-400 transition-colors hover:text-slate-700"
+                                            >
+                                                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                                            </button>
+                                        }
+                                    >
+                                        <Input
+                                            type={showPassword ? "text" : "password"}
+                                            placeholder={isSignup ? "Create a password" : "Enter your password"}
+                                            value={password}
+                                            onChange={(event) => setPassword(event.target.value)}
+                                            className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
+                                        />
+                                    </FieldShell>
+
+                                    {isSignup && (
+                                        <div className="space-y-2.5">
+                                            <div className="space-y-2">
+                                                {passwordChecks.map((item) => (
+                                                    <div key={item.label} className="flex items-center gap-2 text-xs">
+                                                        <span
+                                                            className={cn(
+                                                                "inline-flex size-4 items-center justify-center rounded-full border",
+                                                                item.passed
+                                                                    ? "border-emerald-300 bg-emerald-50 text-emerald-600"
+                                                                    : "border-slate-200 bg-white text-slate-300"
+                                                            )}
+                                                        >
+                                                            <Check className="size-3" />
+                                                        </span>
+                                                        <span className={item.passed ? "text-emerald-600" : "text-slate-400"}>
+                                                            {item.label}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <FieldShell
+                                                icon={<Lock className="size-4" />}
+                                                label="Confirm password"
+                                                trailing={
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowConfirmPassword((current) => !current)}
+                                                        className="text-slate-400 transition-colors hover:text-slate-700"
+                                                    >
+                                                        {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                                                    </button>
+                                                }
+                                            >
+                                                <Input
+                                                    type={showConfirmPassword ? "text" : "password"}
+                                                    placeholder="Re-type password"
+                                                    className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
+                                                />
+                                            </FieldShell>
+                                        </div>
+                                    )}
+
+                                    {!isSignup && (
+                                        <div className="flex items-center justify-between gap-3 text-sm">
+                                            <label className="flex items-center gap-2 text-slate-500">
+                                                <input type="checkbox" className="size-4 rounded border-slate-300" />
+                                                Keep me signed in
+                                            </label>
+                                            <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+                                                Forgot password?
+                                            </Link>
+                                        </div>
+                                    )}
+
+                                    <div className="flex flex-col gap-2 pt-1.5 sm:flex-row sm:items-center">
+                                        <Button
+                                            type="submit"
+                                            className="h-10 rounded-full bg-linear-to-r from-indigo-600 via-indigo-500 to-blue-500 px-7 text-white shadow-[0_16px_30px_rgba(79,70,229,0.28)] hover:from-indigo-500 hover:via-indigo-500 hover:to-blue-400"
+                                        >
+                                            {isSignup ? "Sign Up" : "Sign In"}
+                                            <span className="ml-2 inline-flex size-6 items-center justify-center rounded-full bg-white/20">
+                                                <ArrowLeft className="size-3.5 rotate-180" />
+                                            </span>
+                                        </Button>
+
+                                        <div className="flex items-center gap-2.5 text-sm text-slate-400">
+                                            <span>Or</span>
+                                            <button
+                                                type="button"
+                                                className="inline-flex size-9 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+                                            >
+                                                f
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="inline-flex size-9 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+                                            >
+                                                G
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-slate-400">
+                        <div className="inline-flex items-center gap-2">
+                            <span className="inline-flex size-6 items-center justify-center rounded-full bg-slate-100 text-xs">EN</span>
+                            English
+                        </div>
+                        <div className="hidden items-center gap-2 sm:inline-flex">
+                            <ShieldCheck className="size-4 text-emerald-500" />
+                            Secure auth surface
+                        </div>
+                    </div>
+                </section>
+
+                <aside className="relative hidden overflow-hidden bg-linear-to-br from-fuchsia-700 via-pink-600 to-violet-600 lg:flex lg:w-[40%] lg:flex-col lg:justify-between">
+                    <div className="absolute inset-0">
+                        <div className="absolute -left-24 -top-16 h-72 w-72 rounded-full bg-fuchsia-900/30" />
+                        <div className="absolute right-8 top-20 h-52 w-52 rounded-[3rem] bg-white/10" />
+                        <div className="absolute -bottom-18 left-10 h-96 w-96 rotate-12 rounded-[5rem] bg-indigo-400/35" />
+                        <div className="absolute bottom-8 right-10 h-40 w-40 rounded-full bg-violet-900/25" />
+                    </div>
+
+                    <div className="relative z-10 px-6 pt-7 text-white xl:px-8">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold tracking-wide backdrop-blur-sm">
+                            <Film className="size-4" />
+                            CINE STREAM MODE
+                        </div>
+
+                        <motion.div
+                            key={`panel-${mode}`}
+                            initial={{ opacity: 0, x: 18 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.4, ease: "easeOut" }}
+                            className="mt-6 max-w-sm"
+                        >
+                            <h2 className="text-4xl font-black leading-tight tracking-tight">
+                                {isSignup ? "Hello, Friend!" : "Welcome Back"}
+                            </h2>
+                            <p className="mt-3 text-base text-pink-100/95">
+                                {isSignup
+                                    ? "Create an account and start sharing your favorite scenes, reviews, and watchlists."
+                                    : "To stay connected with CineTube, sign in with your personal credentials."}
+                            </p>
+                            <button
+                                type="button"
+                                onClick={() => switchMode(isSignup ? "login" : "signup")}
+                                className="mt-7 inline-flex h-11 items-center justify-center rounded-full border border-white/50 px-7 text-sm font-semibold tracking-wide text-white transition hover:bg-white/15"
+                            >
+                                {isSignup ? "SIGN IN" : "CREATE ACCOUNT"}
+                            </button>
+                        </motion.div>
+                    </div>
+
+                    <div className="relative z-10 px-6 pb-6 xl:px-8">
+                        <motion.div
+                            animate={{ y: [0, -8, 0] }}
+                            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+                            className="max-w-sm rounded-[1.5rem] border border-white/15 bg-white/10 px-5 py-5 text-white backdrop-blur-sm"
+                        >
+                            <div className="mb-4 flex items-center justify-between">
+                                <div className="inline-flex size-11 items-center justify-center rounded-xl bg-white/20">
+                                    <Clapperboard className="size-5" />
+                                </div>
+                                <div className="inline-flex items-center gap-2 rounded-full bg-black/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide">
+                                    <Play className="size-3 fill-current" />
+                                    Live review room
+                                </div>
+                            </div>
+
+                            <h3 className="text-2xl font-black tracking-tight">watch and share your best movies</h3>
+                            <p className="mt-2 text-sm text-pink-100/90">
+                                Join the community and keep your ratings, favorites, and comments in one secure profile.
+                            </p>
+
+                            <div className="mt-4 grid grid-cols-3 gap-2">
+                                <div className="rounded-xl bg-black/20 p-2 text-center">
+                                    <p className="text-xs text-pink-100/80">Reels</p>
+                                    <p className="mt-1 text-base font-black">128</p>
+                                </div>
+                                <div className="rounded-xl bg-black/20 p-2 text-center">
+                                    <p className="text-xs text-pink-100/80">Reviews</p>
+                                    <p className="mt-1 text-base font-black">1.2k</p>
+                                </div>
+                                <div className="rounded-xl bg-black/20 p-2 text-center">
+                                    <p className="text-xs text-pink-100/80">Lists</p>
+                                    <p className="mt-1 text-base font-black">320</p>
+                                </div>
+                            </div>
+
+                            <div className="mt-4 flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2 text-xs text-pink-50">
+                                <ShieldCheck className="size-4" />
+                                Your account data stays protected while you explore.
+                            </div>
+                        </motion.div>
+                    </div>
+                </aside>
+            </div>
+        </main>
+    )
+}
+
+function FieldShell({
+    children,
+    icon,
+    label,
+    trailing,
+}: {
+    children: React.ReactNode
+    icon: React.ReactNode
+    label: string
+    trailing?: React.ReactNode
+}) {
+    return (
+        <div className="border-b border-slate-200 pb-1.5">
+            <div className="flex items-center gap-2.5 text-slate-400">
+                <span>{icon}</span>
+                <div className="min-w-0 flex-1">
+                    <p className="mb-0 text-xs font-medium uppercase tracking-[0.22em] text-slate-300">
+                        {label}
+                    </p>
+                    {children}
+                </div>
+                {trailing}
+            </div>
+        </div>
+    )
+}

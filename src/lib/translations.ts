@@ -20,7 +20,7 @@ export const translations = {
         },
         auth: {
             login: "লগইন",
-            signup: "সাইন আপ",
+            // signup: "সাইন আপ",
         },
     },
 };

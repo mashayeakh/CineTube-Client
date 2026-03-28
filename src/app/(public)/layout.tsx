@@ -2,6 +2,7 @@
 "use client"; // needed for useSession
 
 import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
+import { usePathname } from "next/navigation";
 import "../globals.css";
 import { Navbar } from "@/components/navbar";
 import Heading from "@/components/ui/modules/home/heading";
@@ -22,6 +23,9 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+    const pathname = usePathname();
+    const hidePublicChrome = pathname === "/login" || pathname === "/signup";
+
     // const { data: session } = authClient.useSession();
     // const hideNavbar = !!session?.user?.role;
 
@@ -31,8 +35,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 className={`${plusJakartaSans.variable} ${fraunces.variable} font-sans antialiased bg-cream text-charcoal min-h-full flex flex-col`}
             >
                 {/* {!hideNavbar && <Navbar />} */}
-                <Heading />
-                <Navbar />
+                {!hidePublicChrome && <Heading />}
+                {!hidePublicChrome && <Navbar />}
                 {children}
                 {/* <Footer2 /> */}
                 {/* <Toaster richColors position="top-center" /> */}

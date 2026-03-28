@@ -42,6 +42,7 @@ import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useQuery } from '@tanstack/react-query';
 import { getPopularMovies } from '../_actions/popular';
+import { getGenres } from '../_actions/genres';
 
 // Movie interface
 interface Movie {
@@ -330,12 +331,10 @@ interface Movie {
 //     },
 // ];
 
-// Genre options
-const genres = [
-    "Action", "Drama", "Comedy", "Thriller", "Horror",
-    "Romance", "Crime", "History", "Biography", "Mystery",
-    "Sports", "Family"
-];
+interface Genre {
+    id: string;
+    name: string;
+}
 
 
 // Sort options
@@ -392,6 +391,12 @@ export default function PopularMoviesPage() {
         queryKey: ['popular-movies'],
         queryFn: getPopularMovies,
     });
+    const { data: genresData = [] } = useQuery({
+        queryKey: ['movie-genres'],
+        queryFn: getGenres,
+    });
+
+    const genres = (genresData as Genre[]).map((g) => g.name);
     const apiMovies: Movie[] = (apiData as any[]).map(mapToMovie);
 
     // Filter and sort movies

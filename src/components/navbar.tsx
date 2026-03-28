@@ -1,8 +1,9 @@
 "use client";
 
-import { Book, Menu, Sunset, Trees, Zap } from "lucide-react";
+import { Book, Menu, Sunset, Zap } from "lucide-react";
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import {
   Accordion,
@@ -43,6 +44,8 @@ interface MenuItem {
 }
 
 const Navbar = ({ className }: { className?: string }) => {
+  const router = useRouter();
+
   // ✅ Language state
   const [lang, setLang] = React.useState<"en" | "bn">("en");
 
@@ -168,11 +171,17 @@ const Navbar = ({ className }: { className?: string }) => {
               {lang === "en" ? "বাংলা" : "EN"}
             </Button>
 
-            <Button variant="ghost" size="sm">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push("/login")}
+            >
               {t.auth.login}
             </Button>
 
-            <Button size="sm">{t.auth.signup}</Button>
+            {/* <Button size="sm" onClick={() => router.push("/signup")}>
+              {t.auth.signup}
+            </Button> */}
           </div>
         </nav>
 
@@ -207,8 +216,12 @@ const Navbar = ({ className }: { className?: string }) => {
                   {lang === "en" ? "বাংলা" : "EN"}
                 </Button>
 
-                <Button variant="outline">{t.auth.login}</Button>
-                <Button>{t.auth.signup}</Button>
+                <Button variant="outline" onClick={() => router.push("/login")}>
+                  {t.auth.login}
+                </Button>
+                {/* <Button onClick={() => router.push("/signup")}>
+                  {t.auth.signup}
+                </Button> */}
               </div>
             </SheetContent>
           </Sheet>
