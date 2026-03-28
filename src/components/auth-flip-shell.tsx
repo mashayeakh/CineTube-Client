@@ -295,7 +295,7 @@ export function AuthFlipShell({ initialMode }: { initialMode: AuthMode }) {
                                                 <input type="checkbox" className="size-4 rounded border-slate-300" />
                                                 Keep me signed in
                                             </label>
-                                            <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+                                            <Link href="/forgetPassword" className="font-medium text-indigo-600 hover:text-indigo-500">
                                                 Forgot password?
                                             </Link>
                                         </div>
