@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Metadata } from "next";
 import { Funnel_Sans, Geist, Geist_Mono, Lato } from "next/font/google";
 import "./globals.css";

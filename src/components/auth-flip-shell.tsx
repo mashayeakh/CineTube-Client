@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import Link from "next/link"
@@ -21,6 +22,10 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { useForm } from "@tanstack/react-form"
+import { loginAction } from "@/app/(public)/login/_action/loginAction"
+import { ILoginPayload, loginZodSchema } from "@/zod/auth.validation"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 type AuthMode = "login" | "signup"
 
@@ -50,6 +55,42 @@ export function AuthFlipShell({ initialMode }: { initialMode: AuthMode }) {
         ],
         [password]
     )
+    const queryClient = useQueryClient()
+
+    const { mutateAsync, isPending } = useMutation({
+        mutationFn: (payload: ILoginPayload) => loginAction(payload),
+    })
+
+    const [serverError, setServerError] = useState<string | null>(null)
+    const form = useForm({
+        defaultValues: {
+            email: "",
+            password: "",
+        },
+
+        onSubmit: async ({ value }) => {
+            setServerError(null)
+
+            const parsedPayload = loginZodSchema.safeParse(value)
+            if (!parsedPayload.success) {
+                setServerError(parsedPayload.error.issues[0]?.message || "Please provide valid credentials")
+                return
+            }
+
+            try {
+                const result = (await mutateAsync(parsedPayload.data)) as any
+                if (!result.success) {
+                    setServerError(result.message || "Login failed")
+                    return
+                }
+                queryClient.invalidateQueries({ queryKey: ["user"] })
+                router.push("/dashboard")
+            } catch (error: any) {
+                console.error("Login failed:", error)
+                setServerError("An unexpected error occurred. Please try again. " + (error.message || ""))
+            }
+        },
+    })
 
     const switchMode = (nextMode: AuthMode) => {
         setMode(nextMode)
@@ -107,38 +148,102 @@ export function AuthFlipShell({ initialMode }: { initialMode: AuthMode }) {
                                     </div>
                                 </div>
 
-                                <form className="space-y-3">
+                                <form
+                                    className="space-y-3"
+                                    noValidate
+                                    onSubmit={(e) => {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        if (!isSignup) {
+                                            form.handleSubmit()
+                                        }
+                                    }}
+                                >
                                     {isSignup && (
                                         <FieldShell icon={<User className="size-4" />} label="Full name">
                                             <Input placeholder="Daniel Ahmadi" className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0" />
                                         </FieldShell>
                                     )}
 
-                                    <FieldShell icon={<Mail className="size-4" />} label="Email address">
-                                        <Input placeholder="name@example.com" type="email" className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0" />
-                                    </FieldShell>
+                                    {isSignup ? (
+                                        <FieldShell icon={<Mail className="size-4" />} label="Email address">
+                                            <Input placeholder="name@example.com" type="email" className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0" />
+                                        </FieldShell>
+                                    ) : (
+                                        <form.Field
+                                            name="email"
+                                            validators={{ onChange: loginZodSchema.shape.email }}
+                                        >
+                                            {(field) => (
+                                                <FieldShell icon={<Mail className="size-4" />} label="Email address">
+                                                    <Input
+                                                        name={field.name}
+                                                        value={field.state.value}
+                                                        onBlur={field.handleBlur}
+                                                        onChange={(event) => field.handleChange(event.target.value)}
+                                                        placeholder="name@example.com"
+                                                        type="email"
+                                                        className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
+                                                    />
+                                                </FieldShell>
+                                            )}
+                                        </form.Field>
+                                    )}
 
-                                    <FieldShell
-                                        icon={<Lock className="size-4" />}
-                                        label="Password"
-                                        trailing={
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowPassword((current) => !current)}
-                                                className="text-slate-400 transition-colors hover:text-slate-700"
-                                            >
-                                                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                                            </button>
-                                        }
-                                    >
-                                        <Input
-                                            type={showPassword ? "text" : "password"}
-                                            placeholder={isSignup ? "Create a password" : "Enter your password"}
-                                            value={password}
-                                            onChange={(event) => setPassword(event.target.value)}
-                                            className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
-                                        />
-                                    </FieldShell>
+                                    {isSignup ? (
+                                        <FieldShell
+                                            icon={<Lock className="size-4" />}
+                                            label="Password"
+                                            trailing={
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPassword((current) => !current)}
+                                                    className="text-slate-400 transition-colors hover:text-slate-700"
+                                                >
+                                                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                                                </button>
+                                            }
+                                        >
+                                            <Input
+                                                type={showPassword ? "text" : "password"}
+                                                placeholder="Create a password"
+                                                value={password}
+                                                onChange={(event) => setPassword(event.target.value)}
+                                                className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
+                                            />
+                                        </FieldShell>
+                                    ) : (
+                                        <form.Field
+                                            name="password"
+                                            validators={{ onChange: loginZodSchema.shape.password }}
+                                        >
+                                            {(field) => (
+                                                <FieldShell
+                                                    icon={<Lock className="size-4" />}
+                                                    label="Password"
+                                                    trailing={
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setShowPassword((current) => !current)}
+                                                            className="text-slate-400 transition-colors hover:text-slate-700"
+                                                        >
+                                                            {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                                                        </button>
+                                                    }
+                                                >
+                                                    <Input
+                                                        name={field.name}
+                                                        type={showPassword ? "text" : "password"}
+                                                        value={field.state.value}
+                                                        onBlur={field.handleBlur}
+                                                        onChange={(event) => field.handleChange(event.target.value)}
+                                                        placeholder="Enter your password"
+                                                        className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
+                                                    />
+                                                </FieldShell>
+                                            )}
+                                        </form.Field>
+                                    )}
 
                                     {isSignup && (
                                         <div className="space-y-2.5">
@@ -196,16 +301,39 @@ export function AuthFlipShell({ initialMode }: { initialMode: AuthMode }) {
                                         </div>
                                     )}
 
+                                    {!isSignup && serverError && (
+                                        <p className="text-xs text-destructive">{serverError}</p>
+                                    )}
+
                                     <div className="flex flex-col gap-2 pt-1.5 sm:flex-row sm:items-center">
-                                        <Button
-                                            type="submit"
-                                            className="h-10 rounded-full bg-linear-to-r from-indigo-600 via-indigo-500 to-blue-500 px-7 text-white shadow-[0_16px_30px_rgba(79,70,229,0.28)] hover:from-indigo-500 hover:via-indigo-500 hover:to-blue-400"
-                                        >
-                                            {isSignup ? "Sign Up" : "Sign In"}
-                                            <span className="ml-2 inline-flex size-6 items-center justify-center rounded-full bg-white/20">
-                                                <ArrowLeft className="size-3.5 rotate-180" />
-                                            </span>
-                                        </Button>
+                                        {isSignup ? (
+                                            <Button
+                                                type="submit"
+                                                className="h-10 rounded-full bg-linear-to-r from-indigo-600 via-indigo-500 to-blue-500 px-7 text-white shadow-[0_16px_30px_rgba(79,70,229,0.28)] hover:from-indigo-500 hover:via-indigo-500 hover:to-blue-400"
+                                            >
+                                                Sign Up
+                                                <span className="ml-2 inline-flex size-6 items-center justify-center rounded-full bg-white/20">
+                                                    <ArrowLeft className="size-3.5 rotate-180" />
+                                                </span>
+                                            </Button>
+                                        ) : (
+                                            <form.Subscribe
+                                                selector={(state) => [state.canSubmit, state.isSubmitting] as const}
+                                            >
+                                                {([canSubmit, isSubmitting]) => (
+                                                    <Button
+                                                        type="submit"
+                                                        disabled={!canSubmit || isSubmitting || isPending}
+                                                        className="h-10 rounded-full bg-linear-to-r from-indigo-600 via-indigo-500 to-blue-500 px-7 text-white shadow-[0_16px_30px_rgba(79,70,229,0.28)] hover:from-indigo-500 hover:via-indigo-500 hover:to-blue-400"
+                                                    >
+                                                        {isSubmitting || isPending ? "Logging in..." : "Sign In"}
+                                                        <span className="ml-2 inline-flex size-6 items-center justify-center rounded-full bg-white/20">
+                                                            <ArrowLeft className="size-3.5 rotate-180" />
+                                                        </span>
+                                                    </Button>
+                                                )}
+                                            </form.Subscribe>
+                                        )}
 
                                         <div className="flex items-center gap-2.5 text-sm text-slate-400">
                                             <span>Or</span>

@@ -1,0 +1,16 @@
+export interface ILoginResponse {
+    token: string,
+    accessToken: string,
+    refreshToken: string,
+    user: {
+        createdAt: Date;
+        updatedAt: Date;
+        email: string;
+        emailVerified: boolean;
+        name: string;
+        image?: string | null | undefined;
+        status: string | null | undefined;
+        isDeleted: boolean;
+        role: string | null | undefined;
+    }
+}

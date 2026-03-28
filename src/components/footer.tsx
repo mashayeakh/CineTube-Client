@@ -34,7 +34,7 @@ const Footer = ({
     url: "http://localhost:3000/",
   },
   className,
-  tagline = "Components made easy.",
+  tagline = "Your streaming portal to cinematic excellence.",
   menuItems = [
     {
       title: "Product",
@@ -43,8 +43,6 @@ const Footer = ({
         { text: "Pricing", url: "#" },
         { text: "Marketplace", url: "#" },
         { text: "Features", url: "#" },
-        { text: "Integrations", url: "#" },
-        { text: "Pricing", url: "#" },
       ],
     },
     {
@@ -54,20 +52,10 @@ const Footer = ({
         { text: "Team", url: "#" },
         { text: "Blog", url: "#" },
         { text: "Careers", url: "#" },
-        { text: "Contact", url: "#" },
-        { text: "Privacy", url: "#" },
       ],
     },
     {
-      title: "Resources",
-      links: [
-        { text: "Help", url: "#" },
-        { text: "Sales", url: "#" },
-        { text: "Advertise", url: "#" },
-      ],
-    },
-    {
-      title: "Social",
+      title: "Connect",
       links: [
         { text: "Twitter", url: "#" },
         { text: "Instagram", url: "#" },
@@ -82,51 +70,71 @@ const Footer = ({
   ],
 }: FooterProps) => {
   return (
-    <section className={cn("py-28 border-4", className)}>
+    <section className={cn("relative bg-linear-to-b from-[#0d253f] to-[#1a3a5f] py-8 lg:py-12", className)}>
       <div className="container">
-        <footer>
-          <div className="grid grid-cols-2 gap-8 lg:grid-cols-6">
-            <div className="col-span-2 mb-8 lg:mb-0">
-              <div className="flex items-center gap-2 lg:justify-start">
+        <footer className="space-y-6">
+          {/* Top Section: Logo & Tagline */}
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-sm">
+              <div className="flex items-center gap-2">
                 <Logo url="https://shadcnblocks.com">
                   <LogoImage
                     src={logo.src}
                     alt={logo.alt}
                     title={logo.title}
-                    className="h-10 dark:invert"
+                    className="h-8 brightness-0 invert"
                   />
-                  <LogoText className="text-xl">{logo.title}</LogoText>
+                  <LogoText className="text-xl font-bold text-white">{logo.title}</LogoText>
                 </Logo>
               </div>
-              <p className="mt-4 font-bold">{tagline}</p>
+              <p className="mt-2 text-xs text-white/90 leading-relaxed">{tagline}</p>
             </div>
-            {menuItems.map((section, sectionIdx) => (
-              <div key={sectionIdx}>
-                <h3 className="mb-4 font-bold">{section.title}</h3>
-                <ul className="space-y-4 text-muted-foreground">
-                  {section.links.map((link, linkIdx) => (
-                    <li
-                      key={linkIdx}
-                      className="font-medium hover:text-primary"
-                    >
-                      <a href={link.url}>{link.text}</a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+
+            {/* Menu Items Grid */}
+            <div className="grid grid-cols-3 gap-6 lg:gap-10">
+              {menuItems.map((section, sectionIdx) => (
+                <div key={sectionIdx}>
+                  <h3 className="mb-2 font-bold text-white text-xs uppercase tracking-wider">{section.title}</h3>
+                  <ul className="space-y-1.5">
+                    {section.links.map((link, linkIdx) => (
+                      <li key={linkIdx}>
+                        <a
+                          href={link.url}
+                          className="text-white/80 hover:text-white transition-colors duration-200 text-xs font-medium"
+                        >
+                          {link.text}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="mt-24 flex flex-col justify-between gap-4 border-t pt-8 text-sm font-medium text-muted-foreground md:flex-row md:items-center">
-            <p>{copyright}</p>
+
+          {/* Bottom Section: Copyright & Links */}
+          <div className="border-t border-white/20 pt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <p className="text-white/70 text-xs font-medium">{copyright}</p>
             <ul className="flex gap-4">
               {bottomLinks.map((link, linkIdx) => (
-                <li key={linkIdx} className="underline hover:text-primary">
-                  <a href={link.url}>{link.text}</a>
+                <li key={linkIdx}>
+                  <a
+                    href={link.url}
+                    className="text-white/70 hover:text-white transition-colors duration-200 text-xs font-medium"
+                  >
+                    {link.text}
+                  </a>
                 </li>
               ))}
             </ul>
           </div>
         </footer>
+      </div>
+
+      {/* Decorative gradient overlay */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -right-20 -top-20 h-96 w-96 rounded-full bg-white/5 blur-3xl"></div>
+        <div className="absolute -left-20 -bottom-20 h-96 w-96 rounded-full bg-white/5 blur-3xl"></div>
       </div>
     </section>
   );
