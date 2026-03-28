@@ -1,16 +1,23 @@
 import axios from "axios"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
+const API_BASE_URL =
+    process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL
 
-if (!API_BASE_URL) {
-    throw new Error("Api base url is not defined. ")
+const getBaseUrl = () => {
+    if (!API_BASE_URL) {
+        throw new Error(
+            "API base URL is not defined. Set NEXT_PUBLIC_API_BASE_URL or NEXT_PUBLIC_API_URL in .env.local."
+        )
+    }
+
+    return API_BASE_URL.replace(/\/$/, "")
 }
 
 
 
 const axiosInstance = () => {
     const instance = axios.create({
-        baseURL: API_BASE_URL,
+        baseURL: getBaseUrl(),
         timeout: 5000,
         headers: {
             "Content-Type": "application/json",

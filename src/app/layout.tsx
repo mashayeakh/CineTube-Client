@@ -3,6 +3,7 @@ import { Funnel_Sans, Geist, Geist_Mono, Lato } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import QueryProviders from "@/providers/queryProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,7 +42,9 @@ export default function RootLayout({
       {/* <body className="min-h-full flex flex-col bg-[#F6F930]"> */}
       <body className="min-h-full flex flex-col ">
         {/* <Navbar /> */}
-        {children}
+        <QueryProviders>
+          {children}
+        </QueryProviders>
         <Footer className="flex justify-center px-28 body-font" />
       </body>
     </html>
