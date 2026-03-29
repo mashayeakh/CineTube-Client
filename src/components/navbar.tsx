@@ -1,9 +1,9 @@
 "use client";
 
-import { Book, Menu, Sunset, Zap, Search, Clapperboard, X } from "lucide-react";
-import * as React from "react";
+import { Book, Clapperboard, Home, LogOut, Menu, Search, Settings, Sunset, X, Zap } from "lucide-react";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import * as React from "react";
 
 import {
   Accordion,
@@ -11,9 +11,14 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-
-import { Button } from "@/components/ui/button";
-
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -22,7 +27,6 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
-
 import {
   Sheet,
   SheetContent,
@@ -30,18 +34,22 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-
-import { cn } from "@/lib/utils";
 import { translations } from "@/lib/translations";
+import { cn } from "@/lib/utils";
 
-// Types
-interface MenuItem {
+type MenuItem = {
   title: string;
   url: string;
   description?: string;
   icon?: React.ReactNode;
   items?: MenuItem[];
-}
+};
+
+type CurrentUser = {
+  name: string;
+  email: string;
+  image?: string | null;
+};
 
 const Navbar = ({ className }: { className?: string }) => {
   const router = useRouter();
@@ -50,6 +58,65 @@ const Navbar = ({ className }: { className?: string }) => {
   const [lang, setLang] = React.useState<"en" | "bn">("en");
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [user, setUser] = React.useState<CurrentUser | null>(null);
+  const [isAuthChecking, setIsAuthChecking] = React.useState(true);
+
+  React.useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+        if (!baseUrl) {
+          setUser(null);
+          return;
+        }
+
+        const res = await fetch(`${baseUrl}/auth/user/profile`, {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          setUser(null);
+          return;
+        }
+
+        const payload = await res.json();
+        const profile = payload?.result;
+
+        if (!profile) {
+          setUser(null);
+          return;
+        }
+
+        setUser({
+          name: profile.name,
+          email: profile.email,
+          image: profile.image,
+        });
+      } catch {
+        setUser(null);
+      } finally {
+        setIsAuthChecking(false);
+      }
+    };
+
+    void checkAuth();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+      });
+    } finally {
+      setUser(null);
+      router.push("/");
+      router.refresh();
+    }
+  };
 
   const t = translations[lang];
 
@@ -68,7 +135,7 @@ const Navbar = ({ className }: { className?: string }) => {
           title: "Upcoming",
           description: "Coming soon to theatres",
           icon: <Clapperboard className="size-4" />,
-          url: "#",
+          url: "/movie/upcoming",
         },
         {
           title: "Top Rated",
@@ -136,21 +203,23 @@ const Navbar = ({ className }: { className?: string }) => {
         className
       )}
     >
-      {/* Search overlay */}
       {searchOpen && (
         <div className="absolute inset-0 z-10 flex items-center gap-3 px-4 sm:px-6 lg:px-8">
           <Search className="size-4 shrink-0 text-slate-400" />
           <input
             autoFocus
             type="text"
-            placeholder="Search movies, series, people…"
+            placeholder="Search movies, series, people..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Escape" && setSearchOpen(false)}
             className="flex-1 bg-transparent text-sm text-white placeholder-slate-400 outline-none"
           />
           <button
-            onClick={() => { setSearchOpen(false); setSearchQuery("") }}
+            onClick={() => {
+              setSearchOpen(false);
+              setSearchQuery("");
+            }}
             className="rounded-full p-1 text-slate-400 transition hover:text-white"
           >
             <X className="size-4" />
@@ -159,11 +228,7 @@ const Navbar = ({ className }: { className?: string }) => {
       )}
 
       <div className={cn("container mx-auto px-4 py-0 lg:py-0", searchOpen && "invisible")}>
-
-        {/* Desktop */}
-        <nav className="hidden h-14 lg:grid lg:grid-cols-3 items-center">
-
-          {/* Logo */}
+        <nav className="hidden h-14 items-center lg:grid lg:grid-cols-3">
           <div className="flex items-center gap-2">
             <Link href="/" className="group flex items-center gap-2">
               <span className="flex size-8 items-center justify-center rounded-lg bg-linear-to-br from-indigo-500 to-violet-600 shadow-[0_0_18px_rgba(99,102,241,0.55)]">
@@ -175,7 +240,6 @@ const Navbar = ({ className }: { className?: string }) => {
             </Link>
           </div>
 
-          {/* Center nav menu */}
           <div className="flex justify-center">
             <NavigationMenu>
               <NavigationMenuList>
@@ -184,9 +248,7 @@ const Navbar = ({ className }: { className?: string }) => {
             </NavigationMenu>
           </div>
 
-          {/* Right actions */}
-          <div className="flex justify-end items-center gap-1.5">
-            {/* Search */}
+          <div className="flex items-center justify-end gap-1.5">
             <button
               onClick={() => setSearchOpen(true)}
               className="inline-flex size-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/8 hover:text-white"
@@ -194,7 +256,6 @@ const Navbar = ({ className }: { className?: string }) => {
               <Search className="size-4" />
             </button>
 
-            {/* Language toggle */}
             <button
               onClick={() => setLang((prev) => (prev === "en" ? "bn" : "en"))}
               className="inline-flex h-8 items-center rounded-full border border-white/12 bg-white/6 px-3 text-xs font-medium text-slate-300 transition hover:bg-white/12 hover:text-white"
@@ -204,24 +265,64 @@ const Navbar = ({ className }: { className?: string }) => {
 
             <div className="mx-1 h-5 w-px bg-white/10" />
 
-            <button
-              onClick={() => router.push("/login")}
-              className="inline-flex h-8 items-center rounded-full px-4 text-xs font-semibold text-slate-300 transition hover:text-white"
-            >
-              {t.auth.login}
-            </button>
+            {isAuthChecking ? (
+              <div className="h-8 w-28 rounded-full border border-white/10 bg-white/5" />
+            ) : user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/6 px-2 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-white/12 hover:text-white">
+                  <Avatar className="h-7 w-7 shrink-0">
+                    <AvatarImage src={user.image ?? undefined} alt={user.name} />
+                    <AvatarFallback className="text-xs bg-indigo-600 text-white">
+                      {user.name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="pr-1 text-xs font-semibold">My Account</span>
+                </DropdownMenuTrigger>
 
-            <button
-              onClick={() => router.push("/signup")}
-              className="inline-flex h-8 items-center rounded-full bg-linear-to-r from-indigo-600 to-violet-600 px-4 text-xs font-semibold text-white shadow-[0_0_20px_rgba(99,102,241,0.4)] transition hover:from-indigo-500 hover:to-violet-500"
-            >
-              {t.auth.signup ?? "Sign up"}
-            </button>
+                <DropdownMenuContent align="end" className="w-56 border-white/12 bg-slate-900/95 text-slate-100 backdrop-blur-xl">
+                  <div className="px-1.5 py-1">
+                    <p className="text-sm font-semibold text-white">{user.name}</p>
+                    <p className="text-xs text-slate-300">{user.email}</p>
+                  </div>
+                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuItem onClick={() => router.push("/user/dashboard")} className="cursor-pointer">
+                    <Home className="mr-2 h-4 w-4" />
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push("/change-password")} className="cursor-pointer">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer">
+                    Earnings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-300 focus:text-red-200">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <button
+                  onClick={() => router.push("/login")}
+                  className="inline-flex h-8 items-center rounded-full px-4 text-xs font-semibold text-slate-300 transition hover:text-white"
+                >
+                  {t.auth.login}
+                </button>
+                <button
+                  onClick={() => router.push("/signup")}
+                  className="inline-flex h-8 items-center rounded-full bg-linear-to-r from-indigo-600 to-violet-600 px-4 text-xs font-semibold text-white shadow-[0_0_20px_rgba(99,102,241,0.4)] transition hover:from-indigo-500 hover:to-violet-500"
+                >
+                  {"signup" in t.auth ? t.auth.signup : "Sign up"}
+                </button>
+              </>
+            )}
           </div>
         </nav>
 
-        {/* Mobile */}
-        <div className="flex h-14 lg:hidden items-center justify-between">
+        <div className="flex h-14 items-center justify-between lg:hidden">
           <Link href="/" className="flex items-center gap-2">
             <span className="flex size-7 items-center justify-center rounded-md bg-linear-to-br from-indigo-500 to-violet-600 shadow-[0_0_14px_rgba(99,102,241,0.5)]">
               <Clapperboard className="size-3.5 text-white" />
@@ -240,18 +341,20 @@ const Navbar = ({ className }: { className?: string }) => {
             </button>
 
             <Sheet>
-              <SheetTrigger render={
-                <button className="inline-flex size-8 items-center justify-center rounded-full text-slate-400 transition hover:text-white">
-                  <Menu className="size-5" />
-                </button>
-              } />
+              <SheetTrigger
+                render={
+                  <button className="inline-flex size-8 items-center justify-center rounded-full text-slate-400 transition hover:text-white">
+                    <Menu className="size-5" />
+                  </button>
+                }
+              />
 
               <SheetContent
                 side="right"
                 className="w-70 border-l border-white/8 bg-[rgba(7,7,22,0.97)] p-0 backdrop-blur-xl"
               >
                 <SheetHeader className="border-b border-white/8 px-5 py-4">
-                  <SheetTitle asChild>
+                  <SheetTitle>
                     <Link href="/" className="flex items-center gap-2">
                       <span className="flex size-7 items-center justify-center rounded-md bg-linear-to-br from-indigo-500 to-violet-600">
                         <Clapperboard className="size-3.5 text-white" />
@@ -269,25 +372,59 @@ const Navbar = ({ className }: { className?: string }) => {
                   </Accordion>
                 </div>
 
-                <div className="absolute bottom-0 left-0 right-0 border-t border-white/8 px-4 py-4 space-y-2">
+                <div className="absolute bottom-0 left-0 right-0 space-y-2 border-t border-white/8 px-4 py-4">
                   <button
                     onClick={() => setLang((prev) => (prev === "en" ? "bn" : "en"))}
-                    className="w-full inline-flex h-9 items-center justify-center rounded-full border border-white/12 bg-white/6 text-xs font-medium text-slate-300 transition hover:bg-white/12 hover:text-white"
+                    className="inline-flex h-9 w-full items-center justify-center rounded-full border border-white/12 bg-white/6 text-xs font-medium text-slate-300 transition hover:bg-white/12 hover:text-white"
                   >
                     {lang === "en" ? "বাংলা" : "English"}
                   </button>
-                  <button
-                    onClick={() => router.push("/login")}
-                    className="w-full inline-flex h-9 items-center justify-center rounded-full border border-white/15 text-sm font-semibold text-slate-200 transition hover:bg-white/8"
-                  >
-                    {t.auth.login}
-                  </button>
-                  <button
-                    onClick={() => router.push("/signup")}
-                    className="w-full inline-flex h-9 items-center justify-center rounded-full bg-linear-to-r from-indigo-600 to-violet-600 text-sm font-semibold text-white shadow-[0_0_18px_rgba(99,102,241,0.35)] transition hover:from-indigo-500 hover:to-violet-500"
-                  >
-                    {t.auth.signup ?? "Sign up"}
-                  </button>
+
+                  {isAuthChecking ? (
+                    <div className="h-20 w-full rounded-2xl border border-white/10 bg-white/5" />
+                  ) : user ? (
+                    <>
+                      <button
+                        onClick={() => router.push("/user/dashboard")}
+                        className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full border border-white/15 text-sm font-semibold text-slate-200 transition hover:bg-white/8"
+                      >
+                        <Home className="h-4 w-4" />
+                        Dashboard
+                      </button>
+                      <button
+                        onClick={() => router.push("/change-password")}
+                        className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full border border-white/15 text-sm font-semibold text-slate-200 transition hover:bg-white/8"
+                      >
+                        <Settings className="h-4 w-4" />
+                        Settings
+                      </button>
+                      <button className="inline-flex h-9 w-full items-center justify-center rounded-full border border-white/15 text-sm font-semibold text-slate-200 transition hover:bg-white/8">
+                        Earnings
+                      </button>
+                      <button
+                        onClick={handleLogout}
+                        className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 text-sm font-semibold text-red-300 transition hover:bg-red-500/20"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Sign out
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => router.push("/login")}
+                        className="inline-flex h-9 w-full items-center justify-center rounded-full border border-white/15 text-sm font-semibold text-slate-200 transition hover:bg-white/8"
+                      >
+                        {t.auth.login}
+                      </button>
+                      <button
+                        onClick={() => router.push("/signup")}
+                        className="inline-flex h-9 w-full items-center justify-center rounded-full bg-linear-to-r from-indigo-600 to-violet-600 text-sm font-semibold text-white shadow-[0_0_18px_rgba(99,102,241,0.35)] transition hover:from-indigo-500 hover:to-violet-500"
+                      >
+                        {"signup" in t.auth ? t.auth.signup : "Sign up"}
+                      </button>
+                    </>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
@@ -298,7 +435,6 @@ const Navbar = ({ className }: { className?: string }) => {
   );
 };
 
-// Desktop renderer
 const renderMenuItem = (item: MenuItem, pathname: string) => {
   if (item.items) {
     return (
@@ -310,24 +446,18 @@ const renderMenuItem = (item: MenuItem, pathname: string) => {
           <ul className="grid w-52 gap-0.5 p-2">
             {item.items.map((sub) => (
               <li key={sub.title}>
-                <NavigationMenuLink asChild>
-                  <Link
-                    href={sub.url}
-                    className={cn(
-                      "flex items-start gap-3 rounded-lg px-3 py-2.5 text-sm transition hover:bg-white/8",
-                      pathname === sub.url ? "bg-indigo-500/15 text-indigo-300" : "text-slate-300"
-                    )}
-                  >
-                    {sub.icon && (
-                      <span className="mt-0.5 shrink-0 text-indigo-400">{sub.icon}</span>
-                    )}
-                    <div>
-                      <p className="font-semibold leading-none">{sub.title}</p>
-                      {sub.description && (
-                        <p className="mt-0.5 text-xs text-slate-500">{sub.description}</p>
-                      )}
-                    </div>
-                  </Link>
+                <NavigationMenuLink
+                  href={sub.url}
+                  className={cn(
+                    "flex items-start gap-3 rounded-lg px-3 py-2.5 text-sm transition hover:bg-white/8",
+                    pathname === sub.url ? "bg-indigo-500/15 text-indigo-300" : "text-slate-300"
+                  )}
+                >
+                  {sub.icon ? <span className="mt-0.5 shrink-0 text-indigo-400">{sub.icon}</span> : null}
+                  <div>
+                    <p className="font-semibold leading-none">{sub.title}</p>
+                    {sub.description ? <p className="mt-0.5 text-xs text-slate-500">{sub.description}</p> : null}
+                  </div>
                 </NavigationMenuLink>
               </li>
             ))}
@@ -339,22 +469,19 @@ const renderMenuItem = (item: MenuItem, pathname: string) => {
 
   return (
     <NavigationMenuItem key={item.title}>
-      <NavigationMenuLink asChild>
-        <Link
-          href={item.url}
-          className={cn(
-            "inline-flex h-8 items-center rounded-full px-3.5 text-xs font-semibold transition hover:bg-white/8 hover:text-white",
-            pathname === item.url ? "text-indigo-300" : "text-slate-300"
-          )}
-        >
-          {item.title}
-        </Link>
+      <NavigationMenuLink
+        href={item.url}
+        className={cn(
+          "inline-flex h-8 items-center rounded-full px-3.5 text-xs font-semibold transition hover:bg-white/8 hover:text-white",
+          pathname === item.url ? "text-indigo-300" : "text-slate-300"
+        )}
+      >
+        {item.title}
       </NavigationMenuLink>
     </NavigationMenuItem>
   );
 };
 
-// Mobile renderer
 const renderMobileMenuItem = (item: MenuItem, pathname: string) => {
   if (item.items) {
     return (
@@ -372,7 +499,7 @@ const renderMobileMenuItem = (item: MenuItem, pathname: string) => {
                 pathname === sub.url ? "text-indigo-300" : "text-slate-400 hover:text-slate-200"
               )}
             >
-              {sub.icon && <span className="text-indigo-400">{sub.icon}</span>}
+              {sub.icon ? <span className="text-indigo-400">{sub.icon}</span> : null}
               {sub.title}
             </Link>
           ))}
@@ -396,4 +523,3 @@ const renderMobileMenuItem = (item: MenuItem, pathname: string) => {
 };
 
 export { Navbar };
-
