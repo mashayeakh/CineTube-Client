@@ -34,7 +34,7 @@ export const premiumUserProtectedRoutes: RouteConfig = {
 };
 
 export const adminProtectedRoutes: RouteConfig = {
-    pattern: [/^\/admin\/dashboard(?:\/|$)/],
+    pattern: [/^\/admin(?:\/|$)/],
     exact: []
 }
 
