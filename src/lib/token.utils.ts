@@ -10,7 +10,7 @@ export const getTokenSecondRemaining = async (token: string): Promise<number> =>
     if (!token) return 0;
 
     try {
-        const tokenPayload = JWT_ACCESS_SECRET ? jwt.verify(token, JWT_ACCESS_SECRET as string) as JwtPayload : jwt.decode(token) as JwtPayload;
+        const tokenPayload = jwt.decode(token) as JwtPayload;
 
         if (tokenPayload && !tokenPayload.exp) {
             return 0;
@@ -30,6 +30,14 @@ export const setTokenInCookie = async (
     token: string,
     fallbackMaxAgeInSeconds: number = 24 * 60 * 60
 ) => {
-    const maxAgeInSeconds = await getTokenSecondRemaining(token);
+    let maxAgeInSeconds;
+    if (name !== "better-auth.session_token") {
+        maxAgeInSeconds = await getTokenSecondRemaining(token);
+    }
     await setCookie(name, token, maxAgeInSeconds || fallbackMaxAgeInSeconds)
+}
+
+export async function isTokenExpiringSoon(token: string, thresholdInSeconds = 300): Promise<boolean> {
+    const remainingSeconds = await getTokenSecondRemaining(token);
+    return remainingSeconds > 0 && remainingSeconds <= thresholdInSeconds;
 }

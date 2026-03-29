@@ -4,16 +4,7 @@
 
 ⚠ Port 3000 is in use by process 66556, using available port 3001 instead.
 ▲ Next.js 16.2.0 (Turbopack)
-- Local:         http://localhost:3001
-- Network:       http://192.168.110.240:3001
+- Local:         http://localhost:3000
+- Network:       http://192.168.110.240:3000
 - Environments: .env.local, .env
 ✓ Ready in 310ms
-⨯ Another next dev server is already running.
-
-- Local:        http://localhost:3000
-- PID:          66556
-- Dir:          D:\NextLevel_Rest\Assignment_5_Full_stack\ClientSide\cinetube
-- Log:          .next\dev\logs\next-development.log
-
-Run taskkill /PID 66556 /F to stop it.
-[?25h

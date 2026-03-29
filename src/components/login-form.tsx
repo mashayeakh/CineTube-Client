@@ -22,7 +22,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useForm } from "@tanstack/react-form"
 
 import { ILoginPayload, loginZodSchema } from "@/zod/auth.validation"
-import { loginAction } from "@/app/(public)/login/_action/loginAction"
+import { loginAction } from "@/app/(public)/(authRoutes)/login/_action/loginAction"
 
 export function LoginForm({
   className,

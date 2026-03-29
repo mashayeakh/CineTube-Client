@@ -23,18 +23,23 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { useForm } from "@tanstack/react-form"
-import { loginAction } from "@/app/(public)/login/_action/loginAction"
+import { loginAction } from "@/app/(public)/(authRoutes)/login/_action/loginAction"
 import { ILoginPayload, loginZodSchema } from "@/zod/auth.validation"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 type AuthMode = "login" | "signup"
 
-export function AuthFlipShell({ initialMode }: { initialMode: AuthMode }) {
+interface LoginFormProps {
+    redirectPath?: string;
+}
+
+export function AuthFlipShell({ initialMode, LoginFormProps }: { initialMode: AuthMode; LoginFormProps: LoginFormProps }) {
     const router = useRouter()
     const [mode, setMode] = useState<AuthMode>(initialMode)
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [password, setPassword] = useState("")
+    const redirectPath = LoginFormProps.redirectPath
 
     const isSignup = mode === "signup"
 
@@ -58,7 +63,7 @@ export function AuthFlipShell({ initialMode }: { initialMode: AuthMode }) {
     const queryClient = useQueryClient()
 
     const { mutateAsync, isPending } = useMutation({
-        mutationFn: (payload: ILoginPayload) => loginAction(payload),
+        mutationFn: (payload: ILoginPayload) => loginAction(payload, redirectPath),
     })
 
     const [serverError, setServerError] = useState<string | null>(null)
@@ -84,7 +89,12 @@ export function AuthFlipShell({ initialMode }: { initialMode: AuthMode }) {
                     return
                 }
                 queryClient.invalidateQueries({ queryKey: ["user"] })
-                router.push("/dashboard")
+                const nextPath = result?.result?.redirectTo as string | undefined
+                if (nextPath) {
+                    router.push(nextPath)
+                    return
+                }
+                router.refresh()
             } catch (error: any) {
                 console.error("Login failed:", error)
                 setServerError("An unexpected error occurred. Please try again. " + (error.message || ""))

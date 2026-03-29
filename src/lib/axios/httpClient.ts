@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { getNewTokensWithRefreshToken } from '@/service/auth.services';
 import { ApiResponse } from '@/types/api.types';
 import axios from 'axios';
 import { cookies, headers } from 'next/headers';
+import { isTokenExpiringSoon } from '../token.utils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -9,26 +11,26 @@ if (!API_BASE_URL) {
     throw new Error('API_BASE_URL is not defined in environment variables');
 }
 
-// async function tryRefreshToken(
-//     accessToken: string,
-//     refreshToken: string
-// ): Promise<void> {
-//     if (!(await isTokenExpiringSoon(accessToken))) {
-//         return;
-//     }
+async function tryRefreshToken(
+    accessToken: string,
+    refreshToken: string
+): Promise<void> {
+    if (!(await isTokenExpiringSoon(accessToken))) {
+        return;
+    }
 
-//     const requestHeader = await headers();
+    const requestHeader = await headers();
 
-//     if (requestHeader.get("x-token-refreshed") === "1") {
-//         return; // avoid multiple refresh attempts in the same request lifecycle
-//     }
+    if (requestHeader.get("x-token-refreshed") === "1") {
+        return; // avoid multiple refresh attempts in the same request lifecycle
+    }
 
-//     try {
-//         await getNewTokensWithRefreshToken(refreshToken);
-//     } catch (error: any) {
-//         console.error("Error refreshing token in http client:", error);
-//     }
-// }
+    try {
+        await getNewTokensWithRefreshToken(refreshToken);
+    } catch (error: any) {
+        console.error("Error refreshing token in http client:", error);
+    }
+}
 
 const axiosInstance = async () => {
     const cookieStore = await cookies();
@@ -43,7 +45,6 @@ const axiosInstance = async () => {
         .getAll()
         .map((cookie) => `${cookie.name}=${cookie.value}`)
         .join("; ");
-    // eg Cookie: "accessToken=abc123; refreshToken=def456"
 
     const instance = axios.create({
         baseURL: API_BASE_URL,
