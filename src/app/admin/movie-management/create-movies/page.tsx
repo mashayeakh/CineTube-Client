@@ -1,0 +1,226 @@
+import Link from "next/link";
+import { revalidatePath } from "next/cache";
+import { Bell, Home, Search } from "lucide-react";
+
+import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { PendingSubmitButton } from "@/components/ui/pending-submit-button";
+import { createAdminMovie } from "@/service/admin-movie.services";
+import { getAdminGenres, getAdminStreamingPlatforms } from "@/service/admin-content.services";
+import { getUserInfo } from "@/service/auth.services";
+
+type UnknownRecord = Record<string, unknown>;
+
+type OptionItem = {
+    id: string;
+    name: string;
+};
+
+function isRecord(value: unknown): value is UnknownRecord {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function pickString(source: unknown, keys: string[], fallback = "") {
+    if (!isRecord(source)) {
+        return fallback;
+    }
+
+    for (const key of keys) {
+        const value = source[key];
+
+        if (typeof value === "string" && value.trim()) {
+            return value.trim();
+        }
+    }
+
+    return fallback;
+}
+
+function normalizeOptions(raw: unknown, typePrefix: string): OptionItem[] {
+    const list = Array.isArray(raw) ? raw : [];
+
+    return list
+        .map((item, index) => ({
+            id: pickString(item, ["id", "_id", `${typePrefix}Id`], `${typePrefix}-${index + 1}`),
+            name: pickString(item, ["name", "title"], `${typePrefix} ${index + 1}`),
+        }))
+        .filter((item) => Boolean(item.id && item.name));
+}
+
+async function createMovieAction(formData: FormData) {
+    "use server";
+
+    const title = String(formData.get("title") ?? "").trim();
+    const description = String(formData.get("description") ?? "").trim();
+    const poster = String(formData.get("poster") ?? "").trim();
+    const releaseYear = Number(formData.get("releaseYear") ?? 0);
+    const director = String(formData.get("director") ?? "").trim();
+    const castInput = String(formData.get("cast") ?? "").trim();
+    const priceType = String(formData.get("priceType") ?? "PREMIUM").trim();
+    const ageGroup = String(formData.get("ageGroup") ?? "AGE_13_PLUS").trim();
+    const genres = formData.getAll("genres").map((value) => String(value));
+    const platforms = formData.getAll("platforms").map((value) => String(value));
+
+    const currentUser = await getUserInfo();
+    const userId = pickString(currentUser, ["id", "_id", "userId"]);
+
+    if (!title || !description || !director || !userId || !releaseYear) {
+        return;
+    }
+
+    const cast = castInput
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+    try {
+        await createAdminMovie({
+            title,
+            description,
+            poster,
+            releaseYear,
+            director,
+            cast,
+            genres,
+            platforms,
+            priceType,
+            ageGroup,
+            userId,
+        });
+    } catch (error) {
+        console.error("Failed to create movie:", error);
+    }
+
+    revalidatePath("/admin/movie-management/create-movies");
+    revalidatePath("/admin/movie-management/view-movies");
+}
+
+export default async function AdminCreateMoviesPage() {
+    const [rawGenres, rawPlatforms, currentUser] = await Promise.all([
+        getAdminGenres().catch(() => []),
+        getAdminStreamingPlatforms().catch(() => []),
+        getUserInfo().catch(() => null),
+    ]);
+
+    const genres = normalizeOptions(rawGenres, "genre");
+    const platforms = normalizeOptions(rawPlatforms, "platform");
+    const adminName = pickString(currentUser, ["name", "fullName", "username"], "Logged in admin");
+
+    return (
+        <div className="min-h-screen bg-slate-100 text-slate-900">
+            <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)]">
+                <AdminSidebar activePath="/admin/movie-management/create-movies" />
+
+                <div className="min-w-0">
+                    <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-slate-50 px-4 sm:px-6">
+                        <div>
+                            <p className="text-sm font-semibold text-slate-800">Movie Management</p>
+                            <p className="text-xs text-slate-500">Create movie</p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <div className="hidden items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-500 md:flex">
+                                <Search className="size-4" />
+                                Search
+                            </div>
+                            <button className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:text-slate-700" type="button">
+                                <Bell className="size-4" />
+                            </button>
+                            <Link href="/admin/dashboard" className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:text-slate-700">
+                                <Home className="size-4" />
+                            </Link>
+                        </div>
+                    </header>
+
+                    <main className="p-4 sm:p-6">
+                        <div className="mx-auto max-w-5xl space-y-5">
+                            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                                <p className="text-sm text-slate-500">Admin / Movie Management / Create Movies</p>
+                                <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">Create Movies</h1>
+                                <p className="mt-2 text-sm text-slate-600">Create a new movie and attach genres/platforms from your database.</p>
+                                <p className="mt-1 text-xs text-slate-500">Creating as: {adminName}</p>
+                            </section>
+
+                            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                                <form action={createMovieAction} className="space-y-4">
+                                    <div className="grid gap-3 md:grid-cols-2">
+                                        <input name="title" required placeholder="Movie title" className="h-10 rounded-lg border border-slate-200 px-3 text-sm" />
+                                        <input name="poster" placeholder="Poster URL" className="h-10 rounded-lg border border-slate-200 px-3 text-sm" />
+                                    </div>
+
+                                    <textarea name="description" required placeholder="Description" className="min-h-28 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+
+                                    <div className="grid gap-3 md:grid-cols-3">
+                                        <input name="director" required placeholder="Director" className="h-10 rounded-lg border border-slate-200 px-3 text-sm" />
+                                        <input name="releaseYear" required type="number" placeholder="Release year" className="h-10 rounded-lg border border-slate-200 px-3 text-sm" />
+                                    </div>
+
+                                    <input
+                                        name="cast"
+                                        placeholder="Cast (comma separated), e.g. Timothee Chalamet, Rebecca Ferguson"
+                                        className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm"
+                                    />
+
+                                    <div className="grid gap-3 md:grid-cols-2">
+                                        <select name="priceType" defaultValue="PREMIUM" className="h-10 rounded-lg border border-slate-200 px-3 text-sm">
+                                            <option value="FREE">FREE</option>
+                                            <option value="PREMIUM">PREMIUM</option>
+                                        </select>
+                                        <select name="ageGroup" defaultValue="AGE_13_PLUS" className="h-10 rounded-lg border border-slate-200 px-3 text-sm">
+                                            <option value="AGE_7_PLUS">AGE_7_PLUS</option>
+                                            <option value="AGE_13_PLUS">AGE_13_PLUS</option>
+                                            <option value="AGE_16_PLUS">AGE_16_PLUS</option>
+                                            <option value="AGE_18_PLUS">AGE_18_PLUS</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <fieldset className="rounded-lg border border-slate-200 p-3">
+                                            <legend className="px-1 text-sm font-semibold text-slate-800">Genres</legend>
+                                            <div className="mt-2 grid max-h-48 gap-2 overflow-auto">
+                                                {genres.length === 0 ? (
+                                                    <p className="text-sm text-slate-500">No genres found.</p>
+                                                ) : (
+                                                    genres.map((genre) => (
+                                                        <label key={genre.id} className="flex items-center gap-2 text-sm text-slate-700">
+                                                            <input type="checkbox" name="genres" value={genre.id} className="size-4" />
+                                                            <span>{genre.name}</span>
+                                                        </label>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </fieldset>
+
+                                        <fieldset className="rounded-lg border border-slate-200 p-3">
+                                            <legend className="px-1 text-sm font-semibold text-slate-800">Streaming Platforms</legend>
+                                            <div className="mt-2 grid max-h-48 gap-2 overflow-auto">
+                                                {platforms.length === 0 ? (
+                                                    <p className="text-sm text-slate-500">No platforms found.</p>
+                                                ) : (
+                                                    platforms.map((platform) => (
+                                                        <label key={platform.id} className="flex items-center gap-2 text-sm text-slate-700">
+                                                            <input type="checkbox" name="platforms" value={platform.id} className="size-4" />
+                                                            <span>{platform.name}</span>
+                                                        </label>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </fieldset>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-3">
+                                        <PendingSubmitButton pendingText="Creating..." className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+                                            Create Movie
+                                        </PendingSubmitButton>
+                                        <Link href="/admin/movie-management/view-movies" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                                            View Movies
+                                        </Link>
+                                    </div>
+                                </form>
+                            </section>
+                        </div>
+                    </main>
+                </div>
+            </div>
+        </div>
+    );
+}

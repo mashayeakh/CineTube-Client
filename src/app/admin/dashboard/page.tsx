@@ -1,20 +1,19 @@
 import Link from "next/link";
 import {
     Activity,
+    BarChart3,
     Bell,
     CalendarCheck2,
     CheckCircle2,
     CircleAlert,
     CircleDashed,
     Home,
-    LayoutDashboard,
-    LogOut,
     Search,
-    Tags,
-    UserRoundCog,
+    TrendingUp,
     Users,
 } from "lucide-react";
 
+import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -507,6 +506,8 @@ export default async function AdminDashboardPage() {
     const studentUsers = users.filter((user) => user.role.toLowerCase().includes("user")).length;
     const adminUsers = users.filter((user) => user.role.toLowerCase().includes("admin")).length;
     const paidPaymentsCount = payments.filter((payment) => payment.status.toLowerCase().includes("success") || payment.status.toLowerCase().includes("paid")).length;
+    const pendingPaymentsCount = payments.filter((payment) => payment.status.toLowerCase().includes("pending") || payment.status.toLowerCase().includes("process")).length;
+    const failedPaymentsCount = payments.filter((payment) => payment.status.toLowerCase().includes("fail") || payment.status.toLowerCase().includes("reject")).length;
     const pendingCount = pendingReviews.filter((review) => review.status.toLowerCase().includes("pending")).length + contributions.filter((item) => item.status.toLowerCase().includes("pending")).length;
     const approvedCount = pendingReviews.filter((review) => review.status.toLowerCase().includes("approved")).length + contributions.filter((item) => item.status.toLowerCase().includes("approved")).length;
     const rejectedCount = pendingReviews.filter((review) => review.status.toLowerCase().includes("reject")).length + contributions.filter((item) => item.status.toLowerCase().includes("reject")).length;
@@ -526,107 +527,82 @@ export default async function AdminDashboardPage() {
 
     const todayDeltaText = `${todayDelta >= 0 ? "+" : ""}${todayDelta} from yesterday`;
     const weekDeltaText = `${weekDelta >= 0 ? "+" : ""}${weekDelta} from last week`;
-
-    const sideNavItems = [
-        { label: "Dashboard", icon: LayoutDashboard, active: true, href: "/admin/dashboard" },
-        { label: "Category Management", icon: Tags, active: false, href: "/admin/category-management" },
-        { label: "View Bookings", icon: CalendarCheck2, active: false, href: "/admin/view-bookings" },
-        { label: "User Management", icon: UserRoundCog, active: false, href: "/admin/user-management" },
-        { label: "Logout", icon: LogOut, active: false },
-    ];
+    const trendChartData = trendPoints.length > 0 ? trendPoints : [{ label: "No data", value: 0 }];
 
     return (
         <div className="min-h-screen bg-slate-100 text-slate-900">
-            <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)]">
-                <aside className="border-r border-slate-200 bg-slate-50 lg:sticky lg:top-0 lg:h-screen">
-                    <div className="px-4 py-5">
-                        <h2 className="text-xl font-semibold tracking-tight text-slate-800">My Dashboard</h2>
-                    </div>
-
-                    <nav className="space-y-1 px-2 pb-6">
-                        {sideNavItems.map((item) => {
-                            const Icon = item.icon;
-                            const baseClasses = `flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition ${item.active
-                                ? "bg-blue-50 text-blue-600"
-                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                                }`;
-
-                            if (item.href) {
-                                return (
-                                    <Link key={item.label} href={item.href} className={baseClasses}>
-                                        <Icon className="size-4" />
-                                        <span>{item.label}</span>
-                                    </Link>
-                                );
-                            }
-
-                            return (
-                                <button key={item.label} className={baseClasses} type="button">
-                                    <Icon className="size-4" />
-                                    <span>{item.label}</span>
-                                </button>
-                            );
-                        })}
-                    </nav>
-                </aside>
+            <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)]">
+                <AdminSidebar activePath="/admin/dashboard" />
 
                 <div className="min-w-0">
-                    <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-slate-50 px-4 sm:px-6">
+                    <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200/80 bg-slate-50/95 px-4 backdrop-blur sm:px-6">
                         <div>
-                            <p className="text-sm font-semibold text-slate-800">Dashboard</p>
-                            <p className="text-xs text-slate-500">Welcome back!</p>
+                            <p className="text-sm font-semibold tracking-wide text-slate-800">Admin Console</p>
+                            <p className="text-xs text-slate-500">Operational overview</p>
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <div className="hidden items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-500 md:flex">
+                            <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500 shadow-sm md:flex">
                                 <Search className="size-4" />
                                 Search
                             </div>
-                            <button className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:text-slate-700">
+                            <button className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-700">
                                 <Bell className="size-4" />
                             </button>
-                            <button className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:text-slate-700">
+                            <button className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-700">
                                 <Home className="size-4" />
                             </button>
                         </div>
                     </header>
 
-                    <main className="p-4 sm:p-6">
-                        <div className="mx-auto max-w-6xl space-y-4">
-                            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                                <h1 className="text-4xl font-semibold tracking-tight text-slate-900">Admin Dashboard</h1>
-                                <p className="mt-2 text-sm text-slate-600">Welcome back! Here is what is happening with your platform.</p>
-                                <div className="mt-3 flex items-center gap-2 text-sm text-slate-500">
+                    <main className="bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.08),transparent_42%),radial-gradient(circle_at_top_left,rgba(2,132,199,0.08),transparent_36%)] p-4 sm:p-6">
+                        <div className="mx-auto max-w-6xl space-y-5">
+                            <section className="rounded-2xl border border-slate-200/80 bg-white px-6 py-6 shadow-sm">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <div>
+                                        <h1 className="text-4xl font-semibold tracking-tight text-slate-900">Admin Dashboard</h1>
+                                        <p className="mt-2 text-sm text-slate-600">Welcome back! Here is what is happening with your platform.</p>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-right">
+                                        <p className="text-xs uppercase tracking-wide text-slate-500">Feed Health</p>
+                                        <p className="text-lg font-semibold text-slate-900">{countFulfilled(requests)}/{requests.length}</p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
                                     <span className="inline-flex size-2 rounded-full bg-emerald-500" />
                                     Last updated: Just now
                                 </div>
                             </section>
 
                             <section className="grid gap-4 xl:grid-cols-3">
-                                <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                                <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
                                     <div className="flex items-start justify-between">
-                                        <div className="rounded-lg bg-blue-50 p-2 text-blue-500">
+                                        <div className="rounded-xl bg-blue-50 p-2.5 text-blue-600">
                                             <Users className="size-5" />
                                         </div>
                                         <Badge variant="secondary">+{Math.max(activeUsersCount, 0)}%</Badge>
                                     </div>
                                     <p className="mt-4 text-sm text-slate-500">Total Users</p>
-                                    <p className="mt-1 text-4xl font-semibold text-slate-900">{formatNumber(totalUsers)}</p>
+                                    <p className="mt-1 text-4xl font-semibold tracking-tight text-slate-900">{formatNumber(totalUsers)}</p>
                                     <p className="mt-3 text-sm text-slate-500">
                                         <span className="text-violet-500">•</span> Students: {formatNumber(studentUsers)}
                                         <span className="ml-3 text-orange-500">•</span> Admin: {formatNumber(adminUsers)}
                                     </p>
+                                    <div className="mt-4 h-2 rounded-full bg-slate-100">
+                                        <div className="h-2 rounded-full bg-blue-500" style={{ width: `${Math.min(healthPercent + 15, 100)}%` }} />
+                                    </div>
                                 </article>
 
-                                <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                                <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
                                     <div className="flex items-start justify-between">
-                                        <div className="rounded-lg bg-emerald-50 p-2 text-emerald-500">
+                                        <div className="rounded-xl bg-emerald-50 p-2.5 text-emerald-600">
                                             <CalendarCheck2 className="size-5" />
                                         </div>
                                         <Badge variant="secondary">+8.2%</Badge>
                                     </div>
                                     <p className="mt-4 text-sm text-slate-500">Total Movies</p>
-                                    <p className="mt-1 text-4xl font-semibold text-slate-900">{formatNumber(totalMovies)}</p>
+                                    <p className="mt-1 text-4xl font-semibold tracking-tight text-slate-900">{formatNumber(totalMovies)}</p>
                                     <div className="mt-3 grid grid-cols-2 gap-3 text-sm text-slate-500">
                                         <p>
                                             Active
@@ -637,17 +613,20 @@ export default async function AdminDashboardPage() {
                                             <span className="mt-0.5 block font-semibold text-slate-800">{formatNumber(watchlistEntries)}</span>
                                         </p>
                                     </div>
+                                    <div className="mt-4 h-2 rounded-full bg-slate-100">
+                                        <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${Math.min((watchlistEntries / Math.max(totalMovies, 1)) * 100, 100)}%` }} />
+                                    </div>
                                 </article>
 
-                                <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                                <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
                                     <div className="flex items-start justify-between">
-                                        <div className="rounded-lg bg-orange-50 p-2 text-orange-500">
+                                        <div className="rounded-xl bg-orange-50 p-2.5 text-orange-600">
                                             <Activity className="size-5" />
                                         </div>
                                         <Badge variant={failedFeeds > 0 ? "destructive" : "secondary"}>{failedFeeds > 0 ? `${failedFeeds} feeds down` : "0%"}</Badge>
                                     </div>
                                     <p className="mt-4 text-sm text-slate-500">Platform Health</p>
-                                    <p className="mt-1 text-4xl font-semibold text-slate-900">{formatNumber(countFulfilled(requests))}</p>
+                                    <p className="mt-1 text-4xl font-semibold tracking-tight text-slate-900">{formatNumber(countFulfilled(requests))}</p>
                                     <p className="mt-2 text-sm text-slate-500">Active feeds</p>
                                     <div className="mt-3 h-2 w-full rounded-full bg-slate-200">
                                         <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${healthPercent}%` }} />
@@ -657,24 +636,24 @@ export default async function AdminDashboardPage() {
                             </section>
 
                             <section className="grid gap-4 xl:grid-cols-3">
-                                <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                                    <h3 className="text-xl font-semibold text-slate-900">Verification Summary</h3>
+                                <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+                                    <h3 className="text-xl font-semibold tracking-tight text-slate-900">Verification Summary</h3>
                                     <div className="mt-4 space-y-3">
-                                        <div className="flex items-center justify-between rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2.5">
+                                        <div className="flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2.5">
                                             <div>
                                                 <p className="text-sm text-slate-600">Verified</p>
                                                 <p className="text-2xl font-semibold text-slate-900">{formatNumber(approvedCount)}</p>
                                             </div>
                                             <CheckCircle2 className="size-5 text-emerald-500" />
                                         </div>
-                                        <div className="flex items-center justify-between rounded-lg border border-amber-100 bg-amber-50 px-3 py-2.5">
+                                        <div className="flex items-center justify-between rounded-xl border border-amber-100 bg-amber-50 px-3 py-2.5">
                                             <div>
                                                 <p className="text-sm text-slate-600">Pending</p>
                                                 <p className="text-2xl font-semibold text-slate-900">{formatNumber(pendingCount || reviewQueue)}</p>
                                             </div>
                                             <CircleDashed className="size-5 text-amber-500" />
                                         </div>
-                                        <div className="flex items-center justify-between rounded-lg border border-rose-100 bg-rose-50 px-3 py-2.5">
+                                        <div className="flex items-center justify-between rounded-xl border border-rose-100 bg-rose-50 px-3 py-2.5">
                                             <div>
                                                 <p className="text-sm text-slate-600">Rejected</p>
                                                 <p className="text-2xl font-semibold text-slate-900">{formatNumber(rejectedCount)}</p>
@@ -684,51 +663,134 @@ export default async function AdminDashboardPage() {
                                     </div>
                                 </article>
 
-                                <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                                    <h3 className="text-xl font-semibold text-slate-900">Booking Trends</h3>
+                                <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+                                    <h3 className="text-xl font-semibold tracking-tight text-slate-900">Booking Trends</h3>
                                     <div className="mt-4 space-y-3">
-                                        <div className="rounded-lg bg-blue-50 px-3 py-2.5">
+                                        <div className="rounded-xl bg-blue-50 px-3 py-2.5">
                                             <p className="text-sm text-slate-600">Today</p>
                                             <p className="text-3xl font-semibold text-slate-900">{formatNumber(todayCount)}</p>
                                             <p className="text-xs text-slate-500">{todayDeltaText}</p>
                                         </div>
-                                        <div className="rounded-lg bg-emerald-50 px-3 py-2.5">
+                                        <div className="rounded-xl bg-emerald-50 px-3 py-2.5">
                                             <p className="text-sm text-slate-600">This Week</p>
                                             <p className="text-3xl font-semibold text-slate-900">{formatNumber(weekCount)}</p>
                                             <p className="text-xs text-slate-500">{weekDeltaText}</p>
                                         </div>
-                                        <div className="rounded-lg bg-violet-50 px-3 py-2.5">
+                                        <div className="rounded-xl bg-violet-50 px-3 py-2.5">
                                             <p className="text-sm text-slate-600">This Month</p>
                                             <p className="text-3xl font-semibold text-slate-900">{formatNumber(monthCount)}</p>
                                             <p className="text-xs text-slate-500">Top title: {topMovieTitle}</p>
                                         </div>
                                     </div>
+                                    <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                        <SparklineChart points={trendChartData.slice(-14)} />
+                                    </div>
                                 </article>
 
-                                <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                                    <h3 className="text-xl font-semibold text-slate-900">Quick Stats</h3>
+                                <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+                                    <h3 className="text-xl font-semibold tracking-tight text-slate-900">Quick Stats</h3>
                                     <div className="mt-4 grid grid-cols-2 gap-3">
-                                        <div className="rounded-lg border border-slate-200 px-3 py-2.5 text-center">
+                                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center">
                                             <p className="text-3xl font-semibold text-blue-500">{formatNumber(activeUsersCount)}</p>
                                             <p className="mt-1 text-sm text-slate-500">Active Users</p>
                                         </div>
-                                        <div className="rounded-lg border border-slate-200 px-3 py-2.5 text-center">
+                                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center">
                                             <p className="text-3xl font-semibold text-emerald-500">{formatNumber(paidPaymentsCount)}</p>
                                             <p className="mt-1 text-sm text-slate-500">Completed</p>
                                         </div>
-                                        <div className="rounded-lg border border-slate-200 px-3 py-2.5 text-center">
+                                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center">
                                             <p className="text-3xl font-semibold text-orange-500">{formatNumber(totalMovies)}</p>
                                             <p className="mt-1 text-sm text-slate-500">Movies</p>
                                         </div>
-                                        <div className="rounded-lg border border-slate-200 px-3 py-2.5 text-center">
+                                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center">
                                             <p className="text-3xl font-semibold text-violet-500">{revenueInThousands}</p>
                                             <p className="mt-1 text-sm text-slate-500">Revenue (K)</p>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-sm font-medium text-slate-700">Weekly Direction</p>
+                                            <span className={`inline-flex items-center gap-1 text-sm font-semibold ${weekDelta >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                                                <TrendingUp className="size-4" />
+                                                {weekDelta >= 0 ? "+" : ""}{weekDelta}
+                                            </span>
+                                        </div>
+                                        <div className="mt-2 h-2 rounded-full bg-slate-200">
+                                            <div
+                                                className={`h-2 rounded-full ${weekDelta >= 0 ? "bg-emerald-500" : "bg-rose-500"}`}
+                                                style={{ width: `${Math.min(Math.abs(weekDelta) * 8 + 15, 100)}%` }}
+                                            />
                                         </div>
                                     </div>
                                 </article>
                             </section>
 
-                            <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                            <section className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
+                                <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <h3 className="text-xl font-semibold tracking-tight text-slate-900">Activity Graph</h3>
+                                            <p className="mt-1 text-sm text-slate-500">Daily review-volume trend from your analytics feed.</p>
+                                        </div>
+                                        <div className="rounded-xl bg-blue-50 p-2 text-blue-600">
+                                            <BarChart3 className="size-5" />
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                        <SparklineChart points={trendChartData} stroke="#0f766e" />
+                                    </div>
+
+                                    <div className="mt-4 grid grid-cols-3 gap-3 text-center">
+                                        <div className="rounded-xl border border-slate-200 bg-slate-50 py-2">
+                                            <p className="text-xs text-slate-500">Today</p>
+                                            <p className="text-lg font-semibold text-slate-900">{formatNumber(todayCount)}</p>
+                                        </div>
+                                        <div className="rounded-xl border border-slate-200 bg-slate-50 py-2">
+                                            <p className="text-xs text-slate-500">This Week</p>
+                                            <p className="text-lg font-semibold text-slate-900">{formatNumber(weekCount)}</p>
+                                        </div>
+                                        <div className="rounded-xl border border-slate-200 bg-slate-50 py-2">
+                                            <p className="text-xs text-slate-500">This Month</p>
+                                            <p className="text-lg font-semibold text-slate-900">{formatNumber(monthCount)}</p>
+                                        </div>
+                                    </div>
+                                </article>
+
+                                <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+                                    <h3 className="text-xl font-semibold tracking-tight text-slate-900">Payment Distribution</h3>
+                                    <p className="mt-1 text-sm text-slate-500">Breakdown of payment statuses.</p>
+
+                                    <div className="mt-5 flex items-center justify-center">
+                                        <DonutChart
+                                            value={paidPaymentsCount}
+                                            total={Math.max(payments.length, 1)}
+                                            color="#16a34a"
+                                        />
+                                    </div>
+
+                                    <div className="mt-5 space-y-2 text-sm">
+                                        <div className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
+                                            <span className="text-slate-600">Paid</span>
+                                            <span className="font-semibold text-emerald-600">{formatNumber(paidPaymentsCount)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
+                                            <span className="text-slate-600">Pending</span>
+                                            <span className="font-semibold text-amber-600">{formatNumber(pendingPaymentsCount)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
+                                            <span className="text-slate-600">Failed</span>
+                                            <span className="font-semibold text-rose-600">{formatNumber(failedPaymentsCount)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                                            <span className="text-slate-700">Total</span>
+                                            <span className="font-semibold text-slate-900">{formatNumber(payments.length)}</span>
+                                        </div>
+                                    </div>
+                                </article>
+                            </section>
+
+                            <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
                                         <h3 className="text-2xl font-semibold text-slate-900">Users</h3>
@@ -762,7 +824,7 @@ export default async function AdminDashboardPage() {
                                                 </tr>
                                             ) : (
                                                 users.map((user) => (
-                                                    <tr key={user.id} className="border-b border-slate-100 last:border-b-0">
+                                                    <tr key={user.id} className="border-b border-slate-100 transition hover:bg-slate-50 last:border-b-0">
                                                         <td className="py-3 pr-4 font-medium text-slate-800">{user.name}</td>
                                                         <td className="py-3 pr-4 text-slate-600">{user.email}</td>
                                                         <td className="py-3 pr-4">
@@ -781,14 +843,14 @@ export default async function AdminDashboardPage() {
                             </section>
 
                             <section className="grid gap-4 md:grid-cols-2">
-                                <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                                <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
                                     <h3 className="text-lg font-semibold text-slate-900">Moderation Queue</h3>
                                     <p className="mt-1 text-sm text-slate-500">Pending review and contribution records</p>
                                     <p className="mt-4 text-3xl font-semibold text-slate-900">{formatNumber(pendingCount || reviewQueue)}</p>
                                     <p className="mt-2 text-sm text-slate-500">Reviews: {pendingReviews.length}, Contributions: {contributions.length}, Comments: {comments.length}</p>
                                 </article>
 
-                                <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                                <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
                                     <h3 className="text-lg font-semibold text-slate-900">Revenue Snapshot</h3>
                                     <p className="mt-1 text-sm text-slate-500">Payments and subscriptions status</p>
                                     <p className="mt-4 text-3xl font-semibold text-slate-900">{formatCurrency(totalRevenue)}</p>
@@ -799,7 +861,7 @@ export default async function AdminDashboardPage() {
                             <div className="flex items-center justify-end">
                                 <Link
                                     href="/admin/dashboard"
-                                    className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
                                 >
                                     Refresh Dashboard
                                 </Link>
@@ -807,6 +869,80 @@ export default async function AdminDashboardPage() {
                         </div>
                     </main>
                 </div>
+            </div>
+        </div>
+    );
+}
+
+function SparklineChart({
+    points,
+    stroke = "#2563eb",
+}: {
+    points: Array<{ label: string; value: number }>;
+    stroke?: string;
+}) {
+    const width = 520;
+    const height = 160;
+    const padding = 16;
+
+    const safePoints = points.length > 1 ? points : [{ label: "A", value: 0 }, { label: "B", value: points[0]?.value ?? 0 }];
+    const minValue = Math.min(...safePoints.map((point) => point.value));
+    const maxValue = Math.max(...safePoints.map((point) => point.value));
+    const range = Math.max(maxValue - minValue, 1);
+
+    const polylinePoints = safePoints
+        .map((point, index) => {
+            const x = padding + (index * (width - padding * 2)) / Math.max(safePoints.length - 1, 1);
+            const normalized = (point.value - minValue) / range;
+            const y = height - padding - normalized * (height - padding * 2);
+            return `${x},${y}`;
+        })
+        .join(" ");
+
+    return (
+        <svg viewBox={`0 0 ${width} ${height}`} className="h-40 w-full">
+            <defs>
+                <linearGradient id="trendFill" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stopColor={stroke} stopOpacity="0.22" />
+                    <stop offset="100%" stopColor={stroke} stopOpacity="0.02" />
+                </linearGradient>
+            </defs>
+            <polyline
+                fill="none"
+                stroke={stroke}
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                points={polylinePoints}
+            />
+            <polygon
+                fill="url(#trendFill)"
+                points={`${padding},${height - padding} ${polylinePoints} ${width - padding},${height - padding}`}
+            />
+        </svg>
+    );
+}
+
+function DonutChart({
+    value,
+    total,
+    color,
+}: {
+    value: number;
+    total: number;
+    color: string;
+}) {
+    const safeTotal = Math.max(total, 1);
+    const angle = Math.round((value / safeTotal) * 360);
+
+    return (
+        <div className="relative flex size-28 items-center justify-center rounded-full bg-slate-100"
+            style={{
+                background: `conic-gradient(${color} ${angle}deg, #e2e8f0 ${angle}deg)`,
+            }}
+        >
+            <div className="flex size-20 items-center justify-center rounded-full bg-white text-sm font-semibold text-slate-700">
+                {Math.round((value / safeTotal) * 100)}%
             </div>
         </div>
     );
