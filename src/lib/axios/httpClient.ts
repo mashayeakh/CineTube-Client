@@ -20,7 +20,6 @@ const axiosInstance = async () => {
         baseURL: API_BASE_URL,
         timeout: 30000,
         headers: {
-            'Content-Type': 'application/json',
             Cookie: cookieHeader
         }
     })
@@ -33,9 +32,25 @@ export interface ApiRequestOptions {
     headers?: Record<string, string>;
 }
 
+function isFormData(value: unknown): value is FormData {
+    return typeof FormData !== 'undefined' && value instanceof FormData;
+}
+
+function getRequestHeaders(data: unknown, headers?: Record<string, string>) {
+    if (isFormData(data)) {
+        return headers;
+    }
+
+    return {
+        'Content-Type': 'application/json',
+        ...headers,
+    };
+}
+
 const shouldLogHttpError = (error: unknown) => {
     if (axios.isAxiosError(error)) {
-        return error.response?.status !== 404;
+        const status = error.response?.status;
+        return status !== 401 && status !== 403 && status !== 404;
     }
 
     return true;
@@ -62,7 +77,7 @@ const httpPost = async <TData>(endpoint: string, data: unknown, options?: ApiReq
         const instance = await axiosInstance();
         const response = await instance.post<ApiResponse<TData>>(endpoint, data, {
             params: options?.params,
-            headers: options?.headers,
+            headers: getRequestHeaders(data, options?.headers),
         });
         return response.data;
     } catch (error) {
@@ -78,7 +93,7 @@ const httpPut = async <TData>(endpoint: string, data: unknown, options?: ApiRequ
         const instance = await axiosInstance();
         const response = await instance.put<ApiResponse<TData>>(endpoint, data, {
             params: options?.params,
-            headers: options?.headers,
+            headers: getRequestHeaders(data, options?.headers),
         });
         return response.data;
     } catch (error) {
@@ -94,7 +109,7 @@ const httpPatch = async <TData>(endpoint: string, data: unknown, options?: ApiRe
         const instance = await axiosInstance();
         const response = await instance.patch<ApiResponse<TData>>(endpoint, data, {
             params: options?.params,
-            headers: options?.headers,
+            headers: getRequestHeaders(data, options?.headers),
         });
         return response.data;
     }

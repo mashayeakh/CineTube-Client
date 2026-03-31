@@ -2,28 +2,64 @@
 
 import Link from "next/link"
 import { useRef, useState } from "react"
-import { ArrowLeft, Clapperboard, Mail, ShieldCheck } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { ArrowLeft, Clapperboard, Loader2, Mail, ShieldCheck } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { forgetPasswordAction, resetPasswordAction } from "./_actions/forgetPasswordActions"
 
 export default function ForgetPassword() {
+    const router = useRouter()
     const [email, setEmail] = useState("")
     const [otp, setOtp] = useState<string[]>(Array(6).fill(""))
     const [newPassword, setNewPassword] = useState("")
     const [otpSent, setOtpSent] = useState(false)
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const [successMsg, setSuccessMsg] = useState<string | null>(null)
     const otpInputsRef = useRef<Array<HTMLInputElement | null>>([])
 
-    const handleSendOtp = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSendOtp = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         if (!email.trim()) return
-        setOtpSent(true)
+        setError(null)
+        setLoading(true)
+        try {
+            const result = await forgetPasswordAction({ email: email.trim() })
+            if (!result.success) {
+                setError(result.message)
+            } else {
+                setOtpSent(true)
+                setSuccessMsg(result.message || "OTP sent to your email")
+            }
+        } catch {
+            setError("Something went wrong. Please try again.")
+        } finally {
+            setLoading(false)
+        }
     }
 
-    const handleResetPassword = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleResetPassword = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
-        // TODO: connect with reset password API
-        console.log({ email, otp: otp.join(""), newPassword })
+        const otpValue = otp.join("")
+        if (!email.trim() || otpValue.length !== 6 || !newPassword) return
+        setError(null)
+        setSuccessMsg(null)
+        setLoading(true)
+        try {
+            const result = await resetPasswordAction({ email: email.trim(), otp: otpValue, newPassword })
+            if (!result.success) {
+                setError(result.message)
+            } else {
+                setSuccessMsg(result.message || "Password reset successfully!")
+                setTimeout(() => router.push("/login"), 2000)
+            }
+        } catch {
+            setError("Something went wrong. Please try again.")
+        } finally {
+            setLoading(false)
+        }
     }
 
     const handleOtpChange = (index: number, rawValue: string) => {
@@ -104,6 +140,17 @@ export default function ForgetPassword() {
                             </div>
                         </div>
 
+                        {error && (
+                            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+                                {error}
+                            </p>
+                        )}
+                        {successMsg && (
+                            <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-600">
+                                {successMsg}
+                            </p>
+                        )}
+
                         {!otpSent ? (
                             <form className="space-y-3" noValidate onSubmit={handleSendOtp}>
                                 <div className="border-b border-slate-200 pb-1.5">
@@ -128,9 +175,10 @@ export default function ForgetPassword() {
                                 <div className="flex flex-col gap-2 pt-1.5 sm:flex-row sm:items-center">
                                     <Button
                                         type="submit"
+                                        disabled={loading}
                                         className="h-10 rounded-full bg-linear-to-r from-indigo-600 via-indigo-500 to-blue-500 px-7 text-white shadow-[0_16px_30px_rgba(79,70,229,0.28)] hover:from-indigo-500 hover:via-indigo-500 hover:to-blue-400"
                                     >
-                                        Send Reset Otp
+                                        {loading ? <><Loader2 className="mr-2 size-4 animate-spin" /> Sending...</> : "Send Reset Otp"}
                                     </Button>
                                 </div>
                             </form>
@@ -208,9 +256,10 @@ export default function ForgetPassword() {
                                 <div className="flex flex-col gap-2 pt-1.5 sm:flex-row sm:items-center">
                                     <Button
                                         type="submit"
+                                        disabled={loading}
                                         className="h-10 rounded-full bg-linear-to-r from-indigo-600 via-indigo-500 to-blue-500 px-7 text-white shadow-[0_16px_30px_rgba(79,70,229,0.28)] hover:from-indigo-500 hover:via-indigo-500 hover:to-blue-400"
                                     >
-                                        Reset Password
+                                        {loading ? <><Loader2 className="mr-2 size-4 animate-spin" /> Resetting...</> : "Reset Password"}
                                     </Button>
                                 </div>
                             </form>

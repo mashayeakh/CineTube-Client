@@ -4,6 +4,7 @@ import { Bell, Home, Search } from "lucide-react";
 
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { ReviewTableClient } from "@/components/admin/review-table-client";
+import { resolveMediaUrl } from "@/lib/media";
 import { approveReview, getAdminReviews, rejectReview } from "@/service/admin-review.services";
 
 type UnknownRecord = Record<string, unknown>;
@@ -88,7 +89,9 @@ function normalizeReviews(raw: unknown): ReviewRow[] {
             return {
                 id: pickString(item, ["id", "_id", "reviewId"], `review-${index + 1}`),
                 movieTitle: pickString(movieObject, ["title", "name"], pickString(item, ["movieTitle", "title"], "Untitled movie")),
-                moviePoster: pickString(movieObject, ["poster", "thumbnail", "image"], pickString(item, ["poster", "moviePoster", "image"], "")),
+                moviePoster: resolveMediaUrl(
+                    pickString(movieObject, ["poster", "thumbnail", "image"], pickString(item, ["poster", "moviePoster", "image"], ""))
+                ),
                 reviewerName: pickString(userObject, ["name", "fullName", "username"], pickString(item, ["reviewerName", "userName", "author"], "Unknown user")),
                 reviewerEmail: pickString(userObject, ["email"], pickString(item, ["reviewerEmail", "email"], "N/A")),
                 rating: pickNumber(item, ["rating", "stars", "score"], 0),

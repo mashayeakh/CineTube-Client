@@ -51,7 +51,7 @@ async function createMovieAction(formData: FormData) {
 
     const title = String(formData.get("title") ?? "").trim();
     const description = String(formData.get("description") ?? "").trim();
-    const poster = String(formData.get("poster") ?? "").trim();
+    const poster = formData.get("poster");
     const releaseYear = Number(formData.get("releaseYear") ?? 0);
     const director = String(formData.get("director") ?? "").trim();
     const castInput = String(formData.get("cast") ?? "").trim();
@@ -62,8 +62,9 @@ async function createMovieAction(formData: FormData) {
 
     const currentUser = await getUserInfo();
     const userId = pickString(currentUser, ["id", "_id", "userId"]);
+    const hasPoster = poster instanceof File && poster.size > 0;
 
-    if (!title || !description || !director || !userId || !releaseYear) {
+    if (!title || !description || !director || !userId || !releaseYear || !hasPoster) {
         return;
     }
 
@@ -72,20 +73,30 @@ async function createMovieAction(formData: FormData) {
         .map((item) => item.trim())
         .filter(Boolean);
 
+    const payload = new FormData();
+    payload.append("title", title);
+    payload.append("description", description);
+    payload.append("poster", poster);
+    payload.append("releaseYear", String(releaseYear));
+    payload.append("director", director);
+    payload.append("priceType", priceType);
+    payload.append("ageGroup", ageGroup);
+    payload.append("userId", userId);
+
+    for (const item of cast) {
+        payload.append("cast", item);
+    }
+
+    for (const genre of genres) {
+        payload.append("genres", genre);
+    }
+
+    for (const platform of platforms) {
+        payload.append("platforms", platform);
+    }
+
     try {
-        await createAdminMovie({
-            title,
-            description,
-            poster,
-            releaseYear,
-            director,
-            cast,
-            genres,
-            platforms,
-            priceType,
-            ageGroup,
-            userId,
-        });
+        await createAdminMovie(payload);
     } catch (error) {
         console.error("Failed to create movie:", error);
     }
@@ -141,10 +152,10 @@ export default async function AdminCreateMoviesPage() {
                             </section>
 
                             <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                                <form action={createMovieAction} className="space-y-4">
+                                <form action={createMovieAction} encType="multipart/form-data" className="space-y-4">
                                     <div className="grid gap-3 md:grid-cols-2">
                                         <input name="title" required placeholder="Movie title" className="h-10 rounded-lg border border-slate-200 px-3 text-sm" />
-                                        <input name="poster" placeholder="Poster URL" className="h-10 rounded-lg border border-slate-200 px-3 text-sm" />
+                                        <input name="poster" type="file" accept="image/*" required className="h-10 rounded-lg border border-slate-200 px-3 py-2 text-sm" />
                                     </div>
 
                                     <textarea name="description" required placeholder="Description" className="min-h-28 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />

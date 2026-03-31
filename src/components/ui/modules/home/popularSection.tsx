@@ -10,7 +10,9 @@ import {
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { getPopularMovies } from '@/app/(public)/movie/_actions/popular';
+import { getPopularMovies } from '@/app/(public)/public/_actions/popular';
+import { resolveMediaUrl } from '@/lib/media';
+import { Skeleton } from '@/components/ui/skeleton';
 
 import {
     Carousel,
@@ -65,7 +67,7 @@ function mapToMovie(movie: PopularApiMovie): Movie {
         title: movie.title,
         releaseDate: movie.releaseYear ? `${movie.releaseYear}-01-01` : '',
         posterPath:
-            movie.poster ||
+            resolveMediaUrl(movie.poster) ||
             'https://images.unsplash.com/photo-1534809027769-b00d750a2883',
         rating: avgRating,
         language: movie.director ?? '—',
@@ -106,7 +108,30 @@ export default function PopularSection() {
         );
     };
 
-    if (isLoading) return <p>Loading popular movies...</p>;
+    if (isLoading) {
+        return (
+            <section className="bg-linear-to-b from-background to-muted/10 py-16">
+                <div className="container mx-auto px-4">
+                    <div className="mb-10 flex items-center justify-between">
+                        <div className="space-y-3">
+                            <Skeleton className="h-5 w-28 rounded-full" />
+                            <Skeleton className="h-10 w-60 rounded-full" />
+                        </div>
+                        <Skeleton className="hidden h-10 w-24 rounded-full sm:block" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-5">
+                        {Array.from({ length: 5 }).map((_, index) => (
+                            <div key={`popular-home-skeleton-${index}`} className="space-y-3">
+                                <Skeleton className="aspect-[2/3] w-full rounded-2xl" />
+                                <Skeleton className="h-5 w-4/5 rounded-full" />
+                                <Skeleton className="h-4 w-1/2 rounded-full" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+        );
+    }
     if (error) return <p>Failed to load popular movies.</p>;
 
     return (

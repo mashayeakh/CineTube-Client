@@ -24,7 +24,8 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { useForm } from "@tanstack/react-form"
 import { loginAction } from "@/app/(public)/(authRoutes)/login/_action/loginAction"
-import { ILoginPayload, loginZodSchema } from "@/zod/auth.validation"
+import { signupAction } from "@/app/(public)/(authRoutes)/signup/_action/signupAction"
+import { ILoginPayload, ISignupPayload, loginZodSchema, signupZodSchema } from "@/zod/auth.validation"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 type AuthMode = "login" | "signup"
@@ -33,12 +34,17 @@ interface LoginFormProps {
     redirectPath?: string;
 }
 
-export function AuthFlipShell({ initialMode, LoginFormProps }: { initialMode: AuthMode; LoginFormProps: LoginFormProps }) {
+export function AuthFlipShell({ initialMode, LoginFormProps = {} }: { initialMode: AuthMode; LoginFormProps?: LoginFormProps }) {
     const router = useRouter()
     const [mode, setMode] = useState<AuthMode>(initialMode)
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [password, setPassword] = useState("")
+    const [signupName, setSignupName] = useState("")
+    const [signupEmail, setSignupEmail] = useState("")
+    const [confirmPassword, setConfirmPassword] = useState("")
+    const [signupError, setSignupError] = useState<string | null>(null)
+    const [signupSuccess, setSignupSuccess] = useState(false)
     const redirectPath = LoginFormProps.redirectPath
 
     const isSignup = mode === "signup"
@@ -64,6 +70,10 @@ export function AuthFlipShell({ initialMode, LoginFormProps }: { initialMode: Au
 
     const { mutateAsync, isPending } = useMutation({
         mutationFn: (payload: ILoginPayload) => loginAction(payload, redirectPath),
+    })
+
+    const { mutateAsync: signupMutate, isPending: isSignupPending } = useMutation({
+        mutationFn: (payload: ISignupPayload) => signupAction(payload),
     })
 
     const [serverError, setServerError] = useState<string | null>(null)
@@ -161,23 +171,49 @@ export function AuthFlipShell({ initialMode, LoginFormProps }: { initialMode: Au
                                 <form
                                     className="space-y-3"
                                     noValidate
-                                    onSubmit={(e) => {
+                                    onSubmit={async (e) => {
                                         e.preventDefault()
                                         e.stopPropagation()
-                                        if (!isSignup) {
+                                        if (isSignup) {
+                                            setSignupError(null)
+                                            setSignupSuccess(false)
+                                            const parsed = signupZodSchema.safeParse({ name: signupName, email: signupEmail, password, confirmPassword })
+                                            if (!parsed.success) {
+                                                setSignupError(parsed.error.issues[0]?.message || "Invalid input")
+                                                return
+                                            }
+                                            const result = await signupMutate(parsed.data) as any
+                                            if (!result.success) {
+                                                setSignupError(result.message || "Signup failed")
+                                                return
+                                            }
+                                            setSignupSuccess(true)
+                                            router.push(`/verify-email?email=${encodeURIComponent(parsed.data.email)}`)
+                                        } else {
                                             form.handleSubmit()
                                         }
                                     }}
                                 >
                                     {isSignup && (
                                         <FieldShell icon={<User className="size-4" />} label="Full name">
-                                            <Input placeholder="Daniel Ahmadi" className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0" />
+                                            <Input
+                                                placeholder="Daniel Ahmadi"
+                                                value={signupName}
+                                                onChange={(e) => setSignupName(e.target.value)}
+                                                className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
+                                            />
                                         </FieldShell>
                                     )}
 
                                     {isSignup ? (
                                         <FieldShell icon={<Mail className="size-4" />} label="Email address">
-                                            <Input placeholder="name@example.com" type="email" className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0" />
+                                            <Input
+                                                placeholder="name@example.com"
+                                                type="email"
+                                                value={signupEmail}
+                                                onChange={(e) => setSignupEmail(e.target.value)}
+                                                className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
+                                            />
                                         </FieldShell>
                                     ) : (
                                         <form.Field
@@ -293,6 +329,8 @@ export function AuthFlipShell({ initialMode, LoginFormProps }: { initialMode: Au
                                                 <Input
                                                     type={showConfirmPassword ? "text" : "password"}
                                                     placeholder="Re-type password"
+                                                    value={confirmPassword}
+                                                    onChange={(e) => setConfirmPassword(e.target.value)}
                                                     className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
                                                 />
                                             </FieldShell>
@@ -315,13 +353,22 @@ export function AuthFlipShell({ initialMode, LoginFormProps }: { initialMode: Au
                                         <p className="text-xs text-destructive">{serverError}</p>
                                     )}
 
+                                    {isSignup && signupError && (
+                                        <p className="text-xs text-destructive">{signupError}</p>
+                                    )}
+
+                                    {isSignup && signupSuccess && (
+                                        <p className="text-xs text-emerald-600">Account created! Redirecting to sign in...</p>
+                                    )}
+
                                     <div className="flex flex-col gap-2 pt-1.5 sm:flex-row sm:items-center">
                                         {isSignup ? (
                                             <Button
                                                 type="submit"
+                                                disabled={isSignupPending}
                                                 className="h-10 rounded-full bg-linear-to-r from-indigo-600 via-indigo-500 to-blue-500 px-7 text-white shadow-[0_16px_30px_rgba(79,70,229,0.28)] hover:from-indigo-500 hover:via-indigo-500 hover:to-blue-400"
                                             >
-                                                Sign Up
+                                                {isSignupPending ? "Creating account..." : "Sign Up"}
                                                 <span className="ml-2 inline-flex size-6 items-center justify-center rounded-full bg-white/20">
                                                     <ArrowLeft className="size-3.5 rotate-180" />
                                                 </span>

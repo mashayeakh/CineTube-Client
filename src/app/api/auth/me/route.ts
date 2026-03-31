@@ -23,6 +23,13 @@ export async function GET(request: NextRequest) {
         });
 
         if (!res.ok) {
+            if (res.status === 401 || res.status === 403) {
+                return NextResponse.json(
+                    { error: "Not authenticated" },
+                    { status: res.status }
+                );
+            }
+
             console.error("Backend error:", res.status);
             return NextResponse.json(
                 { error: "Failed to fetch user" },

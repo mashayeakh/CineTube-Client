@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Bell, Home, Search } from "lucide-react";
 
 import { UserSidebar } from "@/components/user/user-sidebar";
+import { getUserInfo } from "@/service/auth.services";
 
 type UserPageShellProps = {
     activePath: string;
@@ -10,11 +11,15 @@ type UserPageShellProps = {
     children: React.ReactNode;
 };
 
-export function UserPageShell({ activePath, title, subtitle, children }: UserPageShellProps) {
+export async function UserPageShell({ activePath, title, subtitle, children }: UserPageShellProps) {
+    const currentUser = await getUserInfo();
+    const rawRole = typeof currentUser?.role === "string" ? currentUser.role.toUpperCase() : "";
+    const userRole = rawRole === "USER" || rawRole === "PREMIUM_USER" || rawRole === "ADMIN" ? rawRole : null;
+
     return (
         <div className="min-h-screen bg-slate-100 text-slate-900">
             <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)]">
-                <UserSidebar activePath={activePath} />
+                <UserSidebar activePath={activePath} userRole={userRole} />
 
                 <div className="min-w-0">
                     <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200/80 bg-slate-50/95 px-4 backdrop-blur sm:px-6">

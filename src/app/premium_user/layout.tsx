@@ -1,5 +1,6 @@
-import { RoleDashboardShell } from "@/components/role-dashboard-shell";
+import { redirect } from "next/navigation";
 
 export default function PremiumUserProtectedLayout({ children }: { children: React.ReactNode }) {
-    return <RoleDashboardShell role="PREMIUM_USER">{children}</RoleDashboardShell>;
+    redirect("/user/dashboard");
+    return <>{children}</>;
 }

@@ -64,13 +64,17 @@ export async function getUserInfo() {
         });
 
         if (!res.ok) {
+            if (res.status === 401 || res.status === 403) {
+                return null;
+            }
+
             console.error("Failed to fetch user info:", res.status, res.statusText);
             return null;
         }
 
-        const { data } = await res.json();
+        const payload = await res.json() as { data?: unknown; result?: unknown };
 
-        return data;
+        return (payload.data ?? payload.result ?? null) as Record<string, unknown> | null;
     } catch (error) {
         console.error("Error fetching user info:", error);
         return null;

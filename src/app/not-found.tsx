@@ -138,7 +138,7 @@ export default function NotFound() {
                         Go to home
                     </Link>
                     <Link
-                        href="/movie/popular"
+                        href="/popular"
                         className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/25 bg-white/8 px-7 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/14"
                     >
                         <Film className="size-4" />

@@ -7,18 +7,38 @@ import {
     parseString,
 } from "@/lib/user-dashboard.utils";
 import { getUserDashboardReviews } from "@/service/user-dashboard.services";
+import { getMyWatchlists } from "@/service/watchlist.services";
+import ReviewFormClient from "./ReviewFormClient";
 
 export default async function UserReviewsPage() {
     let payload: unknown = null;
+    let watchlistPayload: unknown = null;
 
     try {
-        const response = await getUserDashboardReviews();
-        payload = response.data;
+        const [reviewRes, watchlistRes] = await Promise.all([
+            getUserDashboardReviews(),
+            getMyWatchlists(),
+        ]);
+        payload = reviewRes.data;
+        watchlistPayload = watchlistRes.data;
     } catch {
         payload = null;
+        watchlistPayload = null;
     }
 
     const items = extractArray(payload, ["reviews", "items", "results", "data"]);
+
+    const watchlistItems = extractArray(watchlistPayload, ["watchlist", "items", "movies", "results", "data"]);
+    const watchlistMovies = watchlistItems.map((item) => {
+        const record = item as Record<string, unknown>;
+        const movieId = parseString(record.movieId ?? findValue(item, ["movieId"]), "");
+        const movieObj = record.movie as Record<string, unknown> | undefined;
+        const title = parseString(
+            movieObj?.title ?? findValue(item, ["title", "movieTitle", "name"]),
+            "Unknown Movie"
+        );
+        return { movieId, title };
+    }).filter((m) => m.movieId.length > 0);
 
     const rows = items.slice(0, 20).map((item) => {
         const content = parseString(findValue(item, ["content", "review", "description"]));
@@ -36,6 +56,11 @@ export default async function UserReviewsPage() {
             title="My Reviews"
             subtitle="Data from GET /api/v1/user/dashboard/reviews"
         >
+            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 className="mb-4 text-lg font-semibold text-slate-900">Write a Review</h2>
+                <ReviewFormClient watchlistMovies={watchlistMovies} />
+            </section>
+
             <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center justify-between">
                     <p className="text-sm text-slate-500">Total reviews</p>

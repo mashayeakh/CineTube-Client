@@ -41,6 +41,10 @@ export default async function proxy(request: NextRequest) {
         const routeOwner = getRouteOwner(pathname);
         const isAuth = isAuthRoute(pathname);
 
+        if (pathname.startsWith("/premium_user")) {
+            return NextResponse.redirect(new URL("/user/dashboard", request.url));
+        }
+
         if (
             isAuth &&
             isLoggedIn &&
@@ -56,6 +60,11 @@ export default async function proxy(request: NextRequest) {
 
         if (!isLoggedIn) {
             return redirectToLogin(request, pathWithQuery);
+        }
+
+        const isUserRouteForPremium = routeOwner === "USER" && userRole === "PREMIUM_USER";
+        if (isUserRouteForPremium) {
+            return NextResponse.next();
         }
 
         if (ROLE_ROUTES.includes(routeOwner as (typeof ROLE_ROUTES)[number]) && routeOwner !== userRole) {

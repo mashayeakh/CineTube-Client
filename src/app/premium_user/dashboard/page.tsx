@@ -1,28 +1,50 @@
-export default function PremiumUserDashboardPage() {
-    return (
-        <section className="space-y-6 rounded-[28px] bg-slate-950/50 p-6">
-            <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-fuchsia-300">Premium dashboard</p>
-                <h1 className="mt-3 text-3xl font-semibold">Premium member hub</h1>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-                    Premium users are directed here automatically after login. Any route under /premium_user/dashboard is protected for the PREMIUM_USER role.
-                </p>
-            </div>
+import { PremiumPageShell } from "@/components/premium/premium-page-shell";
+import {
+    getPrimitiveEntries,
+    parseString,
+} from "@/lib/user-dashboard.utils";
+import { getUserDashboardStats } from "@/service/user-dashboard.services";
 
-            <div className="grid gap-4 md:grid-cols-3">
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-                    <p className="text-sm text-slate-300">Route owner</p>
-                    <p className="mt-2 text-2xl font-semibold text-white">PREMIUM_USER</p>
-                </div>
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-                    <p className="text-sm text-slate-300">Default path</p>
-                    <p className="mt-2 text-2xl font-semibold text-white">/premium_user/dashboard</p>
-                </div>
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-                    <p className="text-sm text-slate-300">Membership access</p>
-                    <p className="mt-2 text-2xl font-semibold text-white">Premium only</p>
-                </div>
-            </div>
-        </section>
+function formatLabel(value: string) {
+    return value
+        .replace(/([a-z])([A-Z])/g, "$1 $2")
+        .replace(/[_-]+/g, " ")
+        .trim()
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+export default async function PremiumUserDashboardPage() {
+    let statsData: unknown = null;
+
+    try {
+        const response = await getUserDashboardStats();
+        statsData = response.data;
+    } catch {
+        statsData = null;
+    }
+
+    const stats = getPrimitiveEntries(statsData).slice(0, 8);
+
+    return (
+        <PremiumPageShell
+            activePath="/premium_user/dashboard"
+            title="Dashboard"
+            subtitle="Stats from GET /api/v1/user/dashboard/stats"
+        >
+            {stats.length > 0 ? (
+                <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {stats.map((item) => (
+                        <article key={item.key} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{formatLabel(item.key)}</p>
+                            <p className="mt-2 text-2xl font-semibold text-slate-900">{parseString(item.value)}</p>
+                        </article>
+                    ))}
+                </section>
+            ) : (
+                <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <p className="text-sm text-slate-500">No dashboard stats available right now.</p>
+                </section>
+            )}
+        </PremiumPageShell>
     );
 }

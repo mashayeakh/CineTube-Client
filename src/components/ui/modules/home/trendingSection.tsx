@@ -7,9 +7,11 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TrendingUp, Calendar, Clock, Star, Eye, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { resolveMediaUrl } from "@/lib/media";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { getTrendingMoviesToday } from "@/app/(public)/movie/_actions/trending";
+import { getTrendingMoviesToday } from "@/app/(public)/public/_actions/trending";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TrendingApiMovie {
   id: string;
@@ -41,7 +43,33 @@ export default function TrendingSection() {
     queryFn: () => getTrendingMoviesToday(activeTab),
   });
 
-  if (isLoading) return <p>Loading trending...</p>;
+  if (isLoading) {
+    return (
+      <section className="bg-linear-to-b from-background to-muted/20 py-8">
+        <div className="container mx-auto px-4">
+          <div className="mb-8 flex items-center justify-between">
+            <div className="space-y-3">
+              <Skeleton className="h-5 w-24 rounded-full" />
+              <Skeleton className="h-10 w-40 rounded-full" />
+            </div>
+            <div className="flex gap-2 rounded-full bg-muted/50 p-1">
+              <Skeleton className="h-10 w-24 rounded-full" />
+              <Skeleton className="h-10 w-28 rounded-full" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={`trending-skeleton-${index}`} className="space-y-3">
+                <Skeleton className="aspect-5/6 w-full rounded-2xl" />
+                <Skeleton className="h-5 w-3/4 rounded-full" />
+                <Skeleton className="h-4 w-1/2 rounded-full" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
   if (error) return <p>Failed to load trending</p>;
 
   const currentData: TrendingItem[] =
@@ -62,7 +90,7 @@ export default function TrendingSection() {
         id: movie.id,
         title: movie.title,
         posterPath:
-          movie.poster ||
+          resolveMediaUrl(movie.poster) ||
           "https://images.unsplash.com/photo-1534809027769-b00d750a2883",
         rating: averageRating,
         mediaType: "movie",

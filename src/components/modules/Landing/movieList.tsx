@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { getMovies } from '@/app/(public)/movie/_actions'
+import { getMovies } from '@/app/(public)/public/_actions'
 import { useQuery } from '@tanstack/react-query'
 import React from 'react'
 

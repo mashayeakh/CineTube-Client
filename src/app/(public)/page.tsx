@@ -9,7 +9,7 @@ import SearchField from '@/components/ui/modules/home/searchField'
 import TrendingSection from '@/components/ui/modules/home/trendingSection'
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query'
 import React from 'react'
-import { getMovies } from './movie/_actions'
+import { getMovies } from './public/_actions'
 
 // import { Navbar } from '@/src/components/layout/navbar';
 import MovieList from './../../components/modules/Landing/movieList';

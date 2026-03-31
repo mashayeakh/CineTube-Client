@@ -4,16 +4,15 @@ import {
     extractArray,
     findValue,
     formatDate,
-    isRecord,
     parseString,
 } from "@/lib/user-dashboard.utils";
-import { getUserDashboardWatchlist } from "@/service/user-dashboard.services";
+import { getMyWatchlists } from "@/service/watchlist.services";
 
 export default async function UserWatchlistPage() {
     let payload: unknown = null;
 
     try {
-        const response = await getUserDashboardWatchlist();
+        const response = await getMyWatchlists();
         payload = response.data;
     } catch {
         payload = null;
@@ -35,7 +34,7 @@ export default async function UserWatchlistPage() {
         <UserPageShell
             activePath="/user/watchlist"
             title="My Watchlist"
-            subtitle="Data from GET /api/v1/user/dashboard/watchlist"
+            subtitle="Data from GET /api/v1/watchlists"
         >
             <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center justify-between">

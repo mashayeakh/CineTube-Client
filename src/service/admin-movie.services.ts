@@ -43,7 +43,7 @@ export async function getAdminMovies(options?: ApiRequestOptions) {
     return unwrap(response);
 }
 
-export async function createAdminMovie(payload: MoviePayload) {
+export async function createAdminMovie(payload: MoviePayload | FormData) {
     const response = await httpClient.post<unknown>("/movies/create", payload);
     return unwrap(response);
 }
