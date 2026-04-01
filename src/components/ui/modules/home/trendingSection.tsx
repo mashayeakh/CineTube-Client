@@ -20,6 +20,9 @@ interface TrendingApiMovie {
   poster?: string;
   releaseYear?: number;
   score?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  publishedAt?: string;
   reviews?: Array<{ rating?: number }>;
 }
 
@@ -32,11 +35,33 @@ interface TrendingItem {
   year: string;
   overview: string;
   score: number;
+  timestamp: number;
+}
+
+const LANDING_TRENDING_LIMIT = 8;
+
+function parseTimestamp(value: unknown) {
+  if (typeof value !== "string") {
+    return 0;
+  }
+
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getMovieTimestamp(movie: TrendingApiMovie) {
+  return Math.max(
+    parseTimestamp(movie.createdAt),
+    parseTimestamp(movie.updatedAt),
+    parseTimestamp(movie.publishedAt),
+    movie.releaseYear ? Date.UTC(movie.releaseYear, 0, 1) : 0
+  );
 }
 
 export default function TrendingSection() {
   const [activeTab, setActiveTab] = useState<"today" | "week">("today");
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [isViewMoreOpen, setIsViewMoreOpen] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["trending-movies", activeTab],
@@ -97,12 +122,16 @@ export default function TrendingSection() {
         year: movie.releaseYear ? String(movie.releaseYear) : "N/A",
         overview: movie.description ?? "No description available",
         score: Number(movie.score ?? 0),
+        timestamp: getMovieTimestamp(movie),
       };
     }) || [];
 
+  const sortedData = [...currentData].sort((a, b) => b.timestamp - a.timestamp);
+  const visibleData = sortedData.slice(0, LANDING_TRENDING_LIMIT);
+
   return (
     <section className="py-8 bg-linear-to-b from-background to-muted/20">
-      <div className="container mx-auto px-4 border border-green-600">
+      <div className="container mx-auto px-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -136,6 +165,18 @@ export default function TrendingSection() {
           </div>
         </div>
 
+        <div className="mb-5 flex items-center justify-end">
+          {sortedData.length > LANDING_TRENDING_LIMIT ? (
+            <button
+              type="button"
+              onClick={() => setIsViewMoreOpen(true)}
+              className="inline-flex items-center rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
+            >
+              View More
+            </button>
+          ) : null}
+        </div>
+
         {/* GRID (UNCHANGED DESIGN) */}
         <AnimatePresence mode="wait">
           <motion.div
@@ -146,7 +187,7 @@ export default function TrendingSection() {
             transition={{ duration: 0.3 }}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 body-font"
           >
-            {currentData.map((item, index) => (
+            {visibleData.map((item, index) => (
               <TrendingCard
                 key={item.id}
                 item={item}
@@ -159,6 +200,56 @@ export default function TrendingSection() {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      <AnimatePresence>
+        {isViewMoreOpen ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 p-4 backdrop-blur-sm"
+            onClick={() => setIsViewMoreOpen(false)}
+          >
+            <motion.div
+              initial={{ y: 24, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 24, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="mx-auto mt-8 max-h-[85vh] w-full max-w-6xl overflow-hidden rounded-2xl border border-border bg-background shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-border px-5 py-4">
+                <div>
+                  <h3 className="text-xl font-semibold">Trending {activeTab === "today" ? "Today" : "This Week"}</h3>
+                  <p className="text-sm text-muted-foreground">Showing all {sortedData.length} movies</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsViewMoreOpen(false)}
+                  className="rounded-full border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted"
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="max-h-[calc(85vh-78px)] overflow-y-auto p-5">
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                  {sortedData.map((item, index) => (
+                    <TrendingCard
+                      key={`${activeTab}-all-${item.id}`}
+                      item={item}
+                      index={index}
+                      isHovered={hoveredId === item.id}
+                      onHover={() => setHoveredId(item.id)}
+                      onLeave={() => setHoveredId(null)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </section>
   );
 }

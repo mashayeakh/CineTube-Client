@@ -28,7 +28,7 @@ const navItems = [
     // { label: "Overview", href: "/user/overview", icon: Compass },
     { label: "My Watchlist", href: "/user/watchlist", icon: ListVideo },
     { label: "My Reviews", href: "/user/reviews", icon: Star },
-    { label: "My Comments", href: "/user/comments", icon: MessageCircle },
+    // { label: "My Comments", href: "/user/comments", icon: MessageCircle },
     { label: "Movie Contribution", href: "/user/contributions", icon: Film },
     { label: "My Subscription", href: "/user/subscription", icon: Subtitles },
     { label: "Payment History", href: "/user/payment-history", icon: History },

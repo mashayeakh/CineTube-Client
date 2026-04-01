@@ -33,6 +33,8 @@ interface PopularApiMovie {
     score?: number;
     reviews?: Array<{ rating?: number; status?: string }>;
     createdAt?: string;
+    updatedAt?: string;
+    publishedAt?: string;
 }
 
 interface Movie {
@@ -44,6 +46,18 @@ interface Movie {
     language: string;
     duration?: string;
     isNew?: boolean;
+    timestamp: number;
+}
+
+const POPULAR_HOME_LIMIT = 10;
+
+function parseTimestamp(value: unknown) {
+    if (typeof value !== 'string') {
+        return 0;
+    }
+
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function mapToMovie(movie: PopularApiMovie): Movie {
@@ -62,6 +76,13 @@ function mapToMovie(movie: PopularApiMovie): Movie {
         ? Date.now() - new Date(movie.createdAt).getTime() < 7 * 24 * 60 * 60 * 1000
         : false;
 
+    const timestamp = Math.max(
+        parseTimestamp(movie.createdAt),
+        parseTimestamp(movie.updatedAt),
+        parseTimestamp(movie.publishedAt),
+        movie.releaseYear ? Date.UTC(movie.releaseYear, 0, 1) : 0
+    );
+
     return {
         id: movie.id,
         title: movie.title,
@@ -72,6 +93,7 @@ function mapToMovie(movie: PopularApiMovie): Movie {
         rating: avgRating,
         language: movie.director ?? '—',
         isNew,
+        timestamp,
     };
 }
 
@@ -87,6 +109,8 @@ export default function PopularSection() {
     });
 
     const movies: Movie[] = (rawMovies as PopularApiMovie[] | undefined)?.map(mapToMovie) ?? [];
+    const sortedMovies = [...movies].sort((a, b) => b.timestamp - a.timestamp);
+    const featuredMovies = sortedMovies.slice(0, POPULAR_HOME_LIMIT);
 
     const count = api ? api.scrollSnapList().length : 0;
 
@@ -122,7 +146,7 @@ export default function PopularSection() {
                     <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-5">
                         {Array.from({ length: 5 }).map((_, index) => (
                             <div key={`popular-home-skeleton-${index}`} className="space-y-3">
-                                <Skeleton className="aspect-[2/3] w-full rounded-2xl" />
+                                <Skeleton className="aspect-2/3 w-full rounded-2xl" />
                                 <Skeleton className="h-5 w-4/5 rounded-full" />
                                 <Skeleton className="h-4 w-1/2 rounded-full" />
                             </div>
@@ -180,7 +204,7 @@ export default function PopularSection() {
                         className="w-full"
                     >
                         <CarouselContent className="-ml-2 md:-ml-4">
-                            {movies.map((movie, index) => (
+                            {featuredMovies.map((movie, index) => (
                                 <CarouselItem
                                     key={movie.id}
                                     className="pl-2 md:pl-4 basis-1/2 sm:basis-1/3 lg:basis-1/4 xl:basis-1/5"
