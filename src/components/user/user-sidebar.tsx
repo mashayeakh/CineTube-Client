@@ -25,7 +25,7 @@ type UserSidebarProps = {
 const navItems = [
     { label: "Dashboard", href: "/user/dashboard", icon: LayoutDashboard },
     { label: "My Profile", href: "/user/profile", icon: CircleUserRound },
-    { label: "Overview", href: "/user/overview", icon: Compass },
+    // { label: "Overview", href: "/user/overview", icon: Compass },
     { label: "My Watchlist", href: "/user/watchlist", icon: ListVideo },
     { label: "My Reviews", href: "/user/reviews", icon: Star },
     { label: "My Comments", href: "/user/comments", icon: MessageCircle },

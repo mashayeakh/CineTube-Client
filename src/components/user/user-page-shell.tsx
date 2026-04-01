@@ -7,13 +7,16 @@ import { getUserInfo } from "@/service/auth.services";
 type UserPageShellProps = {
     activePath: string;
     title: string;
-    subtitle: string;
     children: React.ReactNode;
 };
 
-export async function UserPageShell({ activePath, title, subtitle, children }: UserPageShellProps) {
+export async function UserPageShell({ activePath, title, children }: UserPageShellProps) {
     const currentUser = await getUserInfo();
     const rawRole = typeof currentUser?.role === "string" ? currentUser.role.toUpperCase() : "";
+
+    console.log("RAW ", rawRole)
+
+
     const userRole = rawRole === "USER" || rawRole === "PREMIUM_USER" || rawRole === "ADMIN" ? rawRole : null;
 
     return (
@@ -24,19 +27,19 @@ export async function UserPageShell({ activePath, title, subtitle, children }: U
                 <div className="min-w-0">
                     <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200/80 bg-slate-50/95 px-4 backdrop-blur sm:px-6">
                         <div>
-                            <p className="text-sm font-semibold tracking-wide text-slate-800">User Console</p>
-                            <p className="text-xs text-slate-500">{subtitle}</p>
+                            <p className="text-sm font-semibold tracking-wide text-slate-800">Welcome {String(currentUser?.name || "User")}</p>
+                            <p className="text-xs text-slate-500"></p>
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500 shadow-sm md:flex">
+                            {/* <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500 shadow-sm md:flex">
                                 <Search className="size-4" />
                                 Search
-                            </div>
+                            </div> */}
                             <button className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-700" type="button">
                                 <Bell className="size-4" />
                             </button>
-                            <Link href="/user/dashboard" className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-700">
+                            <Link href="/" className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-700">
                                 <Home className="size-4" />
                             </Link>
                         </div>
@@ -46,7 +49,7 @@ export async function UserPageShell({ activePath, title, subtitle, children }: U
                         <div className="mx-auto max-w-6xl space-y-5">
                             <section className="rounded-2xl border border-slate-200/80 bg-white px-6 py-6 shadow-sm">
                                 <h1 className="text-4xl font-semibold tracking-tight text-slate-900">{title}</h1>
-                                <p className="mt-2 text-sm text-slate-600">{subtitle}</p>
+                                {/* <p className="mt-2 text-sm text-slate-600">{subtitle}</p> */}
                             </section>
 
                             {children}

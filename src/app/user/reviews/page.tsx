@@ -54,7 +54,7 @@ export default async function UserReviewsPage() {
         <UserPageShell
             activePath="/user/reviews"
             title="My Reviews"
-            subtitle="Data from GET /api/v1/user/dashboard/reviews"
+        // subtitle="Data from GET /api/v1/user/dashboard/reviews"
         >
             <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                 <h2 className="mb-4 text-lg font-semibold text-slate-900">Write a Review</h2>

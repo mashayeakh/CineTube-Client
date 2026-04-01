@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DataRefreshButton } from "@/components/data-refresh-button";
 
 export default function CommonProtectedLayout({ children }: { children: React.ReactNode }) {
 	return (
@@ -21,5 +22,6 @@ export default function CommonProtectedLayout({ children }: { children: React.Re
 				<div className="pt-6">{children}</div>
 			</div>
 		</div>
+		<DataRefreshButton />
 	);
 }

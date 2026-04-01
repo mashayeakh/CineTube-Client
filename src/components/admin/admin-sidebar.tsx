@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ChevronDown, ClipboardCheck, Clapperboard, LayoutDashboard, LogOut, MessageSquareText, PlusCircle, Tags, UserRoundCog, UserCircle2 } from "lucide-react";
+import { ChevronDown, ClipboardCheck, Clapperboard, CreditCard, LayoutDashboard, LogOut, MessageSquareText, PlusCircle, Tags, UserRoundCog, UserCircle2 } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 
 type AdminSidebarProps = {
@@ -18,6 +18,7 @@ export function AdminSidebar({ activePath }: AdminSidebarProps) {
     const links = [
         { label: "Profile", href: "/admin/profile", icon: UserCircle2 },
         { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+        { label: "Subscription Management", href: "/admin/subscription-management", icon: CreditCard },
         { label: "Category Management", href: "/admin/category-management", icon: Tags },
         { label: "User Management", href: "/admin/user-management", icon: UserRoundCog },
     ];

@@ -32,7 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     return (
         <div className="scroll-smooth">
             <div
-                className={`${plusJakartaSans.variable} ${fraunces.variable} font-sans antialiased bg-cream text-charcoal min-h-full flex flex-col`}
+                className={`${plusJakartaSans.variable} ${fraunces.variable} font-sans antialiased bg-background text-foreground min-h-full flex flex-col`}
             >
                 {/* {!hideNavbar && <Navbar />} */}
                 {!hidePublicChrome && <Heading />}

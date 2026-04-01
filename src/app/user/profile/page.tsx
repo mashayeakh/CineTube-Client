@@ -111,7 +111,10 @@ export default async function UserProfilePage() {
 
     if (!profile) {
         return (
-            <UserPageShell activePath="/user/profile" title="My Profile" subtitle="Your account information and activity summary.">
+            <UserPageShell
+                activePath="/user/profile" title="My Profile"
+            //  subtitle="Your account information and activity summary."
+            >
                 <div className="flex min-h-60 items-center justify-center rounded-xl border border-slate-200 bg-white p-8 text-slate-400 shadow-sm">
                     <div className="text-center">
                         <CircleUserRound className="mx-auto mb-3 h-10 w-10 opacity-40" />
@@ -136,7 +139,11 @@ export default async function UserProfilePage() {
     const paymentCount = profile.payments?.length ?? 0;
 
     return (
-        <UserPageShell activePath="/user/profile" title="My Profile" subtitle="Your account information and activity summary.">
+        <UserPageShell
+            activePath="/user/profile"
+            title="My Profile"
+        // subtitle="Your account information and activity summary."
+        >
             <div className="space-y-5">
                 {/* Identity Card */}
                 <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">

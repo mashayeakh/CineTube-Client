@@ -35,7 +35,7 @@ export default async function UserPaymentHistoryPage() {
         <UserPageShell
             activePath="/user/payment-history"
             title="Payment History"
-            subtitle="Data from GET /api/v1/user/dashboard/payments"
+        // subtitle="Data from GET /api/v1/user/dashboard/payments"
         >
             <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center justify-between">

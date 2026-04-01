@@ -87,6 +87,7 @@ type MovieDetailsClientProps = {
     canSaveToLibrary: boolean;
     initialSaved: boolean;
     initialWatchlistId: string | null;
+    hasUserReviewed?: boolean;
     loginHref: string;
 };
 
@@ -96,6 +97,7 @@ export default function MovieDetailsClient({
     canSaveToLibrary,
     initialSaved,
     initialWatchlistId,
+    hasUserReviewed = false,
     loginHref,
 }: MovieDetailsClientProps) {
     const router = useRouter();
@@ -293,21 +295,27 @@ export default function MovieDetailsClient({
                             <div className="flex flex-wrap gap-2">
                                 <Button
                                     variant="secondary"
-                                    className="gap-2 border border-white/20 bg-white/10 text-white hover:bg-white/20"
-                                    onClick={handleProtectedSave}
-                                    disabled={isMutating}
+                                    className={cn(
+                                        "gap-2 border border-white/20 bg-white/10 text-white hover:bg-white/20",
+                                        hasUserReviewed && "cursor-not-allowed opacity-60"
+                                    )}
+                                    onClick={!hasUserReviewed ? handleProtectedSave : undefined}
+                                    disabled={isMutating || hasUserReviewed}
                                 >
-                                    <Heart className={cn("size-4", isSaved && "fill-rose-500 text-rose-500")} />
-                                    {isMutating ? actionLabel : isSaved ? "Favorited" : "Favorite"}
+                                    <Heart className={cn("size-4", (isSaved || hasUserReviewed) && "fill-rose-500 text-rose-500")} />
+                                    {hasUserReviewed ? "Already Watched" : isMutating ? actionLabel : isSaved ? "Favorited" : "Favorite"}
                                 </Button>
                                 <Button
                                     variant="secondary"
-                                    className="gap-2 border border-white/20 bg-white/10 text-white hover:bg-white/20"
-                                    onClick={handleProtectedSave}
-                                    disabled={isMutating}
+                                    className={cn(
+                                        "gap-2 border border-white/20 bg-white/10 text-white hover:bg-white/20",
+                                        hasUserReviewed && "cursor-not-allowed opacity-60"
+                                    )}
+                                    onClick={!hasUserReviewed ? handleProtectedSave : undefined}
+                                    disabled={isMutating || hasUserReviewed}
                                 >
-                                    <Bookmark className={cn("size-4", isSaved && "fill-sky-400 text-sky-400")} />
-                                    {isMutating ? actionLabel : isSaved ? "In Watchlist" : "Add to Watchlist"}
+                                    <Bookmark className={cn("size-4", (isSaved || hasUserReviewed) && "fill-sky-400 text-sky-400")} />
+                                    {hasUserReviewed ? "In Your Watchlist" : isMutating ? actionLabel : isSaved ? "In Watchlist" : "Add to Watchlist"}
                                 </Button>
                                 <Button variant="secondary" className="gap-2 border border-white/20 bg-white/10 text-white hover:bg-white/20">
                                     <Share2 className="size-4" />

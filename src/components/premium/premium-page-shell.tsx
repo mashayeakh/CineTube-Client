@@ -6,11 +6,11 @@ import { PremiumSidebar } from "@/components/premium/premium-sidebar";
 type PremiumPageShellProps = {
     activePath: string;
     title: string;
-    subtitle: string;
+    // subtitle: string;
     children: React.ReactNode;
 };
 
-export function PremiumPageShell({ activePath, title, subtitle, children }: PremiumPageShellProps) {
+export function PremiumPageShell({ activePath, title, children }: PremiumPageShellProps) {
     return (
         <div className="min-h-screen bg-slate-100 text-slate-900">
             <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)]">
@@ -20,7 +20,7 @@ export function PremiumPageShell({ activePath, title, subtitle, children }: Prem
                     <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200/80 bg-slate-50/95 px-4 backdrop-blur sm:px-6">
                         <div>
                             <p className="text-sm font-semibold tracking-wide text-slate-800">Premium Console</p>
-                            <p className="text-xs text-slate-500">{subtitle}</p>
+                            {/* <p className="text-xs text-slate-500">{subtitle}</p> */}
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -41,7 +41,7 @@ export function PremiumPageShell({ activePath, title, subtitle, children }: Prem
                         <div className="mx-auto max-w-6xl space-y-5">
                             <section className="rounded-2xl border border-slate-200/80 bg-white px-6 py-6 shadow-sm">
                                 <h1 className="text-4xl font-semibold tracking-tight text-slate-900">{title}</h1>
-                                <p className="mt-2 text-sm text-slate-600">{subtitle}</p>
+                                {/* <p className="mt-2 text-sm text-slate-600">{subtitle}</p> */}
                             </section>
 
                             {children}

@@ -34,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html className={`${funnelSans.variable} ${plusJakartaSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html suppressHydrationWarning className={`${funnelSans.variable} ${plusJakartaSans.variable} ${geistMono.variable} h-full antialiased`}>
       {/* <body className="min-h-full flex flex-col bg-[#F6F930]"> */}
       <body className="min-h-full flex flex-col body-font">
         {/* <Navbar /> */}

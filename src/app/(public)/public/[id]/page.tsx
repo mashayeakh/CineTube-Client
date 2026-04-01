@@ -131,8 +131,8 @@ export default async function MovieDetails({
             )
             : 0;
 
-    // Parse tags for each review
-    const mappedReviews = (data.reviews ?? []).map((r: any) => {
+    // Parse tags for each review — only show APPROVED reviews on the public page
+    const mappedReviews = approvedReviews.map((r: any) => {
         let tags: string[] = [];
         try {
             const parsed = JSON.parse(r.tags ?? '[]');
@@ -161,6 +161,12 @@ export default async function MovieDetails({
     const role = typeof currentUser?.role === 'string' ? currentUser.role.toUpperCase() : '';
     const isAuthenticated = Boolean(currentUser);
     const canSaveToLibrary = role === 'USER' || role === 'PREMIUM_USER';
+
+    const currentUserId = findValue(currentUser, ["id", "_id", "userId"]);
+    const hasUserReviewed = Boolean(
+        currentUserId &&
+        (data.reviews ?? []).some((r: any) => r.userId === currentUserId || r.user?.id === currentUserId)
+    );
 
     if (canSaveToLibrary) {
         watchlistPayload = await getMyWatchlists()
@@ -205,6 +211,7 @@ export default async function MovieDetails({
             canSaveToLibrary={canSaveToLibrary}
             initialSaved={initialSaved}
             initialWatchlistId={initialWatchlistId}
+            hasUserReviewed={hasUserReviewed}
             loginHref={`/login?redirect=${encodeURIComponent(`/movie/${id}`)}`}
         />
     );

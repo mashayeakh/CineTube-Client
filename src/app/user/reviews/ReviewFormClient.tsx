@@ -64,11 +64,12 @@ export default function ReviewFormClient({ watchlistMovies }: ReviewFormClientPr
             if (!result.success) {
                 setError(result.message)
             } else {
-                setSuccess(result.message || "Review submitted successfully! It will appear after admin approval.")
+                setSuccess("Your review is pending. Once the admin approves it, it will be published.")
                 setSelectedMovieId("")
                 setRating(0)
                 setContent("")
                 setTags([])
+                setTimeout(() => setSuccess(null), 5000)
             }
         } catch {
             setError("Something went wrong. Please try again.")
@@ -133,8 +134,8 @@ export default function ReviewFormClient({ watchlistMovies }: ReviewFormClientPr
                         >
                             <Star
                                 className={`size-6 ${star <= (hoverRating || rating)
-                                        ? "fill-amber-400 text-amber-400"
-                                        : "text-slate-300"
+                                    ? "fill-amber-400 text-amber-400"
+                                    : "text-slate-300"
                                     }`}
                             />
                         </button>

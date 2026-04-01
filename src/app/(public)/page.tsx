@@ -32,8 +32,6 @@ export default async function HomePage() {
       <HydrationBoundary state={dehydrate(queryClient)}>
         {/* <MovieList /> */}
 
-
-        <SearchField />
         {/* <Hero /> */}
         <HeroSection />
         <TrendingSection />

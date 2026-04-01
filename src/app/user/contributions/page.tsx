@@ -1,8 +1,28 @@
 import { UserPageShell } from "@/components/user/user-page-shell";
 import { getUserInfo } from "@/service/auth.services";
+import { getUserDashboardSubscriptions } from "@/service/user-dashboard.services";
 import { getGenres } from "@/app/(public)/public/_actions/genres";
 import { getStreamingPlatforms } from "@/app/(public)/public/_actions/platforms";
 import { ContributionForm } from "./_components/ContributionForm";
+
+function hasActiveSubscription(source: unknown) {
+    if (Array.isArray(source)) {
+        return source.some(hasActiveSubscription);
+    }
+
+    if (typeof source === "object" && source !== null) {
+        const record = source as Record<string, unknown>;
+        const status = typeof record.status === "string" ? record.status.toLowerCase() : "";
+
+        if (status.includes("active")) {
+            return true;
+        }
+
+        return Object.values(record).some(hasActiveSubscription);
+    }
+
+    return false;
+}
 
 export default async function UserContributionsPage() {
     let currentUser = null;
@@ -13,12 +33,15 @@ export default async function UserContributionsPage() {
     }
 
     const role = typeof currentUser?.role === "string" ? currentUser.role.toUpperCase() : "";
-    const isPremium = role === "PREMIUM_USER" || role === "ADMIN";
 
-    const [rawGenres, rawPlatforms] = await Promise.all([
+    const [rawGenres, rawPlatforms, subscriptionsResult] = await Promise.all([
         getGenres().catch(() => []),
         getStreamingPlatforms().catch(() => []),
+        getUserDashboardSubscriptions().catch(() => ({ data: [] })),
     ]);
+
+    const hasActiveSub = hasActiveSubscription(subscriptionsResult);
+    const isPremium = role === "PREMIUM_USER" || role === "ADMIN" || hasActiveSub;
 
     type Item = { id: string; name: string };
     const genres: Item[] = (rawGenres as unknown[])
@@ -32,7 +55,7 @@ export default async function UserContributionsPage() {
         <UserPageShell
             activePath="/user/contributions"
             title="Movie Contribution"
-            subtitle="Submit a movie to be reviewed and added to CineTube"
+        // subtitle="Submit a movie to be reviewed and added to CineTube"
         >
             <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="mb-6 border-b border-slate-100 pb-4">
@@ -42,7 +65,7 @@ export default async function UserContributionsPage() {
                     </p>
                 </div>
 
-                <ContributionForm userId={userId} genres={genres} platforms={platforms} isPremium={isPremium} />
+                <ContributionForm userId={userId as string} genres={genres} platforms={platforms} isPremium={isPremium} />
             </section>
         </UserPageShell>
     );

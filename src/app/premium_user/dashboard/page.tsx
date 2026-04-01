@@ -29,7 +29,7 @@ export default async function PremiumUserDashboardPage() {
         <PremiumPageShell
             activePath="/premium_user/dashboard"
             title="Dashboard"
-            subtitle="Stats from GET /api/v1/user/dashboard/stats"
+        // subtitle="Stats from GET /api/v1/user/dashboard/stats"
         >
             {stats.length > 0 ? (
                 <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

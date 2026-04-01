@@ -39,7 +39,7 @@ export default async function PremiumProfilePage() {
         <PremiumPageShell
             activePath="/premium_user/profile"
             title="My Profile"
-            subtitle="Data from GET /api/v1/auth/user/profile"
+        // subtitle="Data from GET /api/v1/auth/user/profile"
         >
             {profile ? (
                 <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">

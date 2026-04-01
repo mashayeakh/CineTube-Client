@@ -161,6 +161,14 @@ export async function getAdminDashboardSubscriptionStats(options?: ApiRequestOpt
     return adminGet<Record<string, unknown>>("/admin/dashboard/subscriptions/stats", options);
 }
 
+export async function activateAdminDashboardSubscription(id: string, payload?: Record<string, unknown>, options?: ApiRequestOptions) {
+    return adminPatch<Record<string, unknown>>(`/admin/dashboard/subscriptions/${id}/activate`, payload, options);
+}
+
+export async function rejectAdminDashboardSubscription(id: string, payload?: Record<string, unknown>, options?: ApiRequestOptions) {
+    return adminPatch<Record<string, unknown>>(`/admin/dashboard/subscriptions/${id}/reject`, payload, options);
+}
+
 export async function getAdminDashboardTopWatchlistMovies(options?: ApiRequestOptions) {
     return adminGet<unknown>("/admin/dashboard/watchlist/top-movies", options);
 }

@@ -145,30 +145,7 @@ export default function PopularPage() {
                     <p className="mt-2 text-sm text-slate-600">Browse and filter trending titles by genre.</p>
                 </header>
 
-                <section className="rounded-2xl border border-slate-200 bg-white p-6">
-                    <h2 className="text-xl font-semibold text-slate-900">Subscription Plans</h2>
-                    <p className="mt-1 text-sm text-slate-500">Unlock unlimited access to all movies and features.</p>
 
-                    <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                        {Object.values(SUBSCRIPTION_PRICE).map((plan) => (
-                            <div
-                                key={plan.label}
-                                className="flex flex-col gap-3 rounded-xl border border-slate-200 p-5 hover:border-slate-300 hover:shadow-sm transition"
-                            >
-                                <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">{plan.label}</p>
-                                <p className="text-4xl font-bold text-slate-900">
-                                    ${plan.amount.toFixed(2)}
-                                    <span className="ml-1 text-sm font-normal text-slate-500">
-                                        /{plan.label.toLowerCase()}
-                                    </span>
-                                </p>
-                                <button className="mt-auto w-full rounded-lg bg-slate-900 py-2 text-sm font-medium text-white transition hover:bg-slate-700">
-                                    Get {plan.label}
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                </section>
 
                 <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
                     <div className="mb-3 flex items-center gap-2 text-sm font-medium text-slate-700">

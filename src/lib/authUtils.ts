@@ -24,7 +24,7 @@ export const commonProtectedRoutes: RouteConfig = {
 
 export const userProtectedRoutes: RouteConfig = {
     pattern: [/^\/user(?:\/|$)/],
-    exact: ["/payment/success"]
+    exact: []
 };
 
 

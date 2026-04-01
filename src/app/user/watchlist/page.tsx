@@ -34,7 +34,7 @@ export default async function UserWatchlistPage() {
         <UserPageShell
             activePath="/user/watchlist"
             title="My Watchlist"
-            subtitle="Data from GET /api/v1/watchlists"
+        // subtitle="Data from GET /api/v1/watchlists"
         >
             <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center justify-between">

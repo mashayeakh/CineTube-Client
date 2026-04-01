@@ -33,7 +33,6 @@ export default async function PremiumCommentsPage() {
         <PremiumPageShell
             activePath="/premium_user/comments"
             title="My Comments"
-            subtitle="Data from GET /api/v1/user/dashboard/comments"
         >
             <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center justify-between">

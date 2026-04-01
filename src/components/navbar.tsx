@@ -34,6 +34,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { translations } from "@/lib/translations";
 import { cn } from "@/lib/utils";
 
@@ -256,6 +257,8 @@ const Navbar = ({ className }: { className?: string }) => {
               <Search className="size-4" />
             </button>
 
+            <ThemeToggle className="size-8 border-white/12 bg-white/6 text-slate-300 shadow-none transition hover:bg-white/12 hover:text-white" />
+
             <button
               onClick={() => setLang((prev) => (prev === "en" ? "bn" : "en"))}
               className="inline-flex h-8 items-center rounded-full border border-white/12 bg-white/6 px-3 text-xs font-medium text-slate-300 transition hover:bg-white/12 hover:text-white"
@@ -339,6 +342,8 @@ const Navbar = ({ className }: { className?: string }) => {
             >
               <Search className="size-4" />
             </button>
+
+            <ThemeToggle className="size-8 border-white/12 bg-white/6 text-slate-300 shadow-none transition hover:bg-white/12 hover:text-white" />
 
             <Sheet>
               <SheetTrigger

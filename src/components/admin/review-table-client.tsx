@@ -247,16 +247,22 @@ export function ReviewTableClient({ reviews, approveReviewAction, rejectReviewAc
                                             </button>
                                             <form action={approveReviewAction}>
                                                 <input type="hidden" name="reviewId" value={item.id} />
-                                                <PendingSubmitButton pendingText="Approving..." className="h-8 rounded-md border border-emerald-200 px-2 text-xs font-medium text-emerald-600 hover:bg-emerald-50">
+                                                <PendingSubmitButton
+                                                    pendingText="Approving..."
+                                                    disabled={item.status === "APPROVED"}
+                                                    className="h-8 rounded-md border border-emerald-200 px-2 text-xs font-medium text-emerald-600 hover:bg-emerald-50">
                                                     <CheckCircle2 className="size-3" />
-                                                    Approve
+                                                    {item.status === "APPROVED" ? "Already Approved" : "Approve"}
                                                 </PendingSubmitButton>
                                             </form>
                                             <form action={rejectReviewAction}>
                                                 <input type="hidden" name="reviewId" value={item.id} />
-                                                <PendingSubmitButton pendingText="Rejecting..." className="h-8 rounded-md border border-rose-200 px-2 text-xs font-medium text-rose-600 hover:bg-rose-50">
+                                                <PendingSubmitButton
+                                                    pendingText="Rejecting..."
+                                                    disabled={item.status === "REJECTED"}
+                                                    className="h-8 rounded-md border border-rose-200 px-2 text-xs font-medium text-rose-600 hover:bg-rose-50">
                                                     <XCircle className="size-3" />
-                                                    Reject
+                                                    {item.status === "REJECTED" ? "Already Rejected" : "Reject"}
                                                 </PendingSubmitButton>
                                             </form>
                                         </div>

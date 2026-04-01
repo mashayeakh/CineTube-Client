@@ -25,7 +25,7 @@ type PremiumSidebarProps = {
 const navItems = [
     { label: "Dashboard", href: "/premium_user/dashboard", icon: LayoutDashboard },
     { label: "My Profile", href: "/premium_user/profile", icon: CircleUserRound },
-    { label: "Overview", href: "/premium_user/overview", icon: Compass },
+    // { label: "Overview", href: "/premium_user/overview", icon: Compass },
     { label: "My Watchlist", href: "/premium_user/watchlist", icon: ListVideo },
     { label: "My Reviews", href: "/premium_user/reviews", icon: Star },
     { label: "My Comments", href: "/premium_user/comments", icon: MessageCircle },

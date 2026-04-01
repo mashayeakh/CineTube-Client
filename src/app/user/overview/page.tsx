@@ -5,7 +5,7 @@ export default function UserOverviewPage() {
         <UserPageShell
             activePath="/user/overview"
             title="Overview"
-            subtitle="High-level summary of your activity"
+        // subtitle="High-level summary of your activity"
         >
             <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                 <p className="text-sm text-slate-500">Label</p>

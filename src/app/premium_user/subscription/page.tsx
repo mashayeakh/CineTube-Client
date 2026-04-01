@@ -35,7 +35,7 @@ export default async function PremiumSubscriptionPage() {
         <PremiumPageShell
             activePath="/premium_user/subscription"
             title="My Subscription"
-            subtitle="Data from GET /api/v1/user/dashboard/subscriptions"
+        // subtitle="Data from GET /api/v1/user/dashboard/subscriptions"
         >
             <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                 {summary.length > 0 && (
