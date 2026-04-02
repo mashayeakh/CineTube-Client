@@ -179,9 +179,9 @@ export default async function AdminSubscriptionManagementPage() {
                                 <Search className="size-4" />
                                 Search
                             </div>
-                            <button className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:text-slate-700" type="button">
+                            {/* <button className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:text-slate-700" type="button">
                                 <Bell className="size-4" />
-                            </button>
+                            </button> */}
                             <Link href="/admin/dashboard" className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:text-slate-700">
                                 <Home className="size-4" />
                             </Link>

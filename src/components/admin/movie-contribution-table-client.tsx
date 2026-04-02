@@ -265,13 +265,13 @@ export function MovieContributionTableClient({
                                     </div>
 
                                     <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 md:col-span-2">
-                                        <p className="mb-2 text-xs text-slate-500">Additional Backend Info</p>
+                                        <p className="mb-2 text-xs text-slate-500">Additional Info</p>
                                         {collectDetailEntries(selectedContribution.details).length === 0 ? (
                                             <p className="text-sm text-slate-600">No additional information available.</p>
                                         ) : (
                                             <dl className="grid gap-2 md:grid-cols-2">
                                                 {collectDetailEntries(selectedContribution.details).map((entry) => (
-                                                    <div key={`${entry.key}-${entry.value}`} className="rounded border border-slate-200 bg-white px-2 py-1.5">
+                                                    <div key={`${entry.key}-$np{entry.value}`} className="rounded border border-slate-200 bg-white px-2 py-1.5">
                                                         <dt className="text-[11px] text-slate-500">{entry.key}</dt>
                                                         <dd className="text-xs font-medium text-slate-800 break-all">{entry.value}</dd>
                                                     </div>

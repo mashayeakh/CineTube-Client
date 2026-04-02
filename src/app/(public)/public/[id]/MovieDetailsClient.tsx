@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { motion } from "framer-motion";
 import {
     ArrowLeft,
@@ -9,9 +9,12 @@ import {
     Calendar,
     Globe,
     Heart,
+    MessageCircle,
+    Reply,
     Share2,
     Sparkles,
     Star,
+    ThumbsUp,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -24,9 +27,11 @@ import { cn } from "@/lib/utils";
 interface ReviewComment {
     id: string;
     userId: string;
+    parentId: string | null;
     content: string;
     isSpoiler: boolean;
     createdAt: string;
+    replies: ReviewComment[];
 }
 
 interface Review {
@@ -38,6 +43,8 @@ interface Review {
     tags: string[];
     status: string;
     createdAt: string;
+    likesCount?: number;
+    likedByCurrentUser?: boolean;
     comments: ReviewComment[];
 }
 
@@ -81,12 +88,129 @@ function shortId(value: string) {
     return value.length > 8 ? `${value.slice(0, 8)}...` : value;
 }
 
+function normalizeTextId(value: unknown) {
+    if (typeof value === "string") {
+        const trimmed = value.trim();
+        return trimmed.length > 0 ? trimmed : "";
+    }
+
+    if (typeof value === "number" && Number.isFinite(value)) {
+        return String(value);
+    }
+
+    return "";
+}
+
+function mapCommentNode(value: unknown): ReviewComment | null {
+    if (!value || typeof value !== "object") {
+        return null;
+    }
+
+    const record = value as Record<string, unknown>;
+    const nestedReplies = Array.isArray(record.replies) ? record.replies : [];
+    const id = normalizeTextId(record.id);
+
+    if (!id) {
+        return null;
+    }
+
+    return {
+        id,
+        userId: normalizeTextId(record.userId ?? (record.user as { id?: unknown; _id?: unknown } | undefined)?.id ?? (record.user as { id?: unknown; _id?: unknown } | undefined)?._id),
+        parentId: normalizeTextId(record.parentId) || null,
+        content: typeof record.content === "string" ? record.content : "",
+        isSpoiler: Boolean(record.isSpoiler),
+        createdAt: typeof record.createdAt === "string" ? record.createdAt : new Date().toISOString(),
+        replies: nestedReplies
+            .map((reply) => mapCommentNode(reply))
+            .filter((reply): reply is ReviewComment => Boolean(reply)),
+    };
+}
+
+function buildCommentTree(inputComments: ReviewComment[]) {
+    const flattened: ReviewComment[] = [];
+    const flatten = (nodes: ReviewComment[]) => {
+        for (const node of nodes) {
+            flattened.push({ ...node, replies: [] });
+
+            if (node.replies.length > 0) {
+                flatten(node.replies);
+            }
+        }
+    };
+
+    flatten(inputComments);
+
+    const byId = new Map<string, ReviewComment>();
+    const roots: ReviewComment[] = [];
+
+    for (const raw of flattened) {
+        byId.set(raw.id, { ...raw, replies: [...(raw.replies ?? [])] });
+    }
+
+    for (const comment of byId.values()) {
+        if (comment.parentId && byId.has(comment.parentId)) {
+            byId.get(comment.parentId)?.replies.push(comment);
+            continue;
+        }
+
+        roots.push(comment);
+    }
+
+    const sortTree = (nodes: ReviewComment[]) => {
+        nodes.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+        for (const node of nodes) {
+            if (node.replies.length > 0) {
+                sortTree(node.replies);
+            }
+        }
+    };
+
+    sortTree(roots);
+
+    return roots;
+}
+
+function extractCommentsFromPayload(payload: unknown) {
+    if (Array.isArray(payload)) {
+        return buildCommentTree(
+            payload
+                .map((entry) => mapCommentNode(entry))
+                .filter((entry): entry is ReviewComment => Boolean(entry))
+        );
+    }
+
+    if (!payload || typeof payload !== "object") {
+        return [];
+    }
+
+    const record = payload as Record<string, unknown>;
+    const candidate = record.result ?? record.data ?? record.comments ?? record.items ?? record.results ?? record.list;
+
+    if (Array.isArray(candidate)) {
+        return buildCommentTree(
+            candidate
+                .map((entry) => mapCommentNode(entry))
+                .filter((entry): entry is ReviewComment => Boolean(entry))
+        );
+    }
+
+    const oneComment = mapCommentNode(candidate);
+    return oneComment ? [oneComment] : [];
+}
+
+function countComments(nodes: ReviewComment[]): number {
+    return nodes.reduce((count, node) => count + 1 + countComments(node.replies), 0);
+}
+
 type MovieDetailsClientProps = {
     movie: Movie;
     isAuthenticated: boolean;
     canSaveToLibrary: boolean;
     initialSaved: boolean;
     initialWatchlistId: string | null;
+    currentUserId: string | null;
     hasUserReviewed?: boolean;
     loginHref: string;
 };
@@ -97,6 +221,7 @@ export default function MovieDetailsClient({
     canSaveToLibrary,
     initialSaved,
     initialWatchlistId,
+    currentUserId,
     hasUserReviewed = false,
     loginHref,
 }: MovieDetailsClientProps) {
@@ -104,8 +229,99 @@ export default function MovieDetailsClient({
     const [isSaved, setIsSaved] = useState(initialSaved);
     const [watchlistId, setWatchlistId] = useState<string | null>(initialWatchlistId);
     const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+    const [reviewFeedbackById, setReviewFeedbackById] = useState<Record<string, string | null>>({});
+    const [reviewLikePendingById, setReviewLikePendingById] = useState<Record<string, boolean>>({});
+    const [reviewLikeStateById, setReviewLikeStateById] = useState<Record<string, { liked: boolean; likesCount: number }>>(() => {
+        const reviews = movie.reviews ?? [];
+
+        return reviews.reduce<Record<string, { liked: boolean; likesCount: number }>>((acc, review) => {
+            acc[review.id] = {
+                liked: Boolean(review.likedByCurrentUser),
+                likesCount: Number.isFinite(review.likesCount) ? Number(review.likesCount) : 0,
+            };
+
+            return acc;
+        }, {});
+    });
+    const [reviewCommentsById, setReviewCommentsById] = useState<Record<string, ReviewComment[]>>(() => {
+        const reviews = movie.reviews ?? [];
+
+        return reviews.reduce<Record<string, ReviewComment[]>>((acc, review) => {
+            acc[review.id] = buildCommentTree((review.comments ?? []).map((comment) => ({
+                ...comment,
+                parentId: comment.parentId ?? null,
+                replies: comment.replies ?? [],
+            })));
+            return acc;
+        }, {});
+    });
+    const [commentDraftByReviewId, setCommentDraftByReviewId] = useState<Record<string, string>>({});
+    const [replyDraftByCommentId, setReplyDraftByCommentId] = useState<Record<string, string>>({});
+    const [activeReplyTargetByReviewId, setActiveReplyTargetByReviewId] = useState<Record<string, string | null>>({});
+    const [commentPendingByReviewId, setCommentPendingByReviewId] = useState<Record<string, boolean>>({});
+    const [commentFeedbackByReviewId, setCommentFeedbackByReviewId] = useState<Record<string, string | null>>({});
     const [isLoginPromptOpen, setIsLoginPromptOpen] = useState(false);
     const [isMutating, startTransition] = useTransition();
+
+    const likedReviewsStorageKey = useMemo(() => {
+        if (!currentUserId) {
+            return null;
+        }
+
+        return `cinetube:liked-reviews:${currentUserId}:${movie.id}`;
+    }, [currentUserId, movie.id]);
+
+    useEffect(() => {
+        if (!likedReviewsStorageKey) {
+            return;
+        }
+
+        try {
+            const raw = window.localStorage.getItem(likedReviewsStorageKey);
+            if (!raw) {
+                return;
+            }
+
+            const parsed = JSON.parse(raw) as unknown;
+            const likedIds = Array.isArray(parsed) ? new Set(parsed.map((value) => String(value))) : new Set<string>();
+
+            if (likedIds.size === 0) {
+                return;
+            }
+
+            setReviewLikeStateById((prev) => {
+                const next = { ...prev };
+
+                for (const reviewId of likedIds) {
+                    const current = next[reviewId] ?? { liked: false, likesCount: 0 };
+                    next[reviewId] = {
+                        liked: true,
+                        likesCount: current.likesCount > 0 ? current.likesCount : 1,
+                    };
+                }
+
+                return next;
+            });
+        } catch {
+            // Ignore malformed localStorage values.
+        }
+    }, [likedReviewsStorageKey]);
+
+    const persistLikedReview = (reviewId: string) => {
+        if (!likedReviewsStorageKey) {
+            return;
+        }
+
+        try {
+            const raw = window.localStorage.getItem(likedReviewsStorageKey);
+            const parsed = raw ? JSON.parse(raw) : [];
+            const next = new Set(Array.isArray(parsed) ? parsed.map((value) => String(value)) : []);
+            next.add(reviewId);
+            window.localStorage.setItem(likedReviewsStorageKey, JSON.stringify(Array.from(next)));
+        } catch {
+            // Ignore localStorage write failures.
+        }
+    };
 
     const year = useMemo(() => {
         const date = new Date(movie.releaseDate);
@@ -177,6 +393,292 @@ export default function MovieDetailsClient({
                 setFeedbackMessage(error instanceof Error ? error.message : "Unable to update watchlist.");
             }
         });
+    };
+
+    const handleReviewLike = (reviewId: string) => {
+        const currentState = reviewLikeStateById[reviewId] ?? { liked: false, likesCount: 0 };
+
+        // Keep single-click like behavior only.
+        if (currentState.liked) {
+            return;
+        }
+
+        if (!isAuthenticated) {
+            setIsLoginPromptOpen(true);
+            return;
+        }
+
+        if (!canSaveToLibrary) {
+            setReviewFeedbackById((prev) => ({
+                ...prev,
+                [reviewId]: "Only user and premium_user accounts can react to reviews.",
+            }));
+            return;
+        }
+
+        setReviewFeedbackById((prev) => ({ ...prev, [reviewId]: null }));
+        setReviewLikePendingById((prev) => ({ ...prev, [reviewId]: true }));
+        setReviewLikeStateById((prev) => ({
+            ...prev,
+            [reviewId]: {
+                liked: true,
+                likesCount: currentState.likesCount + 1,
+            },
+        }));
+        persistLikedReview(reviewId);
+
+        startTransition(async () => {
+            try {
+                const response = await fetch(`/api/reviews/${reviewId}/like`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                });
+
+                const payload = await response.json().catch(() => ({})) as { message?: string };
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        setIsLoginPromptOpen(true);
+                    }
+
+                    throw new Error(typeof payload.message === "string" ? payload.message : "Unable to like this review.");
+                }
+            } catch (error) {
+                const message = error instanceof Error ? error.message : "Unable to like this review.";
+                const normalizedMessage = message.toLowerCase();
+
+                if (normalizedMessage.includes("already") && normalizedMessage.includes("like")) {
+                    setReviewLikeStateById((prev) => ({
+                        ...prev,
+                        [reviewId]: {
+                            liked: true,
+                            likesCount: Math.max(currentState.likesCount, 1),
+                        },
+                    }));
+                    persistLikedReview(reviewId);
+                    setReviewFeedbackById((prev) => ({
+                        ...prev,
+                        [reviewId]: null,
+                    }));
+                    return;
+                }
+
+                setReviewLikeStateById((prev) => ({
+                    ...prev,
+                    [reviewId]: currentState,
+                }));
+                setReviewFeedbackById((prev) => ({
+                    ...prev,
+                    [reviewId]: message,
+                }));
+            } finally {
+                setReviewLikePendingById((prev) => ({ ...prev, [reviewId]: false }));
+            }
+        });
+    };
+
+    const loadReviewComments = async (reviewId: string) => {
+        const response = await fetch(`/api/user/comments/review/${reviewId}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            throw new Error(typeof payload.message === "string" ? payload.message : "Unable to load comments.");
+        }
+
+        const nextComments = extractCommentsFromPayload(payload);
+
+        setReviewCommentsById((prev) => ({
+            ...prev,
+            [reviewId]: nextComments,
+        }));
+    };
+
+    const handleCommentSubmit = (reviewId: string, parentId?: string) => {
+        const isReply = Boolean(parentId);
+        const sourceText = isReply
+            ? (parentId ? replyDraftByCommentId[parentId] : "")
+            : commentDraftByReviewId[reviewId];
+        const content = typeof sourceText === "string" ? sourceText.trim() : "";
+
+        if (!isAuthenticated) {
+            setIsLoginPromptOpen(true);
+            return;
+        }
+
+        if (!canSaveToLibrary) {
+            setCommentFeedbackByReviewId((prev) => ({
+                ...prev,
+                [reviewId]: "Only user and premium_user accounts can comment on reviews.",
+            }));
+            return;
+        }
+
+        if (!content) {
+            setCommentFeedbackByReviewId((prev) => ({
+                ...prev,
+                [reviewId]: isReply ? "Reply text is required." : "Comment text is required.",
+            }));
+            return;
+        }
+
+        setCommentFeedbackByReviewId((prev) => ({ ...prev, [reviewId]: null }));
+        setCommentPendingByReviewId((prev) => ({ ...prev, [reviewId]: true }));
+
+        startTransition(async () => {
+            try {
+                const response = await fetch("/api/user/comments", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        reviewId,
+                        content,
+                        parentId: parentId ?? undefined,
+                    }),
+                });
+
+                const payload = await response.json().catch(() => ({}));
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        setIsLoginPromptOpen(true);
+                    }
+
+                    throw new Error(typeof payload.message === "string" ? payload.message : "Unable to post comment.");
+                }
+
+                if (isReply && parentId) {
+                    setReplyDraftByCommentId((prev) => ({ ...prev, [parentId]: "" }));
+                    setActiveReplyTargetByReviewId((prev) => ({ ...prev, [reviewId]: null }));
+                } else {
+                    setCommentDraftByReviewId((prev) => ({ ...prev, [reviewId]: "" }));
+                }
+
+                try {
+                    await loadReviewComments(reviewId);
+                } catch {
+                    const fallbackComment = extractCommentsFromPayload(payload)[0] ?? {
+                        id: `local-${Date.now()}`,
+                        userId: currentUserId ?? "me",
+                        parentId: parentId ?? null,
+                        content,
+                        isSpoiler: false,
+                        createdAt: new Date().toISOString(),
+                        replies: [],
+                    };
+
+                    setReviewCommentsById((prev) => {
+                        const nextFlat = [...(prev[reviewId] ?? []), fallbackComment];
+                        return {
+                            ...prev,
+                            [reviewId]: buildCommentTree(nextFlat),
+                        };
+                    });
+                }
+            } catch (error) {
+                setCommentFeedbackByReviewId((prev) => ({
+                    ...prev,
+                    [reviewId]: error instanceof Error ? error.message : "Unable to post comment.",
+                }));
+            } finally {
+                setCommentPendingByReviewId((prev) => ({ ...prev, [reviewId]: false }));
+            }
+        });
+    };
+
+    const renderCommentList = (reviewId: string, comments: ReviewComment[], depth = 0): JSX.Element => {
+        return (
+            <div className="space-y-3">
+                {comments.map((comment) => (
+                    <div key={comment.id} className={cn("space-y-2", depth > 0 && "ml-6 border-l border-slate-200 pl-4")}>
+                        <div className="flex items-start gap-3">
+                            <Avatar className="h-7 w-7 border border-slate-200">
+                                <AvatarFallback className="text-[10px]">
+                                    {(comment.userId || "U").slice(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <p className="text-xs font-semibold">{shortId(comment.userId || "unknown")}</p>
+                                    <p className="text-xs text-slate-500">{formatLongDate(comment.createdAt)}</p>
+                                    {comment.isSpoiler && (
+                                        <Badge variant="secondary" className="rounded-full text-[10px]">spoiler</Badge>
+                                    )}
+                                </div>
+                                <p className="mt-1 text-sm text-slate-700">{comment.content}</p>
+
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="mt-1 h-7 px-2 text-xs text-slate-600"
+                                    onClick={() => {
+                                        if (!isAuthenticated) {
+                                            setIsLoginPromptOpen(true);
+                                            return;
+                                        }
+
+                                        setActiveReplyTargetByReviewId((prev) => ({
+                                            ...prev,
+                                            [reviewId]: prev[reviewId] === comment.id ? null : comment.id,
+                                        }));
+                                    }}
+                                >
+                                    <Reply className="mr-1 size-3" />
+                                    Reply
+                                </Button>
+
+                                {activeReplyTargetByReviewId[reviewId] === comment.id ? (
+                                    <div className="mt-2 space-y-2">
+                                        <textarea
+                                            value={replyDraftByCommentId[comment.id] ?? ""}
+                                            onChange={(event) => {
+                                                const nextValue = event.target.value;
+                                                setReplyDraftByCommentId((prev) => ({ ...prev, [comment.id]: nextValue }));
+                                            }}
+                                            rows={2}
+                                            placeholder="Write a reply..."
+                                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-0 placeholder:text-slate-400 focus:border-slate-300"
+                                        />
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                className="h-8"
+                                                disabled={Boolean(commentPendingByReviewId[reviewId])}
+                                                onClick={() => handleCommentSubmit(reviewId, comment.id)}
+                                            >
+                                                Post Reply
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-8"
+                                                onClick={() => setActiveReplyTargetByReviewId((prev) => ({ ...prev, [reviewId]: null }))}
+                                            >
+                                                Cancel
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ) : null}
+                            </div>
+                        </div>
+
+                        {comment.replies.length > 0 ? renderCommentList(reviewId, comment.replies, depth + 1) : null}
+                    </div>
+                ))}
+            </div>
+        );
     };
 
     return (
@@ -492,6 +994,35 @@ export default function MovieDetailsClient({
 
                                     <p className="mt-3 leading-7 text-slate-700">{review.content}</p>
 
+                                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleReviewLike(review.id)}
+                                            disabled={Boolean(reviewLikePendingById[review.id])}
+                                            className={cn(
+                                                "h-8 gap-2 rounded-full",
+                                                reviewLikeStateById[review.id]?.liked && "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                            )}
+                                        >
+                                            <ThumbsUp
+                                                className={cn(
+                                                    "size-4",
+                                                    reviewLikeStateById[review.id]?.liked && "fill-emerald-600 text-emerald-600"
+                                                )}
+                                            />
+                                            {reviewLikeStateById[review.id]?.liked ? "Liked" : "Like"}
+                                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700">
+                                                {reviewLikeStateById[review.id]?.likesCount ?? 0}
+                                            </span>
+                                        </Button>
+
+                                        {reviewFeedbackById[review.id] ? (
+                                            <p className="text-xs text-red-600">{reviewFeedbackById[review.id]}</p>
+                                        ) : null}
+                                    </div>
+
                                     {review.tags.length > 0 && (
                                         <div className="mt-3 flex flex-wrap gap-2">
                                             {review.tags.map((tag) => (
@@ -502,34 +1033,78 @@ export default function MovieDetailsClient({
                                         </div>
                                     )}
 
-                                    {review.comments.length > 0 && (
-                                        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                                            <p className="text-xs uppercase tracking-wide text-slate-500">
-                                                {review.comments.length} Comment{review.comments.length === 1 ? "" : "s"}
-                                            </p>
-                                            <div className="mt-3 space-y-3">
-                                                {review.comments.map((comment) => (
-                                                    <div key={comment.id} className="flex items-start gap-3">
-                                                        <Avatar className="h-7 w-7 border border-slate-200">
-                                                            <AvatarFallback className="text-[10px]">
-                                                                {comment.userId.slice(0, 2).toUpperCase()}
-                                                            </AvatarFallback>
-                                                        </Avatar>
-                                                        <div>
-                                                            <div className="flex flex-wrap items-center gap-2">
-                                                                <p className="text-xs font-semibold">{shortId(comment.userId)}</p>
-                                                                <p className="text-xs text-slate-500">{formatLongDate(comment.createdAt)}</p>
-                                                                {comment.isSpoiler && (
-                                                                    <Badge variant="secondary" className="rounded-full text-[10px]">spoiler</Badge>
-                                                                )}
-                                                            </div>
-                                                            <p className="mt-1 text-sm text-slate-700">{comment.content}</p>
-                                                        </div>
+                                    <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                        {(() => {
+                                            const comments = reviewCommentsById[review.id] ?? [];
+                                            const totalComments = countComments(comments);
+
+                                            return (
+                                                <>
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <p className="inline-flex items-center gap-2 text-xs uppercase tracking-wide text-slate-500">
+                                                            <MessageCircle className="size-3.5" />
+                                                            {totalComments} Comment{totalComments === 1 ? "" : "s"}
+                                                        </p>
                                                     </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
+
+                                                    <div className="mt-3 space-y-2">
+                                                        {isAuthenticated ? (
+                                                            <>
+                                                                <textarea
+                                                                    value={commentDraftByReviewId[review.id] ?? ""}
+                                                                    onChange={(event) => {
+                                                                        const nextValue = event.target.value;
+                                                                        setCommentDraftByReviewId((prev) => ({
+                                                                            ...prev,
+                                                                            [review.id]: nextValue,
+                                                                        }));
+                                                                    }}
+                                                                    rows={3}
+                                                                    placeholder="Write a comment on this review..."
+                                                                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-0 placeholder:text-slate-400 focus:border-slate-300"
+                                                                />
+                                                                <div className="flex items-center gap-2">
+                                                                    <Button
+                                                                        type="button"
+                                                                        size="sm"
+                                                                        className="h-8"
+                                                                        disabled={Boolean(commentPendingByReviewId[review.id])}
+                                                                        onClick={() => handleCommentSubmit(review.id)}
+                                                                    >
+                                                                        Post Comment
+                                                                    </Button>
+                                                                </div>
+                                                            </>
+                                                        ) : (
+                                                            <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+                                                                Log in first to add comments or replies.
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="link"
+                                                                    className="ml-1 h-auto p-0 text-sm"
+                                                                    onClick={() => setIsLoginPromptOpen(true)}
+                                                                >
+                                                                    Login now
+                                                                </Button>
+                                                            </div>
+                                                        )}
+
+                                                        {commentFeedbackByReviewId[review.id] ? (
+                                                            <p className="text-xs text-red-600">{commentFeedbackByReviewId[review.id]}</p>
+                                                        ) : null}
+                                                    </div>
+
+                                                    <div className="mt-3">
+                                                        {comments.length > 0 ? (
+                                                            renderCommentList(review.id, comments)
+                                                        ) : (
+                                                            <p className="text-sm text-slate-500">No comments yet.</p>
+                                                        )}
+                                                    </div>
+                                                </>
+                                            );
+                                        })()}
+                                    </div>
                                 </motion.article>
                             ))
                         )}

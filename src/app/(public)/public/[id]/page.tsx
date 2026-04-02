@@ -2,6 +2,7 @@
 import { Film } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { unstable_noStore as noStore } from 'next/cache';
 import MovieDetailsClient from './MovieDetailsClient';
 import { getMovieById } from '../_actions/movie';
 import { getGenres } from '../_actions/genres';
@@ -67,6 +68,100 @@ function extractGenreNames(rawGenres: unknown, genreOptions: GenreOption[]) {
     return Array.from(names);
 }
 
+function normalizeId(value: unknown) {
+    if (typeof value === "string") {
+        const trimmed = value.trim();
+        return trimmed.length > 0 ? trimmed : "";
+    }
+
+    if (typeof value === "number" && Number.isFinite(value)) {
+        return String(value);
+    }
+
+    return "";
+}
+
+function parseReactionEntries(source: unknown) {
+    if (Array.isArray(source)) {
+        return source;
+    }
+
+    if (typeof source === "string") {
+        try {
+            const parsed = JSON.parse(source);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch {
+            return [];
+        }
+    }
+
+    if (source && typeof source === "object") {
+        const record = source as Record<string, unknown>;
+        const candidate = record.items ?? record.data ?? record.results ?? record.list;
+        return Array.isArray(candidate) ? candidate : [];
+    }
+
+    return [] as unknown[];
+}
+
+function parseReactionCount(source: unknown) {
+    if (Array.isArray(source)) {
+        return source.length;
+    }
+
+    if (typeof source === "number" && Number.isFinite(source)) {
+        return source;
+    }
+
+    if (typeof source === "string") {
+        const parsedNumber = Number(source);
+
+        if (Number.isFinite(parsedNumber)) {
+            return parsedNumber;
+        }
+
+        try {
+            const parsedJson = JSON.parse(source);
+            return parseReactionCount(parsedJson);
+        } catch {
+            return 0;
+        }
+    }
+
+    if (source && typeof source === "object") {
+        const record = source as Record<string, unknown>;
+        const directCandidates = [
+            record.count,
+            record.total,
+            record.length,
+            record.likesCount,
+            record.likeCount,
+            record.dislikesCount,
+            record.dislikeCount,
+        ];
+
+        for (const candidate of directCandidates) {
+            const nextCount = parseReactionCount(candidate);
+
+            if (nextCount > 0) {
+                return nextCount;
+            }
+        }
+
+        const nestedCandidates = [record.items, record.data, record.results, record.list];
+
+        for (const candidate of nestedCandidates) {
+            const nextCount = parseReactionCount(candidate);
+
+            if (nextCount > 0) {
+                return nextCount;
+            }
+        }
+    }
+
+    return 0;
+}
+
 function NotFound() {
     return (
         <div className="min-h-screen flex items-center justify-center">
@@ -87,6 +182,8 @@ export default async function MovieDetails({
 }: {
     params: Promise<{ id: string }>;
 }) {
+    noStore();
+
     const { id } = await params;
 
     let data: any;
@@ -131,6 +228,8 @@ export default async function MovieDetails({
             )
             : 0;
 
+    const currentUserId = normalizeId(findValue(currentUser, ["id", "_id", "userId"]));
+
     // Parse tags for each review — only show APPROVED reviews on the public page
     const mappedReviews = approvedReviews.map((r: any) => {
         let tags: string[] = [];
@@ -138,6 +237,119 @@ export default async function MovieDetails({
             const parsed = JSON.parse(r.tags ?? '[]');
             if (Array.isArray(parsed)) tags = parsed;
         } catch { tags = []; }
+
+        const likesArray = parseReactionEntries(r.likes ?? r.likedBy ?? r.reviewLikes);
+
+        const dislikesArray = parseReactionEntries(r.dislikes ?? r.dislikedBy ?? r.reviewDislikes);
+
+        const likedByCurrentUser = Boolean(
+            currentUserId && likesArray.some((entry: any) => {
+                const entryId = normalizeId(entry);
+
+                if (entryId) {
+                    return entryId === currentUserId;
+                }
+
+                if (!entry || typeof entry !== "object") {
+                    return false;
+                }
+
+                return (
+                    normalizeId(entry.userId) === currentUserId ||
+                    normalizeId(entry.id) === currentUserId ||
+                    normalizeId(entry._id) === currentUserId ||
+                    normalizeId(entry.user?.id) === currentUserId ||
+                    normalizeId(entry.user?._id) === currentUserId ||
+                    normalizeId(entry.user?.userId) === currentUserId
+                );
+            })
+        );
+
+        const dislikedByCurrentUser = Boolean(
+            currentUserId && dislikesArray.some((entry: any) => {
+                const entryId = normalizeId(entry);
+
+                if (entryId) {
+                    return entryId === currentUserId;
+                }
+
+                if (!entry || typeof entry !== "object") {
+                    return false;
+                }
+
+                return (
+                    normalizeId(entry.userId) === currentUserId ||
+                    normalizeId(entry.id) === currentUserId ||
+                    normalizeId(entry._id) === currentUserId ||
+                    normalizeId(entry.user?.id) === currentUserId ||
+                    normalizeId(entry.user?._id) === currentUserId ||
+                    normalizeId(entry.user?.userId) === currentUserId
+                );
+            })
+        );
+
+        const reactionEntries = parseReactionEntries(r.reactions ?? r.reviewReactions ?? r.reaction ?? r.activity);
+
+        const reactionLikeCount = reactionEntries.filter((entry: any) => {
+            if (!entry || typeof entry !== "object") {
+                return false;
+            }
+
+            const type = normalizeId(entry.type ?? entry.reactionType ?? entry.action).toUpperCase();
+            return type === "LIKE" || type === "UPVOTE";
+        }).length;
+
+        const reactionDislikeCount = reactionEntries.filter((entry: any) => {
+            if (!entry || typeof entry !== "object") {
+                return false;
+            }
+
+            const type = normalizeId(entry.type ?? entry.reactionType ?? entry.action).toUpperCase();
+            return type === "DISLIKE" || type === "DOWNVOTE";
+        }).length;
+
+        const parsedLikeCount = Math.max(
+            parseReactionCount(r.likesCount),
+            parseReactionCount(r.likeCount),
+            parseReactionCount(r.totalLikes),
+            parseReactionCount(r.likes),
+            parseReactionCount(r.likedBy),
+            parseReactionCount(r.reviewLikes),
+            likesArray.length,
+            reactionLikeCount
+        );
+
+        const parsedDislikeCount = Math.max(
+            parseReactionCount(r.dislikesCount),
+            parseReactionCount(r.dislikeCount),
+            parseReactionCount(r.totalDislikes),
+            parseReactionCount(r.dislikes),
+            parseReactionCount(r.dislikedBy),
+            parseReactionCount(r.reviewDislikes),
+            dislikesArray.length,
+            reactionDislikeCount
+        );
+
+        const mapCommentNode = (c: any) => {
+            const nestedReplies = Array.isArray(c?.replies) ? c.replies : [];
+
+            return {
+                id: String(c?.id ?? ""),
+                userId: String(c?.userId ?? c?.user?.id ?? c?.user?._id ?? ""),
+                content: typeof c?.content === "string" ? c.content : "",
+                isSpoiler: Boolean(c?.isSpoiler),
+                createdAt: typeof c?.createdAt === "string" ? c.createdAt : "",
+                parentId: typeof c?.parentId === "string" ? c.parentId : null,
+                replies: nestedReplies.map(mapCommentNode),
+            };
+        };
+
+        const rawComments = Array.isArray(r.comments)
+            ? r.comments
+            : Array.isArray(r.comment)
+                ? r.comment
+                : [];
+
         return {
             id: r.id as string,
             userId: r.userId as string,
@@ -147,13 +359,11 @@ export default async function MovieDetails({
             tags,
             status: (r.status as string) ?? '',
             createdAt: (r.createdAt as string) ?? '',
-            comments: (r.comments ?? []).map((c: any) => ({
-                id: c.id as string,
-                userId: c.userId as string,
-                content: (c.content as string) ?? '',
-                isSpoiler: Boolean(c.isSpoiler),
-                createdAt: (c.createdAt as string) ?? '',
-            })),
+            likesCount: Number.isFinite(parsedLikeCount) ? parsedLikeCount : 0,
+            likedByCurrentUser: likedByCurrentUser || Boolean(r.isLikedByCurrentUser ?? r.isLiked ?? r.hasLiked),
+            dislikesCount: Number.isFinite(parsedDislikeCount) ? parsedDislikeCount : 0,
+            dislikedByCurrentUser: dislikedByCurrentUser || Boolean(r.isDislikedByCurrentUser ?? r.isDisliked ?? r.hasDisliked),
+            comments: rawComments.map(mapCommentNode),
         };
     });
 
@@ -162,7 +372,6 @@ export default async function MovieDetails({
     const isAuthenticated = Boolean(currentUser);
     const canSaveToLibrary = role === 'USER' || role === 'PREMIUM_USER';
 
-    const currentUserId = findValue(currentUser, ["id", "_id", "userId"]);
     const hasUserReviewed = Boolean(
         currentUserId &&
         (data.reviews ?? []).some((r: any) => r.userId === currentUserId || r.user?.id === currentUserId)
@@ -212,6 +421,7 @@ export default async function MovieDetails({
             initialSaved={initialSaved}
             initialWatchlistId={initialWatchlistId}
             hasUserReviewed={hasUserReviewed}
+            currentUserId={currentUserId || null}
             loginHref={`/login?redirect=${encodeURIComponent(`/movie/${id}`)}`}
         />
     );

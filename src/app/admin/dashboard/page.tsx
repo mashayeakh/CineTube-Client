@@ -546,9 +546,9 @@ export default async function AdminDashboardPage() {
                                 <Search className="size-4" />
                                 Search
                             </div>
-                            <button className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-700">
+                            {/* <button className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-700">
                                 <Bell className="size-4" />
-                            </button>
+                            </button> */}
                             <button className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-700">
                                 <Home className="size-4" />
                             </button>

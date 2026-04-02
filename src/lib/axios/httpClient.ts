@@ -49,7 +49,20 @@ function getRequestHeaders(data: unknown, headers?: Record<string, string>) {
 
 const shouldLogHttpError = (error: unknown) => {
     if (axios.isAxiosError(error)) {
+        const code = error.code?.toUpperCase();
         const status = error.response?.status;
+
+        // Next.js dev overlay surfaces server console.error entries.
+        // These are expected transient failures and are handled by callers.
+        if (
+            code === 'ECONNABORTED' ||
+            code === 'ERR_NETWORK' ||
+            code === 'ETIMEDOUT' ||
+            !status
+        ) {
+            return false;
+        }
+
         return status !== 401 && status !== 403 && status !== 404;
     }
 

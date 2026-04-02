@@ -28,9 +28,9 @@ export function PremiumPageShell({ activePath, title, children }: PremiumPageShe
                                 <Search className="size-4" />
                                 Search
                             </div>
-                            <button className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-700" type="button">
+                            {/* <button className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-700" type="button">
                                 <Bell className="size-4" />
-                            </button>
+                            </button> */}
                             <Link href="/premium_user/dashboard" className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-700">
                                 <Home className="size-4" />
                             </Link>

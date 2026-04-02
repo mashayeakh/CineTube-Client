@@ -349,7 +349,7 @@ export function ReviewTableClient({ reviews, approveReviewAction, rejectReviewAc
                                     </div>
 
                                     <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 md:col-span-2">
-                                        <p className="mb-2 text-xs text-slate-500">Additional Backend Info</p>
+                                        <p className="mb-2 text-xs text-slate-500">Additional Info</p>
                                         {collectDetailEntries(selectedReview.details).length === 0 ? (
                                             <p className="text-sm text-slate-600">No additional information available.</p>
                                         ) : (

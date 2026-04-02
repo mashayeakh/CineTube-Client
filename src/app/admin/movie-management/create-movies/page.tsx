@@ -133,9 +133,9 @@ export default async function AdminCreateMoviesPage() {
                                 <Search className="size-4" />
                                 Search
                             </div>
-                            <button className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:text-slate-700" type="button">
+                            {/* <button className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:text-slate-700" type="button">
                                 <Bell className="size-4" />
-                            </button>
+                            </button> */}
                             <Link href="/admin/dashboard" className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:text-slate-700">
                                 <Home className="size-4" />
                             </Link>
@@ -152,7 +152,7 @@ export default async function AdminCreateMoviesPage() {
                             </section>
 
                             <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                                <form action={createMovieAction} encType="multipart/form-data" className="space-y-4">
+                                <form action={createMovieAction} className="space-y-4">
                                     <div className="grid gap-3 md:grid-cols-2">
                                         <input name="title" required placeholder="Movie title" className="h-10 rounded-lg border border-slate-200 px-3 text-sm" />
                                         <input name="poster" type="file" accept="image/*" required className="h-10 rounded-lg border border-slate-200 px-3 py-2 text-sm" />

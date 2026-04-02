@@ -1,6 +1,6 @@
 "use client";
 
-import { Book, Clapperboard, Home, LogOut, Menu, Search, Settings, Sunset, X, Zap } from "lucide-react";
+import { Clapperboard, Home, LogOut, Menu, Search, Settings, X, Zap } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
@@ -35,7 +35,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { translations } from "@/lib/translations";
 import { cn } from "@/lib/utils";
 
 type MenuItem = {
@@ -43,6 +42,7 @@ type MenuItem = {
   url: string;
   description?: string;
   icon?: React.ReactNode;
+  onClick?: () => void;
   items?: MenuItem[];
 };
 
@@ -50,17 +50,18 @@ type CurrentUser = {
   name: string;
   email: string;
   image?: string | null;
+  role?: string;
 };
 
 const Navbar = ({ className }: { className?: string }) => {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [lang, setLang] = React.useState<"en" | "bn">("en");
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [user, setUser] = React.useState<CurrentUser | null>(null);
   const [isAuthChecking, setIsAuthChecking] = React.useState(true);
+  const [isPremiumPromptOpen, setIsPremiumPromptOpen] = React.useState(false);
 
   React.useEffect(() => {
     const checkAuth = async () => {
@@ -94,6 +95,7 @@ const Navbar = ({ className }: { className?: string }) => {
           name: profile.name,
           email: profile.email,
           image: profile.image,
+          role: typeof profile.role === "string" ? profile.role.toUpperCase() : undefined,
         });
       } catch {
         setUser(null);
@@ -119,81 +121,28 @@ const Navbar = ({ className }: { className?: string }) => {
     }
   };
 
-  const t = translations[lang];
+  const handleContributionMoviesClick = () => {
+    if (!user) {
+      setIsPremiumPromptOpen(true);
+      return;
+    }
+
+    router.push("/premium_user/contributions");
+  };
 
   const menu: MenuItem[] = [
     {
-      title: t.menu.movies,
-      url: "#",
-      items: [
-        {
-          title: "Popular",
-          description: "Trending films right now",
-          icon: <Zap className="size-4" />,
-          url: "/popular",
-        },
-        {
-          title: "Upcoming",
-          description: "Coming soon to theatres",
-          icon: <Clapperboard className="size-4" />,
-          url: "/upcoming",
-        },
-        {
-          title: "Top Rated",
-          description: "All-time highest rated",
-          icon: <Sunset className="size-4" />,
-          url: "/top-rated",
-        },
-      ],
+      title: "Popular Movies",
+      description: "Trending films right now",
+      icon: <Zap className="size-4" />,
+      url: "/popular",
     },
     {
-      title: t.menu.series,
-      url: "#",
-      items: [
-        {
-          title: "Popular",
-          description: "Trending series",
-          icon: <Zap className="size-4" />,
-          url: "#",
-        },
-        {
-          title: "On TV",
-          description: "Currently airing",
-          icon: <Zap className="size-4" />,
-          url: "#",
-        },
-        {
-          title: "Top Rated",
-          description: "Fan favourites",
-          icon: <Sunset className="size-4" />,
-          url: "#",
-        },
-      ],
-    },
-    { title: t.menu.people, url: "#" },
-    {
-      title: t.menu.more,
-      url: "#",
-      items: [
-        {
-          title: "Join Community",
-          description: "Connect with cinephiles",
-          icon: <Book className="size-4" />,
-          url: "#",
-        },
-        {
-          title: "Leaderboard",
-          description: "Top reviewers",
-          icon: <Book className="size-4" />,
-          url: "#",
-        },
-        {
-          title: "Guidelines",
-          description: "Community rules",
-          icon: <Sunset className="size-4" />,
-          url: "#",
-        },
-      ],
+      title: "Contribution Movies",
+      description: "Submit movie contributions (premium)",
+      icon: <Clapperboard className="size-4" />,
+      url: "/premium_user/contributions",
+      onClick: handleContributionMoviesClick,
     },
   ];
 
@@ -228,6 +177,48 @@ const Navbar = ({ className }: { className?: string }) => {
         </div>
       )}
 
+      {isPremiumPromptOpen ? (
+        <div
+          className="fixed inset-0 z-70 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="premium-required-title"
+          onClick={() => setIsPremiumPromptOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-950 p-6 text-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-indigo-300">Premium Feature</p>
+              <h2 id="premium-required-title" className="text-2xl font-semibold tracking-tight">
+                You need to be a premium user
+              </h2>
+              <p className="text-sm leading-6 text-slate-300">
+                Contribution Movies is available for premium users. Please log in first.
+              </p>
+            </div>
+
+            <div className="mt-6 flex flex-wrap justify-end gap-3">
+              <button
+                type="button"
+                className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm text-white transition hover:bg-white/10"
+                onClick={() => setIsPremiumPromptOpen(false)}
+              >
+                Not now
+              </button>
+              <button
+                type="button"
+                className="rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-indigo-400"
+                onClick={() => router.push(`/login?redirect=${encodeURIComponent("/premium_user/contributions")}`)}
+              >
+                Go to Login
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className={cn("container mx-auto px-4 py-0 lg:py-0", searchOpen && "invisible")}>
         <nav className="hidden h-14 items-center lg:grid lg:grid-cols-3">
           <div className="flex items-center gap-2">
@@ -258,13 +249,6 @@ const Navbar = ({ className }: { className?: string }) => {
             </button>
 
             <ThemeToggle className="size-8 border-white/12 bg-white/6 text-slate-300 shadow-none transition hover:bg-white/12 hover:text-white" />
-
-            <button
-              onClick={() => setLang((prev) => (prev === "en" ? "bn" : "en"))}
-              className="inline-flex h-8 items-center rounded-full border border-white/12 bg-white/6 px-3 text-xs font-medium text-slate-300 transition hover:bg-white/12 hover:text-white"
-            >
-              {lang === "en" ? "বাংলা" : "EN"}
-            </button>
 
             <div className="mx-1 h-5 w-px bg-white/10" />
 
@@ -312,13 +296,13 @@ const Navbar = ({ className }: { className?: string }) => {
                   onClick={() => router.push("/login")}
                   className="inline-flex h-8 items-center rounded-full px-4 text-xs font-semibold text-slate-300 transition hover:text-white"
                 >
-                  {t.auth.login}
+                  Login
                 </button>
                 <button
                   onClick={() => router.push("/signup")}
                   className="inline-flex h-8 items-center rounded-full bg-linear-to-r from-indigo-600 to-violet-600 px-4 text-xs font-semibold text-white shadow-[0_0_20px_rgba(99,102,241,0.4)] transition hover:from-indigo-500 hover:to-violet-500"
                 >
-                  {"signup" in t.auth ? t.auth.signup : "Sign up"}
+                  Sign up
                 </button>
               </>
             )}
@@ -378,13 +362,6 @@ const Navbar = ({ className }: { className?: string }) => {
                 </div>
 
                 <div className="absolute bottom-0 left-0 right-0 space-y-2 border-t border-white/8 px-4 py-4">
-                  <button
-                    onClick={() => setLang((prev) => (prev === "en" ? "bn" : "en"))}
-                    className="inline-flex h-9 w-full items-center justify-center rounded-full border border-white/12 bg-white/6 text-xs font-medium text-slate-300 transition hover:bg-white/12 hover:text-white"
-                  >
-                    {lang === "en" ? "বাংলা" : "English"}
-                  </button>
-
                   {isAuthChecking ? (
                     <div className="h-20 w-full rounded-2xl border border-white/10 bg-white/5" />
                   ) : user ? (
@@ -420,13 +397,13 @@ const Navbar = ({ className }: { className?: string }) => {
                         onClick={() => router.push("/login")}
                         className="inline-flex h-9 w-full items-center justify-center rounded-full border border-white/15 text-sm font-semibold text-slate-200 transition hover:bg-white/8"
                       >
-                        {t.auth.login}
+                        Login
                       </button>
                       <button
                         onClick={() => router.push("/signup")}
                         className="inline-flex h-9 w-full items-center justify-center rounded-full bg-linear-to-r from-indigo-600 to-violet-600 text-sm font-semibold text-white shadow-[0_0_18px_rgba(99,102,241,0.35)] transition hover:from-indigo-500 hover:to-violet-500"
                       >
-                        {"signup" in t.auth ? t.auth.signup : "Sign up"}
+                        Sign up
                       </button>
                     </>
                   )}
@@ -453,6 +430,14 @@ const renderMenuItem = (item: MenuItem, pathname: string) => {
               <li key={sub.title}>
                 <NavigationMenuLink
                   href={sub.url}
+                  onClick={(event) => {
+                    if (!sub.onClick) {
+                      return;
+                    }
+
+                    event.preventDefault();
+                    sub.onClick();
+                  }}
                   className={cn(
                     "flex items-start gap-3 rounded-lg px-3 py-2.5 text-sm transition hover:bg-white/8",
                     pathname === sub.url ? "bg-indigo-500/15 text-indigo-300" : "text-slate-300"
@@ -476,11 +461,20 @@ const renderMenuItem = (item: MenuItem, pathname: string) => {
     <NavigationMenuItem key={item.title}>
       <NavigationMenuLink
         href={item.url}
+        onClick={(event) => {
+          if (!item.onClick) {
+            return;
+          }
+
+          event.preventDefault();
+          item.onClick();
+        }}
         className={cn(
           "inline-flex h-8 items-center rounded-full px-3.5 text-xs font-semibold transition hover:bg-white/8 hover:text-white",
           pathname === item.url ? "text-indigo-300" : "text-slate-300"
         )}
       >
+        {item.icon ? <span className="mr-1.5 text-indigo-400">{item.icon}</span> : null}
         {item.title}
       </NavigationMenuLink>
     </NavigationMenuItem>
@@ -499,6 +493,14 @@ const renderMobileMenuItem = (item: MenuItem, pathname: string) => {
             <Link
               key={sub.title}
               href={sub.url}
+              onClick={(event) => {
+                if (!sub.onClick) {
+                  return;
+                }
+
+                event.preventDefault();
+                sub.onClick();
+              }}
               className={cn(
                 "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition hover:bg-white/8",
                 pathname === sub.url ? "text-indigo-300" : "text-slate-400 hover:text-slate-200"
@@ -517,12 +519,23 @@ const renderMobileMenuItem = (item: MenuItem, pathname: string) => {
     <Link
       key={item.title}
       href={item.url}
+      onClick={(event) => {
+        if (!item.onClick) {
+          return;
+        }
+
+        event.preventDefault();
+        item.onClick();
+      }}
       className={cn(
         "block rounded-lg px-3 py-2.5 text-sm font-semibold transition hover:bg-white/8",
         pathname === item.url ? "text-indigo-300" : "text-slate-300 hover:text-white"
       )}
     >
-      {item.title}
+      <span className="inline-flex items-center gap-2">
+        {item.icon ? <span className="text-indigo-400">{item.icon}</span> : null}
+        {item.title}
+      </span>
     </Link>
   );
 };
