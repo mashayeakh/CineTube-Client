@@ -40,9 +40,15 @@ export const loginAction = async (payload: ILoginPayload, redirectPath?: string)
     try {
         const response = await httpClient.post<ILoginResponse>("auth/user/login", parsedPayload.data);
 
-        console.log("response result", response.result)
+        const loginResult = response.result ?? response.data;
+        if (!loginResult) {
+            return {
+                success: false,
+                message: "Invalid login response from server.",
+            };
+        }
 
-        const { accessToken, refreshToken, token, user } = response.result
+        const { accessToken, refreshToken, token, user } = loginResult;
 
         const { role, emailVerified } = user
 
@@ -59,7 +65,7 @@ export const loginAction = async (payload: ILoginPayload, redirectPath?: string)
         return {
             ...response,
             result: {
-                ...response.result,
+                ...loginResult,
                 redirectTo: targetPath,
             },
         } as ApiResponse<ILoginResponse>;

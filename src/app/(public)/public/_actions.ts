@@ -1,8 +1,14 @@
 import { httpClient } from "@/lib/axios/httpClient"
 
-export const getMovies = async () => {
-    const allMovies = await httpClient.get("/movies")
-    console.log("all ", allMovies.result)
-    return allMovies.result
+export type MovieListItem = {
+    id: string;
+    title: string;
+    description?: string;
+}
+
+export const getMovies = async (): Promise<MovieListItem[]> => {
+    const allMovies = await httpClient.get<MovieListItem[]>("/movies")
+    const payload = allMovies.result ?? allMovies.data
+    return Array.isArray(payload) ? payload : []
 }
 

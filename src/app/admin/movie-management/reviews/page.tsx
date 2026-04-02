@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
-import { Bell, Home, Search } from "lucide-react";
+import { Home, Search } from "lucide-react";
 
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { ReviewTableClient } from "@/components/admin/review-table-client";

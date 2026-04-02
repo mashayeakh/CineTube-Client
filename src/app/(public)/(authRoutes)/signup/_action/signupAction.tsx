@@ -32,7 +32,7 @@ export const signupAction = async (payload: ISignupPayload) => {
 
     try {
         const response = await httpClient.post("auth/user/register", { name, email, password });
-        return { success: true, ...response };
+        return response;
     } catch (error: any) {
         return {
             success: false,

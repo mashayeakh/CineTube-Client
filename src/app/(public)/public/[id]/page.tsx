@@ -104,7 +104,7 @@ function parseReactionEntries(source: unknown) {
     return [] as unknown[];
 }
 
-function parseReactionCount(source: unknown) {
+function parseReactionCount(source: unknown): number {
     if (Array.isArray(source)) {
         return source.length;
     }

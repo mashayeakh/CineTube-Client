@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition, type ReactElement } from "react";
 import { motion } from "framer-motion";
 import {
     ArrowLeft,
@@ -595,7 +595,7 @@ export default function MovieDetailsClient({
         });
     };
 
-    const renderCommentList = (reviewId: string, comments: ReviewComment[], depth = 0): JSX.Element => {
+    const renderCommentList = (reviewId: string, comments: ReviewComment[], depth = 0): ReactElement => {
         return (
             <div className="space-y-3">
                 {comments.map((comment) => (
