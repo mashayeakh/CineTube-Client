@@ -64,58 +64,53 @@ const Navbar = ({ className }: { className?: string }) => {
   const [isPremiumPromptOpen, setIsPremiumPromptOpen] = React.useState(false);
 
   React.useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-        if (!baseUrl) {
-          setUser(null);
-          return;
+    // Read the non-HttpOnly _auth cookie stamped by proxy — instant, no API call needed
+    const authCookie = document.cookie
+      .split(";")
+      .map((c) => c.trim())
+      .find((c) => c.startsWith("_auth="));
+    const authRole = authCookie ? authCookie.split("=")[1] : null;
+
+    if (!authRole) {
+      // Not logged in — stop checking immediately
+      setUser(null);
+      setIsAuthChecking(false);
+      return;
+    }
+
+    // Logged in — show placeholder "My Account" instantly, then fetch full profile
+    setUser({ name: "My Account", email: "", image: null, role: authRole.toUpperCase() });
+    setIsAuthChecking(false);
+
+    // Fetch full profile details in background
+    fetch("/api/me", { method: "GET", cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((profile) => {
+        if (profile?.name) {
+          setUser({
+            name: profile.name,
+            email: profile.email,
+            image: profile.image ?? null,
+            role: typeof profile.role === "string" ? profile.role.toUpperCase() : authRole.toUpperCase(),
+          });
         }
-
-        const res = await fetch(`${baseUrl}/auth/user/profile`, {
-          method: "GET",
-          credentials: "include",
-          cache: "no-store",
-        });
-
-        if (!res.ok) {
-          setUser(null);
-          return;
-        }
-
-        const payload = await res.json();
-        const profile = payload?.result;
-
-        if (!profile) {
-          setUser(null);
-          return;
-        }
-
-        setUser({
-          name: profile.name,
-          email: profile.email,
-          image: profile.image,
-          role: typeof profile.role === "string" ? profile.role.toUpperCase() : undefined,
-        });
-      } catch {
-        setUser(null);
-      } finally {
-        setIsAuthChecking(false);
-      }
-    };
-
-    void checkAuth();
+      })
+      .catch(() => {
+        // Keep showing "My Account" — we know they're logged in from the cookie
+      });
   }, []);
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", {
+      await fetch("/api/logout", {
         method: "POST",
         credentials: "include",
         cache: "no-store",
       });
     } finally {
       setUser(null);
+      // Clear the client-readable auth cookie immediately
+      document.cookie = "_auth=; path=/; max-age=0; samesite=lax";
       router.push("/");
       router.refresh();
     }

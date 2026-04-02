@@ -31,7 +31,7 @@ export function AdminSidebar({ activePath }: AdminSidebarProps) {
         setIsLoggingOut(true);
 
         try {
-            await fetch("/api/auth/logout", {
+            await fetch("/api/logout", {
                 method: "POST",
                 credentials: "include",
                 cache: "no-store",

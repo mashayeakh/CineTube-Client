@@ -1,8 +1,4 @@
-import { Star } from "lucide-react";
 import React from "react";
-
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface HeroProps {
@@ -27,71 +23,43 @@ interface HeroProps {
 const Hero = ({
   heading = "Explore Stories. Share Opinions. Discover What’s Worth Watching.",
   description = "Finely crafted components built with React, Tailwind and Shadcn UI. Developers can copy and paste these blocks directly into their project.",
-  // button = {
-  //   text: "",
-  //   url: "https://www.shadcnblocks.com",
-  // },
-  // reviews = {
-  //   count: 200,
-  //   rating: 5.0,
-  //   avatars: [
-  //     {
-  //       src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/avatar-1.webp",
-  //       alt: "Avatar 1",
-  //     },
-  //     {
-  //       src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/avatar-2.webp",
-  //       alt: "Avatar 2",
-  //     },
-  //     {
-  //       src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/avatar-3.webp",
-  //       alt: "Avatar 3",
-  //     },
-  //     {
-  //       src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/avatar-4.webp",
-  //       alt: "Avatar 4",
-  //     },
-  //     {
-  //       src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/avatar-5.webp",
-  //       alt: "Avatar 5",
-  //     },
-  //   ],
-  // },
   className,
 }: HeroProps) => {
   return (
-    <section className={cn("py-24 border-2 border-red-700", className)}>
-      <div className="container text-center ">
-        <div className="mx-auto flex max-w-5xl flex-col gap-6">
-          <h1 className="text-3xl font-semibold lg:text-6xl">{heading}</h1>
-          <p className="text-balance text-muted-foreground lg:text-lg">
-            {description}
-          </p>
+    <section
+      className={cn(
+        "relative overflow-hidden py-20 lg:py-28",
+        "bg-[radial-gradient(circle_at_top,#173a63_0%,#0e223b_42%,#090f1d_100%)]",
+        className
+      )}
+    >
+      <div className="pointer-events-none absolute -left-24 top-8 h-64 w-64 rounded-full bg-cyan-400/10 blur-3xl" />
+      <div className="pointer-events-none absolute -right-24 bottom-0 h-72 w-72 rounded-full bg-indigo-500/15 blur-3xl" />
+
+      <div className="container relative text-center">
+        <div className="mx-auto mb-6 inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-slate-100">
+          Now Streaming: Discover, rate, and review in one place
         </div>
-        {/* <Button size="lg" className="mt-10" render={<a href={button.url} />} nativeButton={false}>{button.text}</Button> */}
-        <div className="mx-auto mt-10 flex w-fit flex-col items-center gap-4 sm:flex-row">
-          {/* <span className="mx-4 inline-flex items-center -space-x-4">
-            {reviews.avatars.map((avatar, index) => (
-              <Avatar key={index} className="size-14 border">
-                <AvatarImage src={avatar.src} alt={avatar.alt} />
-              </Avatar>
-            ))}
-          </span> */}
-          <div>
-            <div className="flex items-center gap-1">
-              {/* {[...Array(5)].map((_, index) => (
-                <Star
-                  key={index}
-                  className="size-5 fill-yellow-400 text-yellow-400"
-                />
-              ))} */}
-              {/* <span className="mr-1 font-semibold">
-                {reviews.rating?.toFixed(1)}
-              </span> */}
-            </div>
-            <p className="text-left font-medium text-muted-foreground">
-              {/* from {reviews.count}+ reviews */}
-            </p>
+
+        <div className="mx-auto flex max-w-5xl flex-col gap-6">
+          <h1 className="text-balance text-3xl font-bold tracking-tight text-white lg:text-6xl">
+            {heading}
+          </h1>
+          <p className="mx-auto max-w-3xl text-balance text-slate-200/90 lg:text-xl">{description}</p>
+        </div>
+
+        <div className="mx-auto mt-10 grid w-fit grid-cols-3 gap-3 rounded-2xl border border-white/15 bg-white/5 p-3 backdrop-blur">
+          <div className="rounded-xl bg-black/20 px-4 py-3">
+            <p className="text-lg font-bold text-white">10k+</p>
+            <p className="text-xs text-slate-300">Reviews</p>
+          </div>
+          <div className="rounded-xl bg-black/20 px-4 py-3">
+            <p className="text-lg font-bold text-white">2k+</p>
+            <p className="text-xs text-slate-300">Movies</p>
+          </div>
+          <div className="rounded-xl bg-black/20 px-4 py-3">
+            <p className="text-lg font-bold text-white">24/7</p>
+            <p className="text-xs text-slate-300">Community</p>
           </div>
         </div>
       </div>

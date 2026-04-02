@@ -37,7 +37,7 @@ export default async function HomePage() {
         <TrendingSection />
         <PopularSection />
         <JoinSection />
-        <LeaderboardSection />
+        {/* <LeaderboardSection /> */}
       </HydrationBoundary>
     </div>
   )

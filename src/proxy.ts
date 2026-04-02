@@ -30,6 +30,26 @@ function redirectToLogin(request: NextRequest, pathWithQuery: string) {
     return NextResponse.redirect(loginUrl);
 }
 
+function stampAuthCookie(response: NextResponse, userRole: UserRole | null) {
+    if (userRole) {
+        response.cookies.set("_auth", userRole, {
+            httpOnly: false,
+            sameSite: "lax",
+            path: "/",
+            maxAge: 60 * 60 * 24,
+        });
+        return response;
+    }
+
+    response.cookies.set("_auth", "", {
+        httpOnly: false,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 0,
+    });
+    return response;
+}
+
 export default async function proxy(request: NextRequest) {
     try {
         const { pathname } = request.nextUrl;
@@ -42,7 +62,7 @@ export default async function proxy(request: NextRequest) {
         const isAuth = isAuthRoute(pathname);
 
         if (pathname.startsWith("/premium_user")) {
-            return NextResponse.redirect(new URL("/user/dashboard", request.url));
+            return stampAuthCookie(NextResponse.redirect(new URL("/user/dashboard", request.url)), userRole);
         }
 
         if (
@@ -51,11 +71,14 @@ export default async function proxy(request: NextRequest) {
             pathname !== "/verify-email" &&
             pathname !== "/reset-password"
         ) {
-            return NextResponse.redirect(new URL(getDefaultDashboardRoute(userRole as UserRole), request.url));
+            return stampAuthCookie(
+                NextResponse.redirect(new URL(getDefaultDashboardRoute(userRole as UserRole), request.url)),
+                userRole
+            );
         }
 
         if (routeOwner === null) {
-            return NextResponse.next();
+            return stampAuthCookie(NextResponse.next(), userRole);
         }
 
         if (!isLoggedIn) {
@@ -64,14 +87,17 @@ export default async function proxy(request: NextRequest) {
 
         const isUserRouteForPremium = routeOwner === "USER" && userRole === "PREMIUM_USER";
         if (isUserRouteForPremium) {
-            return NextResponse.next();
+            return stampAuthCookie(NextResponse.next(), userRole);
         }
 
         if (ROLE_ROUTES.includes(routeOwner as (typeof ROLE_ROUTES)[number]) && routeOwner !== userRole) {
-            return NextResponse.redirect(new URL(getDefaultDashboardRoute(userRole as UserRole), request.url));
+            return stampAuthCookie(
+                NextResponse.redirect(new URL(getDefaultDashboardRoute(userRole as UserRole), request.url)),
+                userRole
+            );
         }
 
-        return NextResponse.next();
+        return stampAuthCookie(NextResponse.next(), userRole);
     } catch (error) {
         console.error("Error in proxy middleware:", error);
 
@@ -93,15 +119,6 @@ export default async function proxy(request: NextRequest) {
 
 export const config = {
     matcher: [
-        "/user/:path*",
-        "/admin/:path*",
-        "/premium_user/:path*",
-        "/my-profile",
-        "/change-password",
-        "/login",
-        "/signup",
-        "/forgetPassword",
-        "/reset-password",
-        "/verify-email",
+        "/((?!_next/static|_next/image|favicon.ico|api/).*)",
     ],
 };

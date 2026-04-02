@@ -92,7 +92,7 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
       />
 
       {/* Grid Pattern */}
-      <div className="absolute inset-0 bg-grid-primary/5 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
+      <div className="absolute inset-0 bg-grid-primary/5 mask-[radial-gradient(ellipse_at_center,transparent_20%,black)]" />
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-6xl mx-auto">
@@ -120,7 +120,7 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
 
               {/* Heading */}
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-                <span className="bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+                <span className="bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
                   Join Today
                 </span>
               </h2>
@@ -168,16 +168,14 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
                 transition={{ delay: 0.8 }}
                 className="flex flex-col sm:flex-row gap-4 pt-4"
               >
-                <Link href="/signup">
-                  <Button
-                    size="lg"
-                    className="group relative overflow-hidden bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 text-base px-8"
-                  >
-                    <span className="relative z-10 flex items-center gap-2">
-                      Sign Up
-                      <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
-                    </span>
-                  </Button>
+                <Link
+                  href="/signup"
+                  className="group inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-linear-to-r from-primary to-primary/80 px-8 text-base font-medium text-primary-foreground shadow-lg transition-all duration-300 hover:from-primary/90 hover:to-primary hover:shadow-xl"
+                >
+                  <span className="relative z-10 flex items-center gap-2">
+                    Sign Up
+                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                  </span>
                 </Link>
 
                 <Link href="/learn-more">
