@@ -1,6 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      // Admin movie creation posts FormData including poster files.
+      // The default 1MB Server Action limit is too small for production uploads.
+      bodySizeLimit: "10mb",
+    },
+  },
   async rewrites() {
     const backendBaseUrl =
       process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_BASE_URL;
