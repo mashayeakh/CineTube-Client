@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { Home, Search } from "lucide-react";
 
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
@@ -119,8 +120,30 @@ async function createMovieAction(formData: FormData) {
     const genres = formData.getAll("genres").map((value) => String(value));
     const platforms = formData.getAll("platforms").map((value) => String(value));
 
-    const currentUser = await getUserInfo();
-    const userId = pickString(currentUser, ["id", "_id", "userId"]);
+    // Decode userId directly from the JWT — avoids an extra API round-trip
+    // that can fail in production, causing the form to always reject as "missing fields".
+    const cookieStore = await cookies();
+    const accessTokenRaw = cookieStore.get("accessToken")?.value ?? "";
+    let userId = "";
+    if (accessTokenRaw) {
+        try {
+            const parts = accessTokenRaw.split(".");
+            if (parts.length >= 2) {
+                const raw = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+                const padded = raw + "=".repeat((4 - (raw.length % 4)) % 4);
+                const payload = JSON.parse(Buffer.from(padded, "base64").toString("utf8")) as {
+                    id?: string;
+                    userId?: string;
+                    sub?: string;
+                    _id?: string;
+                };
+                userId = payload.id ?? payload.userId ?? payload.sub ?? payload._id ?? "";
+            }
+        } catch {
+            // malformed token — userId stays empty, validation will reject below
+        }
+    }
+
     const hasPoster = poster instanceof File && poster.size > 0;
 
     if (!title || !description || !director || !userId || !releaseYear || !hasPoster) {
