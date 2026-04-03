@@ -90,8 +90,23 @@ export async function getUserInfo() {
             return null;
         }
 
-        const payload = await res.json() as { data?: unknown; result?: unknown };
-        return (payload.data ?? payload.result ?? null) as Record<string, unknown> | null;
+        const payload = await res.json() as Record<string, unknown>;
+
+        // Try common response structures: wrapped in data/result/user/profile, or direct object with id
+        let user =
+            (typeof payload.data === "object" && payload.data !== null ? payload.data : null) ||
+            (typeof payload.result === "object" && payload.result !== null ? payload.result : null) ||
+            (typeof payload.user === "object" && payload.user !== null ? payload.user : null) ||
+            (typeof payload.profile === "object" && payload.profile !== null ? payload.profile : null) ||
+            (typeof payload.admin === "object" && payload.admin !== null ? payload.admin : null) ||
+            payload;
+
+        // Check if final result has an id-like field (valid user object)
+        if (typeof user === "object" && user !== null && ("id" in user || "_id" in user || "userId" in user || "sub" in user)) {
+            return user as Record<string, unknown>;
+        }
+
+        return null;
     } catch (error) {
         console.error("Error fetching user info:", error);
         return null;

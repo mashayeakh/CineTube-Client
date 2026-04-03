@@ -122,7 +122,18 @@ async function createMovieAction(formData: FormData) {
 
     // Try profile API first for accurate DB userId; JWT decode is the fallback.
     const currentUser = await getUserInfo().catch(() => null);
-    let userId = pickString(currentUser, ["id", "_id", "userId"]);
+    let userId = pickString(currentUser, ["id", "_id", "userId", "sub"]);
+    
+    // Also check nested user/admin/profile objects in case response wraps differently
+    if (!userId && isRecord(currentUser)) {
+        for (const nestedKey of ["user", "admin", "profile", "data"]) {
+            const nested = currentUser[nestedKey];
+            if (isRecord(nested)) {
+                userId = pickString(nested, ["id", "_id", "userId", "sub"]);
+                if (userId) break;
+            }
+        }
+    }
 
     if (!userId) {
         try {
@@ -185,9 +196,12 @@ async function createMovieAction(formData: FormData) {
         console.error("Failed to create movie:", error);
         const rawMessage = extractActionErrorMessage(error);
         const isReadonlyFsError = /EROFS|read-only file system/i.test(rawMessage);
+        const isRecordNotFound = /record not found|not found/i.test(rawMessage);
         const message = isReadonlyFsError
             ? "Poster upload failed because the server uses a read-only filesystem. Configure backend upload storage (for example /tmp or cloud storage) and try again."
-            : rawMessage;
+            : isRecordNotFound
+                ? `${rawMessage} [Debug: userId="${userId}"] — Verify this user exists in the backend database.`
+                : rawMessage;
 
         redirect(buildActionRedirectPath({ error: message }));
     }
