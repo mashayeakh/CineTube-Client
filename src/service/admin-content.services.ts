@@ -1,7 +1,13 @@
 import { httpClient } from "@/lib/axios/httpClient";
 
 const GENRE_ENDPOINTS = ["/genres", "/admin/genres", "/admin/dashboard/genres"];
-const PLATFORM_ENDPOINTS = ["/streaming-platforms", "/platforms", "/admin/streaming-platforms"];
+const PLATFORM_ENDPOINTS = [
+    "/streaming-platforms",
+    "/platforms",
+    "/admin/streaming-platforms",
+    "/admin/dashboard/streaming-platforms",
+    "/admin/dashboard/platforms",
+];
 
 async function tryGet<T>(endpoints: string[]): Promise<T> {
     let lastError: unknown = null;

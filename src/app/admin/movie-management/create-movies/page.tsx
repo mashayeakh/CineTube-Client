@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { Bell, Home, Search } from "lucide-react";
+import { Home, Search } from "lucide-react";
 
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { PendingSubmitButton } from "@/components/ui/pending-submit-button";
@@ -42,7 +42,15 @@ function pickString(source: unknown, keys: string[], fallback = "") {
 }
 
 function normalizeOptions(raw: unknown, typePrefix: string): OptionItem[] {
-    const list = Array.isArray(raw) ? raw : [];
+    const list = Array.isArray(raw)
+        ? raw
+        : isRecord(raw) && Array.isArray(raw.result)
+            ? (raw.result as unknown[])
+            : isRecord(raw) && Array.isArray(raw.data)
+                ? (raw.data as unknown[])
+                : isRecord(raw) && Array.isArray(raw.items)
+                    ? (raw.items as unknown[])
+                    : [];
 
     return list
         .map((item, index) => ({
@@ -173,11 +181,25 @@ export default async function AdminCreateMoviesPage({
     const errorMessage = typeof params.error === "string" ? params.error.trim() : "";
     const successMessage = typeof params.success === "string" ? params.success.trim() : "";
 
-    const [rawGenres, rawPlatforms, currentUser] = await Promise.all([
-        getAdminGenres().catch(() => []),
-        getAdminStreamingPlatforms().catch(() => []),
-        getUserInfo().catch(() => null),
+    const [genresResult, platformsResult, userResult] = await Promise.allSettled([
+        getAdminGenres(),
+        getAdminStreamingPlatforms(),
+        getUserInfo(),
     ]);
+
+    const rawGenres = genresResult.status === "fulfilled" ? genresResult.value : [];
+    const rawPlatforms = platformsResult.status === "fulfilled" ? platformsResult.value : [];
+    const currentUser = userResult.status === "fulfilled" ? userResult.value : null;
+
+    const optionLoadErrors: string[] = [];
+
+    if (genresResult.status === "rejected") {
+        optionLoadErrors.push(`Genres: ${extractActionErrorMessage(genresResult.reason)}`);
+    }
+
+    if (platformsResult.status === "rejected") {
+        optionLoadErrors.push(`Platforms: ${extractActionErrorMessage(platformsResult.reason)}`);
+    }
 
     const genres = normalizeOptions(rawGenres, "genre");
     const platforms = normalizeOptions(rawPlatforms, "platform");
@@ -226,6 +248,13 @@ export default async function AdminCreateMoviesPage({
                                 {successMessage ? (
                                     <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
                                         {successMessage}
+                                    </div>
+                                ) : null}
+
+                                {optionLoadErrors.length > 0 ? (
+                                    <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                                        <p className="font-medium">Failed to load selectable options from API.</p>
+                                        <p className="mt-1 text-xs">{optionLoadErrors.join(" | ")}</p>
                                     </div>
                                 ) : null}
                             </section>
