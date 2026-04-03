@@ -3,10 +3,16 @@
 import { setTokenInCookie } from "@/lib/token.utils";
 import { cookies } from "next/headers";
 
-const BASE_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const BASE_API_URL =
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    process.env.NEXT_PUBLIC_BACKEND_URL ||
+    process.env.NEXT_PUBLIC_API_URL;
 
 export async function getNewTokensWithRefreshToken(refreshToken: string): Promise<boolean> {
 
+    if (!BASE_API_URL) {
+        return false;
+    }
 
     try {
         const res = await fetch(`${BASE_API_URL}/auth/refresh-token`, {
@@ -46,6 +52,10 @@ export async function getNewTokensWithRefreshToken(refreshToken: string): Promis
 
 
 export async function getUserInfo() {
+    if (!BASE_API_URL) {
+        return null;
+    }
+
     try {
         const cookieStore = await cookies();
         const accessToken = cookieStore.get("accessToken")?.value;

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { DataRefreshButton } from "@/components/data-refresh-button";
 
+export const dynamic = "force-dynamic";
+
 export default function CommonProtectedLayout({ children }: { children: React.ReactNode }) {
 	return (
 		<>

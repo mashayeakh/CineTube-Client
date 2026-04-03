@@ -2,13 +2,22 @@ import { ApiResponse } from '@/types/api.types';
 import axios from 'axios';
 import { cookies } from 'next/headers';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+function resolveApiBaseUrl() {
+    const raw =
+        process.env.NEXT_PUBLIC_API_BASE_URL ||
+        process.env.NEXT_PUBLIC_BACKEND_URL ||
+        process.env.NEXT_PUBLIC_API_URL;
 
-if (!API_BASE_URL) {
-    throw new Error('API_BASE_URL is not defined in environment variables');
+    return raw?.replace(/\/$/, '') || '';
 }
 
 const axiosInstance = async () => {
+    const apiBaseUrl = resolveApiBaseUrl();
+
+    if (!apiBaseUrl) {
+        throw new Error('Missing API base URL. Set NEXT_PUBLIC_API_BASE_URL (or NEXT_PUBLIC_BACKEND_URL) in deployment environment variables.');
+    }
+
     const cookieStore = await cookies();
 
     const cookieHeader = cookieStore
@@ -17,7 +26,7 @@ const axiosInstance = async () => {
         .join("; ");
 
     const instance = axios.create({
-        baseURL: API_BASE_URL,
+        baseURL: apiBaseUrl,
         timeout: 30000,
         headers: {
             Cookie: cookieHeader
@@ -47,7 +56,22 @@ function getRequestHeaders(data: unknown, headers?: Record<string, string>) {
     };
 }
 
+function isExpectedDynamicServerUsage(error: unknown) {
+    if (!(error instanceof Error)) {
+        return false;
+    }
+
+    return (
+        ("digest" in error && error.digest === 'DYNAMIC_SERVER_USAGE') ||
+        /Dynamic server usage/i.test(error.message)
+    );
+}
+
 const shouldLogHttpError = (error: unknown) => {
+    if (isExpectedDynamicServerUsage(error)) {
+        return false;
+    }
+
     if (axios.isAxiosError(error)) {
         const code = error.code?.toUpperCase();
         const status = error.response?.status;

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { Bell, Home, Search } from "lucide-react";
 
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
@@ -13,6 +14,11 @@ type UnknownRecord = Record<string, unknown>;
 type OptionItem = {
     id: string;
     name: string;
+};
+
+type PageSearchParams = {
+    error?: string;
+    success?: string;
 };
 
 function isRecord(value: unknown): value is UnknownRecord {
@@ -46,6 +52,51 @@ function normalizeOptions(raw: unknown, typePrefix: string): OptionItem[] {
         .filter((item) => Boolean(item.id && item.name));
 }
 
+function buildActionRedirectPath(params: { error?: string; success?: string }) {
+    const query = new URLSearchParams();
+
+    if (params.error) {
+        query.set("error", params.error);
+    }
+
+    if (params.success) {
+        query.set("success", params.success);
+    }
+
+    const queryString = query.toString();
+    return queryString
+        ? `/admin/movie-management/create-movies?${queryString}`
+        : "/admin/movie-management/create-movies";
+}
+
+function extractActionErrorMessage(error: unknown) {
+    if (isRecord(error)) {
+        const response = error.response;
+
+        if (isRecord(response)) {
+            const data = response.data;
+
+            if (isRecord(data)) {
+                const nestedDetails = data.details;
+
+                if (typeof data.message === "string" && data.message.trim()) {
+                    return data.message.trim();
+                }
+
+                if (isRecord(nestedDetails) && typeof nestedDetails.message === "string" && nestedDetails.message.trim()) {
+                    return nestedDetails.message.trim();
+                }
+            }
+        }
+
+        if (typeof error.message === "string" && error.message.trim()) {
+            return error.message.trim();
+        }
+    }
+
+    return "Failed to create movie. Please try again.";
+}
+
 async function createMovieAction(formData: FormData) {
     "use server";
 
@@ -65,7 +116,7 @@ async function createMovieAction(formData: FormData) {
     const hasPoster = poster instanceof File && poster.size > 0;
 
     if (!title || !description || !director || !userId || !releaseYear || !hasPoster) {
-        return;
+        redirect(buildActionRedirectPath({ error: "Please fill all required fields and attach a poster image." }));
     }
 
     const cast = castInput
@@ -99,13 +150,29 @@ async function createMovieAction(formData: FormData) {
         await createAdminMovie(payload);
     } catch (error) {
         console.error("Failed to create movie:", error);
+        const rawMessage = extractActionErrorMessage(error);
+        const isReadonlyFsError = /EROFS|read-only file system/i.test(rawMessage);
+        const message = isReadonlyFsError
+            ? "Poster upload failed because the server uses a read-only filesystem. Configure backend upload storage (for example /tmp or cloud storage) and try again."
+            : rawMessage;
+
+        redirect(buildActionRedirectPath({ error: message }));
     }
 
     revalidatePath("/admin/movie-management/create-movies");
     revalidatePath("/admin/movie-management/view-movies");
+    redirect(buildActionRedirectPath({ success: "Movie created successfully." }));
 }
 
-export default async function AdminCreateMoviesPage() {
+export default async function AdminCreateMoviesPage({
+    searchParams,
+}: {
+    searchParams: Promise<PageSearchParams>;
+}) {
+    const params = await searchParams;
+    const errorMessage = typeof params.error === "string" ? params.error.trim() : "";
+    const successMessage = typeof params.success === "string" ? params.success.trim() : "";
+
     const [rawGenres, rawPlatforms, currentUser] = await Promise.all([
         getAdminGenres().catch(() => []),
         getAdminStreamingPlatforms().catch(() => []),
@@ -149,6 +216,18 @@ export default async function AdminCreateMoviesPage() {
                                 <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">Create Movies</h1>
                                 <p className="mt-2 text-sm text-slate-600">Create a new movie and attach genres/platforms from your database.</p>
                                 <p className="mt-1 text-xs text-slate-500">Creating as: {adminName}</p>
+
+                                {errorMessage ? (
+                                    <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                                        {errorMessage}
+                                    </div>
+                                ) : null}
+
+                                {successMessage ? (
+                                    <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                                        {successMessage}
+                                    </div>
+                                ) : null}
                             </section>
 
                             <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
