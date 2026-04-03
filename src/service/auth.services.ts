@@ -9,7 +9,6 @@ const BASE_API_URL =
     process.env.NEXT_PUBLIC_API_URL;
 
 export async function getNewTokensWithRefreshToken(refreshToken: string): Promise<boolean> {
-
     if (!BASE_API_URL) {
         return false;
     }
@@ -28,19 +27,16 @@ export async function getNewTokensWithRefreshToken(refreshToken: string): Promis
         }
 
         const { data } = await res.json();
-
         const { accessToken, refreshToken: newRefreshToken, token } = data;
 
         if (accessToken) {
             await setTokenInCookie("accessToken", accessToken);
         }
-
         if (newRefreshToken) {
             await setTokenInCookie("refreshToken", newRefreshToken);
         }
-
         if (token) {
-            await setTokenInCookie("better-auth.session_token", token, 24 * 60 * 60); // 1 day in seconds
+            await setTokenInCookie("better-auth.session_token", token, 24 * 60 * 60);
         }
 
         return true;
@@ -49,7 +45,6 @@ export async function getNewTokensWithRefreshToken(refreshToken: string): Promis
         return false;
     }
 }
-
 
 export async function getUserInfo() {
     if (!BASE_API_URL) {
@@ -65,25 +60,37 @@ export async function getUserInfo() {
             return null;
         }
 
-        const res = await fetch(`${BASE_API_URL}/auth/user/profile`, {
+        const commonCookie = `accessToken=${accessToken}; better-auth.session_token=${sessionToken ?? ""}`;
+
+        // Try with Authorization Bearer header first (production backends typically use this)
+        let res = await fetch(`${BASE_API_URL}/auth/user/profile`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
-                Cookie: `accessToken=${accessToken}; better-auth.session_token=${sessionToken}`
-            }
+                "Authorization": `Bearer ${accessToken}`,
+                Cookie: commonCookie,
+            },
         });
 
+        // If Bearer auth fails, retry with cookie-only
         if (!res.ok) {
-            if (res.status === 401 || res.status === 403) {
-                return null;
-            }
+            res = await fetch(`${BASE_API_URL}/auth/user/profile`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Cookie: commonCookie,
+                },
+            });
+        }
 
-            console.error("Failed to fetch user info:", res.status, res.statusText);
+        if (!res.ok) {
+            if (res.status !== 401 && res.status !== 403) {
+                console.error("Failed to fetch user info:", res.status, res.statusText);
+            }
             return null;
         }
 
         const payload = await res.json() as { data?: unknown; result?: unknown };
-
         return (payload.data ?? payload.result ?? null) as Record<string, unknown> | null;
     } catch (error) {
         console.error("Error fetching user info:", error);

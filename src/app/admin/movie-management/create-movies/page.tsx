@@ -120,32 +120,34 @@ async function createMovieAction(formData: FormData) {
     const genres = formData.getAll("genres").map((value) => String(value));
     const platforms = formData.getAll("platforms").map((value) => String(value));
 
-    // Decode userId directly from the JWT — avoids an extra API round-trip
-    // that can fail in production, causing the form to always reject as "missing fields".
-    const cookieStore = await cookies();
-    const accessTokenRaw = cookieStore.get("accessToken")?.value ?? "";
-    let userId = "";
-    if (accessTokenRaw) {
+    // Try profile API first for accurate DB userId; JWT decode is the fallback.
+    const currentUser = await getUserInfo().catch(() => null);
+    let userId = pickString(currentUser, ["id", "_id", "userId"]);
+
+    if (!userId) {
         try {
-            const parts = accessTokenRaw.split(".");
-            if (parts.length >= 2) {
-                const raw = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-                const padded = raw + "=".repeat((4 - (raw.length % 4)) % 4);
-                const payload = JSON.parse(Buffer.from(padded, "base64").toString("utf8")) as {
-                    id?: string;
-                    userId?: string;
-                    sub?: string;
-                    _id?: string;
-                };
-                userId = payload.id ?? payload.userId ?? payload.sub ?? payload._id ?? "";
+            const cookieStore = await cookies();
+            const accessTokenRaw = cookieStore.get("accessToken")?.value ?? "";
+            if (accessTokenRaw) {
+                const parts = accessTokenRaw.split(".");
+                if (parts.length >= 2) {
+                    const raw = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+                    const padded = raw + "=".repeat((4 - (raw.length % 4)) % 4);
+                    const jwtPayload = JSON.parse(Buffer.from(padded, "base64").toString("utf8")) as {
+                        sub?: string;
+                        userId?: string;
+                        id?: string;
+                        _id?: string;
+                    };
+                    userId = jwtPayload.sub ?? jwtPayload.userId ?? jwtPayload.id ?? jwtPayload._id ?? "";
+                }
             }
         } catch {
-            // malformed token — userId stays empty, validation will reject below
+            // malformed token — userId stays empty
         }
     }
 
     const hasPoster = poster instanceof File && poster.size > 0;
-
     if (!title || !description || !director || !userId || !releaseYear || !hasPoster) {
         redirect(buildActionRedirectPath({ error: "Please fill all required fields and attach a poster image." }));
     }
