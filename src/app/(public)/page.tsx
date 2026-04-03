@@ -5,6 +5,7 @@ import HeroSection from '@/components/ui/modules/home/heroSection'
 import JoinSection from '@/components/ui/modules/home/joinSection'
 import LeaderboardSection from '@/components/ui/modules/home/leaderboardSection'
 import PopularSection from '@/components/ui/modules/home/popularSection'
+import RecommendFeedSection from '@/components/ui/modules/home/recommendFeedSection'
 import SearchField from '@/components/ui/modules/home/searchField'
 import TrendingSection from '@/components/ui/modules/home/trendingSection'
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query'
@@ -36,6 +37,7 @@ export default async function HomePage() {
         <HeroSection />
         <TrendingSection />
         <PopularSection />
+        <RecommendFeedSection />
         <JoinSection />
         {/* <LeaderboardSection /> */}
       </HydrationBoundary>
