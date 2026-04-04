@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { resolveMediaUrl } from "@/lib/media";
 import { cn } from "@/lib/utils";
 
-import { getSeries } from "../public/_actions/series";
+import { getSeries } from "@/app/(public)/public/_actions/series";
 
 const ITEMS_PER_PAGE = 12;
 
