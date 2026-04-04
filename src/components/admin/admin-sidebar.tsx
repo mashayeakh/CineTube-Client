@@ -13,6 +13,7 @@ type AdminSidebarProps = {
 export function AdminSidebar({ activePath }: AdminSidebarProps) {
     const router = useRouter();
     const isMovieOpen = activePath.startsWith("/admin/movie-management");
+    const isSeriesOpen = activePath.startsWith("/admin/series-management");
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const links = [
@@ -115,6 +116,62 @@ export function AdminSidebar({ activePath }: AdminSidebarProps) {
                         <Link
                             href="/admin/movie-management/reviews"
                             className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${activePath === "/admin/movie-management/reviews"
+                                ? "bg-blue-50 font-medium text-blue-600"
+                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                                }`}
+                        >
+                            <MessageSquareText className="size-4" />
+                            Reviews
+                        </Link>
+                    </div>
+                </details>
+                {/* Series management */}
+                <details open={isSeriesOpen} className="group">
+                    <summary
+                        className={`flex cursor-pointer list-none items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${isSeriesOpen
+                            ? "bg-blue-50 text-blue-600"
+                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                            }`}
+                    >
+                        <Clapperboard className="size-4" />
+                        <span className="flex-1">Series Management</span>
+                        <ChevronDown className="size-4 transition group-open:rotate-180" />
+                    </summary>
+
+                    <div className="mt-1 space-y-1 pl-8">
+                        <Link
+                            href="/admin/series-management/create-series"
+                            className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${activePath === "/admin/series-management/create-series"
+                                ? "bg-blue-50 font-medium text-blue-600"
+                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                                }`}
+                        >
+                            <PlusCircle className="size-4" />
+                            Create Series
+                        </Link>
+                        <Link
+                            href="/admin/series-management/view-series"
+                            className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${activePath === "/admin/series-management/view-series"
+                                ? "bg-blue-50 font-medium text-blue-600"
+                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                                }`}
+                        >
+                            <Clapperboard className="size-4" />
+                            View Series
+                        </Link>
+                        <Link
+                            href="/admin/series-management/contributions"
+                            className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${activePath === "/admin/series-management/contributions"
+                                ? "bg-blue-50 font-medium text-blue-600"
+                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                                }`}
+                        >
+                            <ClipboardCheck className="size-4" />
+                            Contributions
+                        </Link>
+                        <Link
+                            href="/admin/series-management/reviews"
+                            className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${activePath === "/admin/series-management/reviews"
                                 ? "bg-blue-50 font-medium text-blue-600"
                                 : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                                 }`}
