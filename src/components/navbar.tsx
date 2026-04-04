@@ -458,11 +458,11 @@ const renderMenuItem = (item: MenuItem, pathname: string) => {
   if (item.items) {
     return (
       <NavigationMenuItem key={item.title}>
-        <NavigationMenuTrigger className="h-8 rounded-full bg-transparent px-3.5 text-xs font-semibold text-slate-300 transition hover:bg-white/8 hover:text-white data-[state=open]:bg-white/8 data-[state=open]:text-white">
+        <NavigationMenuTrigger className="h-9 rounded-full border border-transparent bg-transparent px-4 text-sm font-semibold text-slate-300 transition hover:border-white/10 hover:bg-white/8 hover:text-white data-[state=open]:border-white/12 data-[state=open]:bg-white/10 data-[state=open]:text-white">
           {item.title}
         </NavigationMenuTrigger>
         <NavigationMenuContent>
-          <ul className="grid w-52 gap-0.5 p-2">
+          <ul className="grid w-72 gap-1 p-2.5">
             {item.items.map((sub) => (
               <li key={sub.title}>
                 <NavigationMenuLink
@@ -476,14 +476,27 @@ const renderMenuItem = (item: MenuItem, pathname: string) => {
                     sub.onClick();
                   }}
                   className={cn(
-                    "flex items-start gap-3 rounded-lg px-3 py-2.5 text-sm transition hover:bg-white/8",
-                    pathname === sub.url ? "bg-indigo-500/15 text-indigo-300" : "text-slate-300"
+                    "group flex items-start gap-3 rounded-xl border border-transparent px-3.5 py-3 text-sm transition duration-200 hover:border-white/10 hover:bg-white/6",
+                    pathname === sub.url
+                      ? "border-indigo-400/20 bg-indigo-500/14 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                      : "text-slate-200"
                   )}
                 >
-                  {sub.icon ? <span className="mt-0.5 shrink-0 text-indigo-400">{sub.icon}</span> : null}
-                  <div>
-                    <p className="font-semibold leading-none">{sub.title}</p>
-                    {sub.description ? <p className="mt-0.5 text-xs text-slate-500">{sub.description}</p> : null}
+                  {sub.icon ? (
+                    <span
+                      className={cn(
+                        "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg border transition",
+                        pathname === sub.url
+                          ? "border-indigo-400/25 bg-indigo-400/12 text-indigo-200"
+                          : "border-white/10 bg-white/5 text-indigo-300 group-hover:border-white/14 group-hover:bg-white/8"
+                      )}
+                    >
+                      {sub.icon}
+                    </span>
+                  ) : null}
+                  <div className="space-y-1">
+                    <p className="font-semibold leading-none tracking-tight">{sub.title}</p>
+                    {sub.description ? <p className="text-xs leading-5 text-slate-400">{sub.description}</p> : null}
                   </div>
                 </NavigationMenuLink>
               </li>
