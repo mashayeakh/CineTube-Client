@@ -1,6 +1,6 @@
 "use client";
 
-import { Clapperboard, Home, LogOut, Menu, Search, Settings, X, Zap } from "lucide-react";
+import { Clapperboard, Film, Home, LogOut, Menu, Search, Settings, Star, Trophy, Tv, X, Zap } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
@@ -127,17 +127,59 @@ const Navbar = ({ className }: { className?: string }) => {
 
   const menu: MenuItem[] = [
     {
-      title: "Popular Movies",
-      description: "Trending films right now",
-      icon: <Zap className="size-4" />,
+      title: "Movies",
       url: "/popular",
+      items: [
+        {
+          title: "Popular Movies",
+          description: "Trending films right now",
+          icon: <Film className="size-4" />,
+          url: "/popular",
+        },
+        {
+          title: "Top Rated Movies",
+          description: "Critic and audience favorites",
+          icon: <Star className="size-4" />,
+          url: "/movies/top-rated",
+        },
+      ],
     },
     {
-      title: "Contribution Movies",
-      description: "Submit movie contributions (premium)",
-      icon: <Clapperboard className="size-4" />,
-      url: "/premium_user/contributions",
-      onClick: handleContributionMoviesClick,
+      title: "TV Shows",
+      url: "/tv/popular-series",
+      items: [
+        {
+          title: "Popular Series",
+          description: "Series people are watching now",
+          icon: <Tv className="size-4" />,
+          url: "/tv/popular-series",
+        },
+        {
+          title: "On TV",
+          description: "Browse what is airing now",
+          icon: <Zap className="size-4" />,
+          url: "/tv/on-tv",
+        },
+      ],
+    },
+    {
+      title: "More",
+      url: "/leaderboard",
+      items: [
+        {
+          title: "Contribute Movie",
+          description: "Submit movie contributions",
+          icon: <Clapperboard className="size-4" />,
+          url: "/premium_user/contributions",
+          onClick: handleContributionMoviesClick,
+        },
+        {
+          title: "Leaderboard",
+          description: "Top contributors and rankings",
+          icon: <Trophy className="size-4" />,
+          url: "/leaderboard",
+        },
+      ],
     },
   ];
 
