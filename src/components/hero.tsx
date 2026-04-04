@@ -17,7 +17,7 @@ const Hero = ({
     <section
       className={cn(
         "relative overflow-hidden py-24 lg:py-32",
-        "bg-[radial-gradient(circle_at_top,#173a63_0%,#0e223b_42%,#090f1d_100%)]",
+        "bg-[radial-gradient(circle_at_top,#16375E_0%,#0e223b_42%,#090f1d_100%)]",
         className
       )}
     >
@@ -47,10 +47,10 @@ const Hero = ({
             Explore Movies
           </Link>
           <Link
-            href="/signup"
+            href="/series"
             className="inline-flex h-12 items-center gap-2 rounded-full border border-white/30 bg-white/10 px-7 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/20"
           >
-            Sign Up Free
+            Explore Series
           </Link>
         </div>
 

@@ -336,7 +336,7 @@ export default async function AdminProfilePage() {
                             {/* <button className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 transition hover:text-slate-700" type="button">
                                 <Bell className="size-4" />
                             </button> */}
-                            <Link href="/admin/dashboard" className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 transition hover:text-slate-700">
+                            <Link href="/" className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 transition hover:text-slate-700">
                                 <Home className="size-4" />
                             </Link>
                         </div>

@@ -63,6 +63,11 @@ export async function deleteAllAdminSeries() {
     return unwrap(response);
 }
 
+export async function featureAdminSeries(seriesId: string) {
+    const response = await httpClient.patch<unknown>(`/series/${seriesId}/feature`, {});
+    return unwrap(response);
+}
+
 export function toSeriesPayload(input: UnknownRecord): Partial<SeriesPayload> {
     return input as Partial<SeriesPayload>;
 }

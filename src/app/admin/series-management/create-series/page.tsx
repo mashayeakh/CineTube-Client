@@ -273,9 +273,7 @@ export default async function AdminCreateSeriesPage({
                     <main className="p-4 sm:p-6">
                         <div className="mx-auto max-w-5xl space-y-5">
                             <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                                <p className="text-sm text-slate-500">Admin / Series Management / Create Series</p>
                                 <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">Create Series</h1>
-                                <p className="mt-2 text-sm text-slate-600">Create a new series and attach genres/platforms from your database.</p>
                                 <p className="mt-1 text-xs text-slate-500">Creating as: {adminName}</p>
 
                                 {errorMessage ? (
