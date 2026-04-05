@@ -41,7 +41,7 @@ const Hero = ({
         {/* CTAs */}
         <div className="mx-auto mt-10 flex flex-wrap items-center justify-center gap-4">
           <Link
-            href="/popular"
+            href="/movies/all-movies"
             className="inline-flex h-12 items-center gap-2 rounded-full bg-white px-7 text-sm font-bold text-slate-900 shadow-lg transition-all hover:bg-white/90"
           >
             Explore Movies

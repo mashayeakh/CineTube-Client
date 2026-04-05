@@ -537,21 +537,21 @@ export default async function AdminDashboardPage() {
                 <div className="min-w-0">
                     <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200/80 bg-slate-50/95 px-4 backdrop-blur sm:px-6">
                         <div>
-                            <p className="text-sm font-semibold tracking-wide text-slate-800">Admin Console</p>
+                            <p className="text-sm font-semibold tracking-wide text-slate-800">Admin Panel</p>
                             <p className="text-xs text-slate-500">Operational overview</p>
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500 shadow-sm md:flex">
+                            {/* <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500 shadow-sm md:flex">
                                 <Search className="size-4" />
                                 Search
                             </div>
-                            {/* <button className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-700">
+                            <button className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-700">
                                 <Bell className="size-4" />
                             </button> */}
-                            <button className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-700">
+                            <Link href="/" className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-700">
                                 <Home className="size-4" />
-                            </button>
+                            </Link>
                         </div>
                     </header>
 
