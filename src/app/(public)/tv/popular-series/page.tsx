@@ -51,7 +51,7 @@ export default function PopularSeriesPage() {
 
     const { data: rawSeries, isLoading } = useQuery({
         queryKey: ["popular-series"],
-        queryFn: getSeries,
+        queryFn: () => getSeries(),
     });
 
     const series = useMemo(() => {
