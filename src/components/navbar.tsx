@@ -125,6 +125,28 @@ const Navbar = ({ className }: { className?: string }) => {
     router.push("/premium_user/contributions");
   };
 
+  const isAdmin = user?.role === "ADMIN";
+
+  const moreMenuItems: MenuItem[] = [
+    ...(!isAdmin
+      ? [
+        {
+          title: "Contribute Movie",
+          description: "Submit movie contributions",
+          icon: <Clapperboard className="size-4" />,
+          url: "/premium_user/contributions",
+          onClick: handleContributionMoviesClick,
+        },
+      ]
+      : []),
+    {
+      title: "Leaderboard",
+      description: "Top contributors and rankings",
+      icon: <Trophy className="size-4" />,
+      url: "/leaderboard",
+    },
+  ];
+
   const menu: MenuItem[] = [
     {
       title: "Movies",
@@ -162,25 +184,18 @@ const Navbar = ({ className }: { className?: string }) => {
         },
       ],
     },
-    {
-      title: "More",
-      url: "/leaderboard",
-      items: [
-        {
-          title: "Contribute Movie",
-          description: "Submit movie contributions",
-          icon: <Clapperboard className="size-4" />,
-          url: "/premium_user/contributions",
-          onClick: handleContributionMoviesClick,
-        },
-        {
-          title: "Leaderboard",
-          description: "Top contributors and rankings",
-          icon: <Trophy className="size-4" />,
-          url: "/leaderboard",
-        },
-      ],
-    },
+    isAdmin
+      ? {
+        title: "Leaderboard",
+        description: "Top contributors and rankings",
+        icon: <Trophy className="size-4" />,
+        url: "/leaderboard",
+      }
+      : {
+        title: "More",
+        url: "/leaderboard",
+        items: moreMenuItems,
+      },
   ];
 
   return (
