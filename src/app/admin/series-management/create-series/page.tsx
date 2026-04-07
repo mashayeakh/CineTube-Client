@@ -207,7 +207,7 @@ async function createSeriesAction(formData: FormData) {
     }
 
     revalidatePath("/admin/series-management/create-series");
-    revalidatePath("/admin/series-management/view-series");
+    revalidatePath("/admin/series-management/all-series");
     redirect(buildActionRedirectPath({ success: "Series created successfully." }));
 }
 
@@ -367,8 +367,8 @@ export default async function AdminCreateSeriesPage({
                                         <PendingSubmitButton pendingText="Creating..." className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
                                             Create Series
                                         </PendingSubmitButton>
-                                        <Link href="/admin/series-management/view-series" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                                            View Series
+                                        <Link href="/admin/series-management/all-series" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                                            View All Series
                                         </Link>
                                     </div>
                                 </form>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronDown, ClipboardCheck, Clapperboard, CreditCard, LayoutDashboard, LogOut, MessageSquareText, PlusCircle, Tags, UserRoundCog, UserCircle2 } from "lucide-react";
+import { ChevronDown, ClipboardCheck, Clapperboard, Compass, CreditCard, LayoutDashboard, LogOut, MessageSquareText, PlusCircle, Star, Tags, UserRoundCog, UserCircle2 } from "lucide-react";
 import { redirect } from "next/navigation";
 import {
     getAdminDashboardSubscriptions,
@@ -122,7 +122,7 @@ export async function AdminSidebar({ activePath }: AdminSidebarProps) {
     ];
 
     return (
-        <aside className="border-r border-slate-200 bg-slate-50 lg:sticky lg:top-0 lg:h-screen">
+        <aside className="border-r border-blue-200/70 bg-linear-to-b from-blue-100 via-sky-50 to-indigo-100 lg:sticky lg:top-0 lg:h-screen">
             <div className="px-4 py-5">
                 <h2 className="text-xl font-semibold tracking-tight text-slate-800">My Dashboard</h2>
             </div>
@@ -132,15 +132,15 @@ export async function AdminSidebar({ activePath }: AdminSidebarProps) {
                     const Icon = item.icon;
                     const isActive = activePath === item.href || activePath.startsWith(`${item.href}/`);
                     const isSubscriptionItem = item.href === "/admin/subscription-management";
-                    const defaultClass = "text-slate-600 hover:bg-slate-100 hover:text-slate-900";
-                    const recentPendingClass = "bg-amber-50 text-amber-700 hover:bg-amber-100";
+                    const defaultClass = "text-slate-700 hover:bg-blue-100/80 hover:text-blue-900";
+                    const recentPendingClass = "bg-amber-50/90 text-amber-700 hover:bg-amber-100";
 
                     return (
                         <Link
                             key={item.href}
                             href={item.href}
                             className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition ${isActive
-                                ? "bg-blue-50 text-blue-600"
+                                ? "bg-blue-600 text-white shadow-md ring-1 ring-blue-500/30"
                                 : isSubscriptionItem && hasRecentPending
                                     ? recentPendingClass
                                     : defaultClass
@@ -166,8 +166,8 @@ export async function AdminSidebar({ activePath }: AdminSidebarProps) {
                 <details open={isMovieOpen} className="group">
                     <summary
                         className={`flex cursor-pointer list-none items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${isMovieOpen
-                            ? "bg-blue-50 text-blue-600"
-                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                            ? "bg-blue-600 text-white shadow-md ring-1 ring-blue-500/30"
+                            : "text-slate-700 hover:bg-blue-100/80 hover:text-blue-900"
                             }`}
                     >
                         <Clapperboard className="size-4" />
@@ -179,8 +179,8 @@ export async function AdminSidebar({ activePath }: AdminSidebarProps) {
                         {/* <Link
                             href="/admin/movie-management/create-movies"
                             className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${activePath === "/admin/movie-management/create-movies"
-                                ? "bg-blue-50 font-medium text-blue-600"
-                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                                ? "bg-blue-600 font-medium text-white shadow-md ring-1 ring-blue-500/30"
+                                : "text-slate-700 hover:bg-blue-100/80 hover:text-blue-900"
                                 }`}
                         >
                             <PlusCircle className="size-4" />
@@ -189,8 +189,8 @@ export async function AdminSidebar({ activePath }: AdminSidebarProps) {
                         <Link
                             href="/admin/movie-management/view-movies"
                             className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${activePath === "/admin/movie-management/view-movies"
-                                ? "bg-blue-50 font-medium text-blue-600"
-                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                                ? "bg-blue-600 font-medium text-white shadow-md ring-1 ring-blue-500/30"
+                                : "text-slate-700 hover:bg-blue-100/80 hover:text-blue-900"
                                 }`}
                         >
                             <Clapperboard className="size-4" />
@@ -199,8 +199,8 @@ export async function AdminSidebar({ activePath }: AdminSidebarProps) {
                         <Link
                             href="/admin/movie-management/contributions"
                             className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${activePath === "/admin/movie-management/contributions"
-                                ? "bg-blue-50 font-medium text-blue-600"
-                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                                ? "bg-blue-600 font-medium text-white shadow-md ring-1 ring-blue-500/30"
+                                : "text-slate-700 hover:bg-blue-100/80 hover:text-blue-900"
                                 }`}
                         >
                             <ClipboardCheck className="size-4" />
@@ -222,8 +222,8 @@ export async function AdminSidebar({ activePath }: AdminSidebarProps) {
                 <details open={isSeriesOpen} className="group">
                     <summary
                         className={`flex cursor-pointer list-none items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${isSeriesOpen
-                            ? "bg-blue-50 text-blue-600"
-                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                            ? "bg-blue-600 text-white shadow-md ring-1 ring-blue-500/30"
+                            : "text-slate-700 hover:bg-blue-100/80 hover:text-blue-900"
                             }`}
                     >
                         <Clapperboard className="size-4" />
@@ -235,28 +235,58 @@ export async function AdminSidebar({ activePath }: AdminSidebarProps) {
                         <Link
                             href="/admin/series-management/create-series"
                             className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${activePath === "/admin/series-management/create-series"
-                                ? "bg-blue-50 font-medium text-blue-600"
-                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                                ? "bg-blue-600 font-medium text-white shadow-md ring-1 ring-blue-500/30"
+                                : "text-slate-700 hover:bg-blue-100/80 hover:text-blue-900"
                                 }`}
                         >
                             <PlusCircle className="size-4" />
                             Create Series
                         </Link>
                         <Link
-                            href="/admin/series-management/view-series"
-                            className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${activePath === "/admin/series-management/view-series"
-                                ? "bg-blue-50 font-medium text-blue-600"
-                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                            href="/admin/series-management/all-series"
+                            className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${activePath === "/admin/series-management/all-series"
+                                ? "bg-blue-600 font-medium text-white shadow-md ring-1 ring-blue-500/30"
+                                : "text-slate-700 hover:bg-blue-100/80 hover:text-blue-900"
                                 }`}
                         >
                             <Clapperboard className="size-4" />
-                            View Series
+                            All Series
+                        </Link>
+                        <Link
+                            href="/admin/series-management/featured-series"
+                            className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${activePath === "/admin/series-management/featured-series"
+                                ? "bg-blue-600 font-medium text-white shadow-md ring-1 ring-blue-500/30"
+                                : "text-slate-700 hover:bg-blue-100/80 hover:text-blue-900"
+                                }`}
+                        >
+                            <Star className="size-4" />
+                            Featured Series
+                        </Link>
+                        <Link
+                            href="/admin/series-management/discovery"
+                            className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${activePath === "/admin/series-management/discovery"
+                                ? "bg-blue-600 font-medium text-white shadow-md ring-1 ring-blue-500/30"
+                                : "text-slate-700 hover:bg-blue-100/80 hover:text-blue-900"
+                                }`}
+                        >
+                            <Compass className="size-4" />
+                            Discovery
+                        </Link>
+                        <Link
+                            href="/admin/series-management/tracking"
+                            className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${activePath === "/admin/series-management/tracking"
+                                ? "bg-blue-600 font-medium text-white shadow-md ring-1 ring-blue-500/30"
+                                : "text-slate-700 hover:bg-blue-100/80 hover:text-blue-900"
+                                }`}
+                        >
+                            <Clapperboard className="size-4" />
+                            Tracking
                         </Link>
                         <Link
                             href="/admin/series-management/contributions"
                             className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${activePath === "/admin/series-management/contributions"
-                                ? "bg-blue-50 font-medium text-blue-600"
-                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                                ? "bg-blue-600 font-medium text-white shadow-md ring-1 ring-blue-500/30"
+                                : "text-slate-700 hover:bg-blue-100/80 hover:text-blue-900"
                                 }`}
                         >
                             <ClipboardCheck className="size-4" />
@@ -278,7 +308,7 @@ export async function AdminSidebar({ activePath }: AdminSidebarProps) {
                 <form action={logoutAction}>
                     <button
                         type="submit"
-                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-blue-100/80 hover:text-blue-900"
                     >
                         <LogOut className="size-4" />
                         <span>Logout</span>

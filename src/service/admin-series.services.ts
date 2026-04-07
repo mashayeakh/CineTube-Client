@@ -43,6 +43,48 @@ export async function getAdminSeries(options?: ApiRequestOptions) {
     return unwrap(response);
 }
 
+export async function getAllAdminSeries(options?: ApiRequestOptions) {
+    const response = await httpClient.get<unknown>("/series", options);
+    return unwrap(response);
+}
+
+export async function getFeaturedAdminSeries(options?: ApiRequestOptions) {
+    const response = await httpClient.get<unknown>("/series/featured", options);
+    return unwrap(response);
+}
+
+export async function getOngoingAdminSeries(options?: ApiRequestOptions) {
+    const response = await httpClient.get<unknown>("/series/ongoing", options);
+    return unwrap(response);
+}
+
+export async function getCompletedAdminSeries(options?: ApiRequestOptions) {
+    const response = await httpClient.get<unknown>("/series/completed", options);
+    return unwrap(response);
+}
+
+export async function getUpcomingAdminSeries(options?: ApiRequestOptions) {
+    const response = await httpClient.get<unknown>("/series/upcoming", options);
+    return unwrap(response);
+}
+
+export async function getMySeriesTracking(options?: ApiRequestOptions) {
+    const response = await httpClient.get<unknown>("/series/tracking/me", options);
+    return unwrap(response);
+}
+
+export async function searchAdminSeries(searchTerm: string, options?: ApiRequestOptions) {
+    const response = await httpClient.get<unknown>("/series/search", {
+        ...options,
+        params: {
+            ...(options?.params ?? {}),
+            searchTerm,
+        },
+    });
+
+    return unwrap(response);
+}
+
 export async function createAdminSeries(payload: SeriesPayload | FormData) {
     const response = await httpClient.post<unknown>("/series/create", payload);
     return unwrap(response);
