@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
-import { Bell, Home, Search } from "lucide-react";
+import { Home, Search } from "lucide-react";
 
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { SubscriptionTableClient } from "@/components/admin/subscription-table-client";
@@ -22,6 +22,16 @@ type SubscriptionRow = {
     startDate: string;
     endDate: string;
 };
+
+function normalizeSubscriptionStatus(value: string) {
+    const normalized = value.trim().toUpperCase();
+
+    if (normalized.includes("CANCEL")) {
+        return "FAILED";
+    }
+
+    return normalized || "PENDING";
+}
 
 function isRecord(value: unknown): value is UnknownRecord {
     return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -100,7 +110,7 @@ function normalizeSubscriptions(raw: unknown): SubscriptionRow[] {
                 userName: pickString(user, ["name", "fullName", "username"], pickString(item, ["userName", "subscriberName"], "Unknown user")),
                 userEmail: pickString(user, ["email"], pickString(item, ["userEmail", "subscriberEmail"], "N/A")),
                 type: pickString(item, ["type", "subscriptionType", "plan"], "MONTHLY").toUpperCase(),
-                status: pickString(item, ["status", "subscriptionStatus"], "PENDING").toUpperCase(),
+                status: normalizeSubscriptionStatus(pickString(item, ["status", "subscriptionStatus"], "PENDING")),
                 startDate: pickString(item, ["startDate", "createdAt", "startsAt"], ""),
                 endDate: pickString(item, ["endDate", "expiresAt", "endsAt"], ""),
             };
@@ -108,12 +118,19 @@ function normalizeSubscriptions(raw: unknown): SubscriptionRow[] {
         .filter((item) => Boolean(item.id));
 }
 
+function isPendingStatus(status: string) {
+    const normalized = status.trim().toUpperCase();
+
+    return normalized.includes("PENDING") || normalized.includes("PROCESS") || normalized.includes("REVIEW");
+}
+
 async function activateSubscriptionAction(formData: FormData) {
     "use server";
 
     const subscriptionId = String(formData.get("subscriptionId") ?? "");
+    const currentStatus = String(formData.get("currentStatus") ?? "");
 
-    if (!subscriptionId) {
+    if (!subscriptionId || !isPendingStatus(currentStatus)) {
         return;
     }
 
@@ -129,19 +146,20 @@ async function activateSubscriptionAction(formData: FormData) {
     revalidatePath("/user/contributions");
 }
 
-async function rejectSubscriptionAction(formData: FormData) {
+async function failSubscriptionAction(formData: FormData) {
     "use server";
 
     const subscriptionId = String(formData.get("subscriptionId") ?? "");
+    const currentStatus = String(formData.get("currentStatus") ?? "");
 
-    if (!subscriptionId) {
+    if (!subscriptionId || !isPendingStatus(currentStatus)) {
         return;
     }
 
     try {
         await rejectAdminDashboardSubscription(subscriptionId);
     } catch (error) {
-        console.error("Failed to reject subscription:", error);
+        console.error("Failed to mark subscription as failed:", error);
     }
 
     revalidatePath("/admin/subscription-management");
@@ -158,9 +176,14 @@ export default async function AdminSubscriptionManagementPage() {
 
     const subscriptions = normalizeSubscriptions(rawSubscriptions);
     const statsData = isRecord(statsPayload) && "data" in statsPayload ? statsPayload.data : {};
+    const failedFromList = subscriptions.filter((item) => item.status === "FAILED").length;
     const pendingCount = pickNumber(statsData, ["pending", "pendingCount", "pendingSubscriptions"]);
     const activeCount = pickNumber(statsData, ["active", "activeCount", "activeSubscriptions"]);
-    const rejectedCount = pickNumber(statsData, ["rejected", "rejectedCount", "cancelled", "cancelledCount"]);
+    const failedCount = Math.max(
+        failedFromList,
+        pickNumber(statsData, ["failed", "failedCount", "failedPayments"]),
+        pickNumber(statsData, ["cancelled", "cancelledCount"]),
+    );
 
     return (
         <div className="min-h-screen bg-slate-100 text-slate-900">
@@ -171,7 +194,7 @@ export default async function AdminSubscriptionManagementPage() {
                     <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-slate-50 px-4 sm:px-6">
                         <div>
                             <p className="text-sm font-semibold text-slate-800">Subscription Management</p>
-                            <p className="text-xs text-slate-500">Activate or reject paid subscriptions</p>
+                            {/* <p className="text-xs text-slate-500">Activate or reject paid subscriptions</p> */}
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -194,7 +217,7 @@ export default async function AdminSubscriptionManagementPage() {
                                 <p className="text-sm text-slate-500">Admin / Subscription Management</p>
                                 <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">Subscription Approval Desk</h1>
                                 <p className="mt-2 text-sm text-slate-600">
-                                    User payments are completed by Stripe first. Then admin activates or rejects subscriptions here.
+                                    User payments are completed by Stripe first. Then admin activates pending subscriptions here.
                                 </p>
 
                                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -207,8 +230,8 @@ export default async function AdminSubscriptionManagementPage() {
                                         <p className="mt-1 text-lg font-semibold text-emerald-800">{activeCount}</p>
                                     </article>
                                     <article className="rounded-lg border border-rose-200 bg-rose-50 p-3">
-                                        <p className="text-xs uppercase tracking-wider text-rose-700">Rejected</p>
-                                        <p className="mt-1 text-lg font-semibold text-rose-800">{rejectedCount}</p>
+                                        <p className="text-xs uppercase tracking-wider text-rose-700">Failed</p>
+                                        <p className="mt-1 text-lg font-semibold text-rose-800">{failedCount}</p>
                                     </article>
                                 </div>
                             </section>
@@ -216,7 +239,7 @@ export default async function AdminSubscriptionManagementPage() {
                             <SubscriptionTableClient
                                 subscriptions={subscriptions}
                                 activateSubscriptionAction={activateSubscriptionAction}
-                                rejectSubscriptionAction={rejectSubscriptionAction}
+                                failSubscriptionAction={failSubscriptionAction}
                             />
                         </div>
                     </main>

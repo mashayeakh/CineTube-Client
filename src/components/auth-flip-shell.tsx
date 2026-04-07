@@ -394,12 +394,12 @@ export function AuthFlipShell({ initialMode, LoginFormProps = {} }: { initialMod
 
                                         <div className="flex items-center gap-2.5 text-sm text-slate-400">
                                             <span>Or</span>
-                                            <button
+                                            {/* <button
                                                 type="button"
                                                 className="inline-flex size-9 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
                                             >
                                                 f
-                                            </button>
+                                            </button> */}
                                             <button
                                                 type="button"
                                                 className="inline-flex size-9 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"

@@ -18,7 +18,7 @@ type SubscriptionRow = {
 type SubscriptionTableClientProps = {
     subscriptions: SubscriptionRow[];
     activateSubscriptionAction: (formData: FormData) => Promise<void>;
-    rejectSubscriptionAction: (formData: FormData) => Promise<void>;
+    failSubscriptionAction: (formData: FormData) => Promise<void>;
 };
 
 function formatDate(raw: string) {
@@ -41,17 +41,33 @@ function badgeClass(status: string) {
         return "bg-emerald-100 text-emerald-700";
     }
 
-    if (normalized.includes("reject") || normalized.includes("cancel") || normalized.includes("fail")) {
+    if (normalized.includes("fail") || normalized.includes("cancel")) {
         return "bg-rose-100 text-rose-700";
     }
 
     return "bg-amber-100 text-amber-700";
 }
 
+function isPendingStatus(status: string) {
+    const normalized = status.trim().toLowerCase();
+
+    return normalized.includes("pending") || normalized.includes("process") || normalized.includes("review");
+}
+
+function statusLabel(status: string) {
+    const normalized = status.trim().toUpperCase();
+
+    if (normalized.includes("CANCEL")) {
+        return "FAILED";
+    }
+
+    return normalized || "PENDING";
+}
+
 export function SubscriptionTableClient({
     subscriptions,
     activateSubscriptionAction,
-    rejectSubscriptionAction,
+    failSubscriptionAction,
 }: SubscriptionTableClientProps) {
     const [query, setQuery] = useState("");
 
@@ -109,7 +125,10 @@ export function SubscriptionTableClient({
                             </tr>
                         ) : (
                             filtered.map((item) => {
-                                const isPending = item.status.toLowerCase().includes("pending");
+                                const isPending = isPendingStatus(item.status);
+                                const normalizedStatus = statusLabel(item.status);
+                                const isActivated = normalizedStatus === "ACTIVE" || normalizedStatus === "COMPLETED";
+                                const isFailed = normalizedStatus === "FAILED";
 
                                 return (
                                     <tr key={item.id} className="border-t border-slate-200 hover:bg-slate-50">
@@ -118,36 +137,54 @@ export function SubscriptionTableClient({
                                         <td className="px-4 py-3 text-slate-700">{item.type}</td>
                                         <td className="px-4 py-3">
                                             <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${badgeClass(item.status)}`}>
-                                                {item.status}
+                                                {normalizedStatus}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3 text-slate-700">{formatDate(item.startDate)}</td>
                                         <td className="px-4 py-3 text-slate-700">{formatDate(item.endDate)}</td>
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-2">
-                                                <form action={activateSubscriptionAction}>
-                                                    <input type="hidden" name="subscriptionId" value={item.id} />
-                                                    <PendingSubmitButton
-                                                        pendingText="Activating..."
-                                                        disabled={!isPending}
-                                                        className="h-8 rounded-md border border-emerald-200 px-2 text-xs font-medium text-emerald-600 hover:bg-emerald-50"
-                                                    >
-                                                        <CheckCircle2 className="size-3" />
-                                                        Activate
-                                                    </PendingSubmitButton>
-                                                </form>
+                                                {isPending && (
+                                                    <>
+                                                        <form action={activateSubscriptionAction}>
+                                                            <input type="hidden" name="subscriptionId" value={item.id} />
+                                                            <input type="hidden" name="currentStatus" value={item.status} />
+                                                            <PendingSubmitButton
+                                                                pendingText="Activating..."
+                                                                className="h-8 rounded-md border border-emerald-200 px-2 text-xs font-medium text-emerald-600 hover:bg-emerald-50"
+                                                            >
+                                                                <CheckCircle2 className="size-3" />
+                                                                Activate
+                                                            </PendingSubmitButton>
+                                                        </form>
 
-                                                <form action={rejectSubscriptionAction}>
-                                                    <input type="hidden" name="subscriptionId" value={item.id} />
-                                                    <PendingSubmitButton
-                                                        pendingText="Rejecting..."
-                                                        disabled={!isPending}
-                                                        className="h-8 rounded-md border border-rose-200 px-2 text-xs font-medium text-rose-600 hover:bg-rose-50"
-                                                    >
+                                                        <form action={failSubscriptionAction}>
+                                                            <input type="hidden" name="subscriptionId" value={item.id} />
+                                                            <input type="hidden" name="currentStatus" value={item.status} />
+                                                            <PendingSubmitButton
+                                                                pendingText="Marking failed..."
+                                                                className="h-8 rounded-md border border-rose-200 px-2 text-xs font-medium text-rose-600 hover:bg-rose-50"
+                                                            >
+                                                                <XCircle className="size-3" />
+                                                                Fail
+                                                            </PendingSubmitButton>
+                                                        </form>
+                                                    </>
+                                                )}
+
+                                                {!isPending && isActivated && (
+                                                    <span className="inline-flex h-8 items-center gap-1 rounded-md border border-emerald-200 px-2 text-xs font-medium text-emerald-600">
+                                                        <CheckCircle2 className="size-3" />
+                                                        Activated
+                                                    </span>
+                                                )}
+
+                                                {!isPending && isFailed && (
+                                                    <span className="inline-flex h-8 items-center gap-1 rounded-md border border-rose-200 px-2 text-xs font-medium text-rose-600">
                                                         <XCircle className="size-3" />
-                                                        Reject
-                                                    </PendingSubmitButton>
-                                                </form>
+                                                        Failed
+                                                    </span>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

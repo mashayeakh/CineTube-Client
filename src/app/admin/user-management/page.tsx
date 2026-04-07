@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import {
-    Ban,
-    Bell,
     Download,
     Home,
     RefreshCw,
@@ -16,7 +14,6 @@ import { PendingSubmitButton } from "@/components/ui/pending-submit-button";
 import {
     getAdminDashboardUsers,
     updateAdminDashboardUserRole,
-    updateAdminDashboardUserStatus,
     type AdminServiceResponse,
 } from "@/service/admin-dashboard.services";
 
@@ -250,31 +247,6 @@ async function updateUserRoleAction(formData: FormData) {
     revalidatePath("/admin/user-management");
 }
 
-async function toggleUserStatusAction(formData: FormData) {
-    "use server";
-
-    const userId = String(formData.get("userId") ?? "");
-    const currentStatus = String(formData.get("currentStatus") ?? "ACTIVE").trim().toUpperCase();
-    const nextStatus = currentStatus === "BANNED" ? "ACTIVE" : "BANNED";
-
-    if (!userId) {
-        return;
-    }
-
-    try {
-        await updateAdminDashboardUserStatus(userId, {
-            status: nextStatus,
-            isBlocked: nextStatus === "BANNED",
-            blocked: nextStatus === "BANNED",
-            active: nextStatus === "ACTIVE",
-        });
-    } catch (error) {
-        console.error("Failed to update user status:", error);
-    }
-
-    revalidatePath("/admin/user-management");
-}
-
 export default async function AdminUserManagementPage({
     searchParams,
 }: {
@@ -309,7 +281,6 @@ export default async function AdminUserManagementPage({
     const totalUsers = users.length;
     const activeUsers = users.filter((user) => user.status === "ACTIVE").length;
     const inactiveUsers = users.filter((user) => user.status === "INACTIVE").length;
-    const bannedUsers = users.filter((user) => user.status === "BANNED").length;
     const adminUsers = users.filter((user) => user.role === "ADMIN").length;
     const regularUsers = users.filter((user) => user.role !== "ADMIN").length;
 
@@ -319,7 +290,6 @@ export default async function AdminUserManagementPage({
         { label: "Total Users", value: totalUsers, tone: "text-slate-900" },
         { label: "Active", value: activeUsers, tone: "text-emerald-600" },
         { label: "Inactive", value: inactiveUsers, tone: "text-slate-600" },
-        { label: "Banned", value: bannedUsers, tone: "text-rose-600" },
         { label: "Admins", value: adminUsers, tone: "text-blue-600" },
         { label: "Regular Users", value: regularUsers, tone: "text-violet-600" },
     ];
@@ -368,7 +338,7 @@ export default async function AdminUserManagementPage({
                                 </a>
                             </section>
 
-                            <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+                            <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
                                 {metricCards.map((card) => (
                                     <article key={card.label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                                         <p className="text-sm text-slate-500">{card.label}</p>
@@ -499,21 +469,6 @@ export default async function AdminUserManagementPage({
                                                                         className="h-8 rounded-md border border-slate-300 px-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
                                                                     >
                                                                         Save
-                                                                    </PendingSubmitButton>
-                                                                </form>
-
-                                                                <form action={toggleUserStatusAction}>
-                                                                    <input type="hidden" name="userId" value={user.id} />
-                                                                    <input type="hidden" name="currentStatus" value={user.status} />
-                                                                    <PendingSubmitButton
-                                                                        pendingText={user.status === "BANNED" ? "Unbanning..." : "Banning..."}
-                                                                        className={`inline-flex h-8 items-center gap-1 rounded-md px-2 text-xs font-semibold ${user.status === "BANNED"
-                                                                            ? "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                                                                            : "border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
-                                                                            }`}
-                                                                    >
-                                                                        <Ban className="size-3" />
-                                                                        {user.status === "BANNED" ? "Unban" : "Ban"}
                                                                     </PendingSubmitButton>
                                                                 </form>
                                                             </div>

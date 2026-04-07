@@ -52,7 +52,7 @@ export default function AdminCategoryManagementPage() {
                                             href="/admin/category-management/genres"
                                             className="rounded-lg border border-slate-300 bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800"
                                         >
-                                            Open Genre CRUD
+                                            Create Genre
                                         </Link>
                                     </div>
                                 </article>
@@ -67,7 +67,7 @@ export default function AdminCategoryManagementPage() {
                                             href="/admin/category-management/streaming-platforms"
                                             className="rounded-lg border border-slate-300 bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800"
                                         >
-                                            Open Platform CRUD
+                                            Create Streaming Platform
                                         </Link>
                                     </div>
                                 </article>

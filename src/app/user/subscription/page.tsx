@@ -46,6 +46,12 @@ function isActiveSubscription(status: string, endDateValue: unknown) {
     return endDate.getTime() >= Date.now();
 }
 
+function isPendingSubscription(status: string) {
+    const normalizedStatus = status.trim().toUpperCase();
+
+    return normalizedStatus.includes("PENDING") || normalizedStatus.includes("PROCESS") || normalizedStatus.includes("REVIEW");
+}
+
 export default async function UserSubscriptionPage() {
     let payload: unknown = null;
 
@@ -65,6 +71,11 @@ export default async function UserSubscriptionPage() {
 
         return isActiveSubscription(status, endDateValue);
     });
+    const pendingRecord = items.find((item) => {
+        const status = parseString(findValue(item, ["status"]), "");
+
+        return isPendingSubscription(status);
+    });
 
     const activePlan = activeRecord
         ? normalizePlan(parseString(findValue(activeRecord, ["plan", "planName", "package", "type", "subscriptionType"]), ""))
@@ -73,6 +84,10 @@ export default async function UserSubscriptionPage() {
         ? formatDate(findValue(activeRecord, ["endDate", "expiresAt", "expiryDate"]))
         : null;
     const hasActiveSubscription = Boolean(activeRecord);
+    const pendingPlan = pendingRecord
+        ? normalizePlan(parseString(findValue(pendingRecord, ["plan", "planName", "package", "type", "subscriptionType"]), ""))
+        : null;
+    const hasPendingSubscription = Boolean(pendingRecord);
 
     const rows = items.slice(0, 20).map((item) => {
         const plan = parseString(findValue(item, ["plan", "planName", "package", "type", "subscriptionType"]));
@@ -96,7 +111,19 @@ export default async function UserSubscriptionPage() {
                     <p className="mt-1 text-sm text-slate-500">Upgrade to Premium to unlock all features including Movie Contribution.</p>
                 </div>
 
-                <PricingCards activePlan={activePlan} activeEndsAt={activeEndsAt} hasActiveSubscription={hasActiveSubscription} />
+                {hasPendingSubscription && (
+                    <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                        Your payment is pending admin confirmation. Once the admin marks it as Active, your selected plan will become available and you can use premium features.
+                    </div>
+                )}
+
+                <PricingCards
+                    activePlan={activePlan}
+                    activeEndsAt={activeEndsAt}
+                    hasActiveSubscription={hasActiveSubscription}
+                    pendingPlan={pendingPlan}
+                    hasPendingSubscription={hasPendingSubscription}
+                />
             </section>
             <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                 {summary.length > 0 && (
