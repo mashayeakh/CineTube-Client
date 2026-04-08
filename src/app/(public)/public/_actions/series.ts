@@ -61,3 +61,17 @@ export const getFeaturedSeries = async () => {
         return null
     }
 }
+
+export const getSeriesById = async (id: string) => {
+    try {
+        const res = await httpClient.get(`/series/${id}`) as SeriesResponse
+        const result = res?.result ?? res?.data ?? res
+        if (result && typeof result === "object" && !Array.isArray(result)) {
+            return result as Record<string, unknown>
+        }
+        return null
+    } catch (error) {
+        console.error("Failed to fetch series by id:", error)
+        return null
+    }
+}

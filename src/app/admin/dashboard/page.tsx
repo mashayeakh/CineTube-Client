@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { SystemSummaryChart } from "@/components/admin/system-summary-chart";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -802,7 +803,7 @@ export default async function AdminDashboardPage() {
                                     </div>
 
                                     <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                                        <SystemSummaryPieChart slices={systemSummarySlices} />
+                                        <SystemSummaryChart slices={systemSummarySlices} />
                                     </div>
                                 </article>
 
@@ -948,168 +949,3 @@ function DonutChart({
     );
 }
 
-function SystemSummaryPieChart({ slices }: { slices: SummarySlice[] }) {
-    const visibleSlices = slices.filter((slice) => slice.value > 0);
-    const total = visibleSlices.reduce((sum, slice) => sum + slice.value, 0);
-
-    if (total === 0) {
-        return (
-            <div className="flex h-52 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white text-sm text-slate-500">
-                No summary data available
-            </div>
-        );
-    }
-
-    const ordered = [...visibleSlices].sort((a, b) => b.value - a.value);
-    const topThree = ordered.slice(0, 3);
-    const otherValue = ordered.slice(3).reduce((sum, slice) => sum + slice.value, 0);
-
-    const palette = ["#be38b7", "#6d28d9", "#2f2cc8", "#30b6be"];
-    const labelPalette = ["STAT 01", "STAT 04", "STAT 03", "STAT 02"];
-
-    const displaySlices = [
-        ...topThree,
-        ...(otherValue > 0 ? [{ label: "Other", value: otherValue, color: "#64748b" }] : []),
-    ]
-        .slice(0, 4)
-        .map((slice, index) => ({
-            ...slice,
-            color: palette[index] ?? slice.color,
-            statLabel: labelPalette[index] ?? `STAT 0${index + 1}`,
-        }));
-
-    const chartSlices = displaySlices.reduce(
-        (acc, slice) => {
-            const sweep = (slice.value / total) * 360;
-            const startAngle = acc.current;
-            const endAngle = acc.current + sweep;
-
-            return {
-                current: endAngle,
-                segments: [...acc.segments, { ...slice, startAngle, endAngle }],
-            };
-        },
-        {
-            current: -165,
-            segments: [] as Array<SummarySlice & { statLabel: string; startAngle: number; endAngle: number }>,
-        }
-    ).segments;
-
-    return (
-        <div className="flex items-center justify-center">
-            <div className="w-full max-w-170">
-                <ExplodedPieChart3D slices={chartSlices} total={total} />
-            </div>
-        </div>
-    );
-}
-
-function polarToCartesian(cx: number, cy: number, radius: number, angleDeg: number) {
-    const rad = (angleDeg * Math.PI) / 180;
-    return {
-        x: cx + radius * Math.cos(rad),
-        y: cy + radius * Math.sin(rad),
-    };
-}
-
-function arcSlicePath(cx: number, cy: number, radius: number, startAngle: number, endAngle: number) {
-    const start = polarToCartesian(cx, cy, radius, startAngle);
-    const end = polarToCartesian(cx, cy, radius, endAngle);
-    const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0;
-
-    return `M ${cx} ${cy} L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${end.x} ${end.y} Z`;
-}
-
-function darkenHex(hex: string, factor = 0.72) {
-    const safe = hex.replace("#", "");
-    const normalized = safe.length === 3 ? safe.split("").map((c) => `${c}${c}`).join("") : safe;
-
-    if (!/^[0-9a-fA-F]{6}$/.test(normalized)) {
-        return hex;
-    }
-
-    const value = Number.parseInt(normalized, 16);
-    const r = Math.max(0, Math.min(255, Math.floor(((value >> 16) & 255) * factor)));
-    const g = Math.max(0, Math.min(255, Math.floor(((value >> 8) & 255) * factor)));
-    const b = Math.max(0, Math.min(255, Math.floor((value & 255) * factor)));
-
-    return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
-}
-
-function ExplodedPieChart3D({
-    slices,
-    total,
-}: {
-    slices: Array<SummarySlice & { statLabel: string; startAngle: number; endAngle: number }>;
-    total: number;
-}) {
-    const cx = 205;
-    const cy = 182;
-    const radius = 112;
-    const depth = 32;
-    const explode = 14;
-
-    const withPosition = slices.map((slice) => {
-        const midAngle = (slice.startAngle + slice.endAngle) / 2;
-        const offset = polarToCartesian(0, 0, explode, midAngle);
-
-        return {
-            ...slice,
-            midAngle,
-            topCx: cx + offset.x,
-            topCy: cy + offset.y,
-        };
-    });
-
-    const orderedForDepth = [...withPosition].sort((a, b) => Math.sin((a.midAngle * Math.PI) / 180) - Math.sin((b.midAngle * Math.PI) / 180));
-
-    return (
-        <svg viewBox="0 0 680 500" className="h-105 w-full">
-            <rect x="8" y="8" width="664" height="484" rx="24" fill="#f8fafc" />
-            <ellipse cx={cx} cy={cy + depth + 24} rx={radius + 34} ry={24} fill="#cbd5e1" opacity="0.45" />
-
-            {orderedForDepth.map((slice) => {
-                const sidePath = arcSlicePath(slice.topCx, slice.topCy + depth, radius, slice.startAngle, slice.endAngle);
-                const topPath = arcSlicePath(slice.topCx, slice.topCy, radius, slice.startAngle, slice.endAngle);
-                const percent = ((slice.value / total) * 100).toFixed(1);
-
-                return (
-                    <g key={slice.label}>
-                        <path d={sidePath} fill={darkenHex(slice.color, 0.7)}>
-                            <title>{`${slice.label}: ${formatNumber(slice.value)} (${percent}%)`}</title>
-                        </path>
-                        <path d={topPath} fill={slice.color} stroke="#f8fafc" strokeWidth="4">
-                            <title>{`${slice.label}: ${formatNumber(slice.value)} (${percent}%)`}</title>
-                        </path>
-                    </g>
-                );
-            })}
-
-            {withPosition.map((slice) => {
-                const percent = ((slice.value / total) * 100).toFixed(1);
-                const angle = (slice.midAngle * Math.PI) / 180;
-                const anchorX = slice.topCx + (radius + 10) * Math.cos(angle);
-                const anchorY = slice.topCy + (radius + 10) * Math.sin(angle);
-                const elbowX = slice.topCx + (radius + 42) * Math.cos(angle);
-                const elbowY = slice.topCy + (radius + 42) * Math.sin(angle);
-                const isRight = Math.cos(angle) >= 0;
-                const lineEndX = isRight ? elbowX + 26 : elbowX - 26;
-                const boxWidth = 110;
-                const boxHeight = 52;
-                const boxX = isRight ? lineEndX : lineEndX - boxWidth;
-                const boxY = elbowY - boxHeight / 2;
-
-                return (
-                    <g key={`${slice.label}-callout`}>
-                        <path d={`M ${anchorX} ${anchorY} L ${elbowX} ${elbowY} L ${lineEndX} ${elbowY}`} fill="none" stroke={slice.color} strokeWidth="4" strokeLinecap="round" />
-                        <circle cx={elbowX} cy={elbowY} r="5" fill={slice.color} />
-                        <rect x={boxX} y={boxY} rx="10" width={boxWidth} height={boxHeight} fill="#f8fafc" stroke={slice.color} strokeWidth="4" />
-                        <text x={boxX + 12} y={boxY + 16} className="fill-slate-500 text-[9px] font-semibold uppercase tracking-[0.8px]">{slice.statLabel}</text>
-                        <text x={boxX + 12} y={boxY + 40} className="fill-slate-900 text-[14px] font-bold">{percent}%</text>
-                        <title>{`${slice.label}: ${formatNumber(slice.value)} (${percent}%)`}</title>
-                    </g>
-                );
-            })}
-        </svg>
-    );
-}

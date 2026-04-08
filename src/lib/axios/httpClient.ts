@@ -25,11 +25,14 @@ const axiosInstance = async () => {
         .map((cookie) => `${cookie.name}=${cookie.value}`)
         .join("; ");
 
+    const accessToken = cookieStore.get("accessToken")?.value;
+
     const instance = axios.create({
         baseURL: apiBaseUrl,
         timeout: 30000,
         headers: {
-            Cookie: cookieHeader
+            Cookie: cookieHeader,
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         }
     })
 
@@ -87,7 +90,7 @@ const shouldLogHttpError = (error: unknown) => {
             return false;
         }
 
-        return status !== 401 && status !== 403 && status !== 404;
+        return status !== 400 && status !== 401 && status !== 403 && status !== 404;
     }
 
     return true;
