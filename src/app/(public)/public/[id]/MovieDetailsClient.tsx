@@ -541,7 +541,9 @@ export default function MovieDetailsClient({
                     },
                     body: JSON.stringify({
                         reviewId,
+                        userId: currentUserId,
                         content,
+                        isSpoiler: false,
                         parentId: parentId ?? undefined,
                     }),
                 });

@@ -72,6 +72,8 @@ export async function getUserInfo() {
             },
         });
 
+        console.log("RRES", res)
+
         // If Bearer auth fails, retry with cookie-only
         if (!res.ok) {
             res = await fetch(`${BASE_API_URL}/auth/user/profile`, {
@@ -93,7 +95,7 @@ export async function getUserInfo() {
         const payload = await res.json() as Record<string, unknown>;
 
         // Try common response structures: wrapped in data/result/user/profile, or direct object with id
-        let user =
+        const user =
             (typeof payload.data === "object" && payload.data !== null ? payload.data : null) ||
             (typeof payload.result === "object" && payload.result !== null ? payload.result : null) ||
             (typeof payload.user === "object" && payload.user !== null ? payload.user : null) ||
