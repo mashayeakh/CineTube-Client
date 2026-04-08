@@ -1,14 +1,12 @@
 import Link from "next/link";
 import {
     Activity,
-    BarChart3,
-    Bell,
     CalendarCheck2,
     CheckCircle2,
     CircleAlert,
     CircleDashed,
     Home,
-    Search,
+    PieChart,
     TrendingUp,
     Users,
 } from "lucide-react";
@@ -31,6 +29,7 @@ import {
     getPendingAdminDashboardReviews,
     type AdminServiceResponse,
 } from "@/service/admin-dashboard.services";
+import { getAdminReviews } from "@/service/admin-review.services";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -88,6 +87,12 @@ type TopMovieItem = {
     title: string;
     count: number;
     rating: number;
+};
+
+type SummarySlice = {
+    label: string;
+    value: number;
+    color: string;
 };
 
 function isRecord(value: unknown): value is UnknownRecord {
@@ -290,6 +295,24 @@ function normalizeUsers(source: unknown): UserItem[] {
         .slice(0, 6);
 }
 
+function countUsersByRole(source: unknown, roleKeys: string[]) {
+    const normalizedRoles = new Set(roleKeys.map((role) => normalizeKey(role)));
+
+    return extractArray(source, ["users", "items", "rows", "records"]).filter((item) => {
+        const role = pickString(item, ["role", "userRole"]);
+        return normalizedRoles.has(normalizeKey(role));
+    }).length;
+}
+
+function countByStatus(source: unknown, terms: string[]) {
+    const normalizedTerms = terms.map((term) => term.toLowerCase());
+
+    return extractArray(source, ["reviews", "items", "rows", "records", "result", "data"]).filter((item) => {
+        const status = pickString(item, ["status", "state", "moderationStatus"]).toLowerCase();
+        return normalizedTerms.some((term) => status.includes(term));
+    }).length;
+}
+
 function normalizeMovies(source: unknown): MovieItem[] {
     return extractArray(source, ["movies", "items", "rows", "records"])
         .map((item, index) => {
@@ -454,6 +477,8 @@ export default async function AdminDashboardPage() {
     const requests = await Promise.allSettled([
         getAdminDashboardStats(),
         getAdminDashboardUsers(),
+        getAdminReviews(),
+        // getAdminDashboardPremium_Users(),
         getAdminDashboardMovies(),
         getPendingAdminDashboardReviews(),
         getAdminDashboardComments(),
@@ -469,6 +494,8 @@ export default async function AdminDashboardPage() {
     const [
         statsResult,
         usersResult,
+        allReviewsResult,
+        // premiumUsersResult,
         moviesResult,
         reviewsResult,
         commentsResult,
@@ -482,12 +509,16 @@ export default async function AdminDashboardPage() {
     ] = requests;
 
     const stats = getSuccessData(statsResult, {});
-    const users = normalizeUsers(getSuccessData(usersResult, []));
+    const usersData = getSuccessData(usersResult, []);
+    const users = normalizeUsers(usersData);
+    const allReviewsData = allReviewsResult.status === "fulfilled" ? allReviewsResult.value : [];
     const movies = normalizeMovies(getSuccessData(moviesResult, []));
     const pendingReviews = normalizeReviews(getSuccessData(reviewsResult, []));
     const comments = extractArray(getSuccessData(commentsResult, []), ["comments", "items", "rows", "records"]);
-    const contributions = normalizeContributions(getSuccessData(contributionsResult, []));
+    const contributionsData = getSuccessData(contributionsResult, []);
+    const contributions = normalizeContributions(contributionsData);
     const payments = normalizePayments(getSuccessData(paymentsResult, []));
+    console.log("**** Payments ", payments)
     const revenueStats = getSuccessData(revenueStatsResult, {});
     const subscriptions = extractArray(getSuccessData(subscriptionsResult, []), ["subscriptions", "items", "rows", "records"]);
     const topWatchlistMovies = normalizeTopMovies(getSuccessData(topMoviesResult, []));
@@ -495,7 +526,16 @@ export default async function AdminDashboardPage() {
     const reviewsPerDay = normalizeSeries(getSuccessData(reviewsGrowthResult, []), "D", ["count", "reviews", "total", "value"]);
 
     const totalUsers = pickNumber(stats, ["totalUsers", "userCount", "users", "totalUserCount"], users.length);
+    console.log("*** USers count ", totalUsers)
+    // console.log("*** Premium Users count ", premiumUsers)
     const totalMovies = pickNumber(stats, ["totalMovies", "movieCount", "movies", "totalMovieCount"], movies.length);
+    const adminAddedMovies = totalMovies;
+    const totalContributedMovies = pickNumber(
+        contributionsData,
+        ["totalMovieContributions", "totalContributions", "totalCount", "count", "total"],
+        extractArray(contributionsData, ["contributions", "items", "rows", "records"]).length
+    );
+    const totalMoviesWithContributions = totalMovies + totalContributedMovies;
     const reviewQueue = pickNumber(stats, ["pendingReviews", "reviewQueue", "totalPendingReviews"], pendingReviews.length);
     const totalRevenue = pickNumber(revenueStats, ["totalRevenue", "revenue", "lifetimeRevenue", "grossRevenue"]);
     const activeSubscriptionsFromList = subscriptions.filter((item) => pickString(item, ["status", "subscriptionStatus"], "").toLowerCase().includes("active")).length;
@@ -503,14 +543,21 @@ export default async function AdminDashboardPage() {
     const watchlistEntries = pickNumber(watchlistCounts, ["total", "totalWatchlists", "watchlistCount", "totalWatchlistEntries"], topWatchlistMovies.reduce((sum, movie) => sum + movie.count, 0));
     const failedFeeds = requests.length - countFulfilled(requests);
     const activeUsersCount = users.filter((user) => user.status.toLowerCase().includes("active")).length;
-    const studentUsers = users.filter((user) => user.role.toLowerCase().includes("user")).length;
-    const adminUsers = users.filter((user) => user.role.toLowerCase().includes("admin")).length;
-    const paidPaymentsCount = payments.filter((payment) => payment.status.toLowerCase().includes("success") || payment.status.toLowerCase().includes("paid")).length;
+    const sUsers = countUsersByRole(usersData, ["user"]);
+    const premiumUsers = countUsersByRole(usersData, ["premium_user", "premium"]);
+    const adminUsers = countUsersByRole(usersData, ["admin"]);
+    // const paidPaymentsCount = payments.filter((payment) => payment.status.toLowerCase().includes("success") || payment.status.toLowerCase().includes("paid")).length;
+    const paidPaymentsCount = payments.filter((payment) => payment.status === "Completed").length;
+
+
+    console.log("***payment", paidPaymentsCount)
+
+
     const pendingPaymentsCount = payments.filter((payment) => payment.status.toLowerCase().includes("pending") || payment.status.toLowerCase().includes("process")).length;
     const failedPaymentsCount = payments.filter((payment) => payment.status.toLowerCase().includes("fail") || payment.status.toLowerCase().includes("reject")).length;
-    const pendingCount = pendingReviews.filter((review) => review.status.toLowerCase().includes("pending")).length + contributions.filter((item) => item.status.toLowerCase().includes("pending")).length;
-    const approvedCount = pendingReviews.filter((review) => review.status.toLowerCase().includes("approved")).length + contributions.filter((item) => item.status.toLowerCase().includes("approved")).length;
-    const rejectedCount = pendingReviews.filter((review) => review.status.toLowerCase().includes("reject")).length + contributions.filter((item) => item.status.toLowerCase().includes("reject")).length;
+    const pendingCount = countByStatus(allReviewsData, ["pending"]);
+    const approvedCount = countByStatus(allReviewsData, ["approved"]);
+    const rejectedCount = countByStatus(allReviewsData, ["reject"]);
 
     const trendPoints = reviewsPerDay.slice(-30);
     const todayCount = trendPoints.at(-1)?.value ?? 0;
@@ -518,7 +565,20 @@ export default async function AdminDashboardPage() {
     const weekCount = trendPoints.slice(-7).reduce((sum, point) => sum + point.value, 0);
     const previousWeekCount = trendPoints.slice(-14, -7).reduce((sum, point) => sum + point.value, 0);
     const monthCount = trendPoints.reduce((sum, point) => sum + point.value, 0);
-    const revenueInThousands = totalRevenue > 0 ? `${(totalRevenue / 1000).toFixed(1)}k` : "0k";
+    const revenueInThousands = totalRevenue > 0 ? `${totalRevenue}k` : "0k";
+    const systemSummarySlices: SummarySlice[] = [
+        { label: "Users", value: totalUsers, color: "#2563eb" },
+        { label: "Admin Movies", value: adminAddedMovies, color: "#0f766e" },
+        { label: "Contributed Movies", value: totalContributedMovies, color: "#ea580c" },
+        { label: "Approved Reviews", value: approvedCount, color: "#16a34a" },
+        { label: "Pending Reviews", value: pendingCount, color: "#ca8a04" },
+        { label: "Rejected Reviews", value: rejectedCount, color: "#e11d48" },
+        { label: "Paid Payments", value: paidPaymentsCount, color: "#7c3aed" },
+        { label: "Active Subscriptions", value: activeSubscriptions, color: "#0891b2" },
+    ];
+
+
+
     const healthPercent = requests.length > 0 ? Math.round((countFulfilled(requests) / requests.length) * 100) : 0;
     const topMovieTitle = topWatchlistMovies[0]?.title ?? "No watchlist data";
 
@@ -527,7 +587,6 @@ export default async function AdminDashboardPage() {
 
     const todayDeltaText = `${todayDelta >= 0 ? "+" : ""}${todayDelta} from yesterday`;
     const weekDeltaText = `${weekDelta >= 0 ? "+" : ""}${weekDelta} from last week`;
-    const trendChartData = trendPoints.length > 0 ? trendPoints : [{ label: "No data", value: 0 }];
 
     return (
         <div className="min-h-screen bg-slate-100 text-slate-900">
@@ -586,8 +645,9 @@ export default async function AdminDashboardPage() {
                                     <p className="mt-4 text-sm text-slate-500">Total Users</p>
                                     <p className="mt-1 text-4xl font-semibold tracking-tight text-slate-900">{formatNumber(totalUsers)}</p>
                                     <p className="mt-3 text-sm text-slate-500">
-                                        <span className="text-violet-500">•</span> Students: {formatNumber(studentUsers)}
+                                        <span className="text-violet-500">•</span> Users: {formatNumber(sUsers)}
                                         <span className="ml-3 text-orange-500">•</span> Admin: {formatNumber(adminUsers)}
+                                        <span className="ml-3 text-emerald-500">•</span> Premium Users: {formatNumber(premiumUsers)}
                                     </p>
                                     <div className="mt-4 h-2 rounded-full bg-slate-100">
                                         <div className="h-2 rounded-full bg-blue-500" style={{ width: `${Math.min(healthPercent + 15, 100)}%` }} />
@@ -602,11 +662,15 @@ export default async function AdminDashboardPage() {
                                         <Badge variant="secondary">+8.2%</Badge>
                                     </div>
                                     <p className="mt-4 text-sm text-slate-500">Total Movies</p>
-                                    <p className="mt-1 text-4xl font-semibold tracking-tight text-slate-900">{formatNumber(totalMovies)}</p>
-                                    <div className="mt-3 grid grid-cols-2 gap-3 text-sm text-slate-500">
+                                    <p className="mt-1 text-4xl font-semibold tracking-tight text-slate-900">{formatNumber(totalMoviesWithContributions)}</p>
+                                    <div className="mt-3 grid grid-cols-3 gap-3 text-sm text-slate-500">
                                         <p>
-                                            Active
-                                            <span className="mt-0.5 block font-semibold text-slate-800">{formatNumber(activeSubscriptions)}</span>
+                                            Admin Added
+                                            <span className="mt-0.5 block font-semibold text-slate-800">{formatNumber(adminAddedMovies)}</span>
+                                        </p>
+                                        <p>
+                                            Contributed
+                                            <span className="mt-0.5 block font-semibold text-slate-800">{formatNumber(totalContributedMovies)}</span>
                                         </p>
                                         <p>
                                             Watchlists
@@ -614,7 +678,7 @@ export default async function AdminDashboardPage() {
                                         </p>
                                     </div>
                                     <div className="mt-4 h-2 rounded-full bg-slate-100">
-                                        <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${Math.min((watchlistEntries / Math.max(totalMovies, 1)) * 100, 100)}%` }} />
+                                        <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${Math.min((watchlistEntries / Math.max(totalMoviesWithContributions, 1)) * 100, 100)}%` }} />
                                     </div>
                                 </article>
 
@@ -682,9 +746,9 @@ export default async function AdminDashboardPage() {
                                             <p className="text-xs text-slate-500">Top title: {topMovieTitle}</p>
                                         </div>
                                     </div>
-                                    <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                    {/* <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
                                         <SparklineChart points={trendChartData.slice(-14)} />
-                                    </div>
+                                    </div> */}
                                 </article>
 
                                 <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
@@ -699,7 +763,7 @@ export default async function AdminDashboardPage() {
                                             <p className="mt-1 text-sm text-slate-500">Completed</p>
                                         </div>
                                         <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center">
-                                            <p className="text-3xl font-semibold text-orange-500">{formatNumber(totalMovies)}</p>
+                                            <p className="text-3xl font-semibold text-orange-500">{formatNumber(totalMoviesWithContributions)}</p>
                                             <p className="mt-1 text-sm text-slate-500">Movies</p>
                                         </div>
                                         <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center">
@@ -729,31 +793,16 @@ export default async function AdminDashboardPage() {
                                 <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
-                                            <h3 className="text-xl font-semibold tracking-tight text-slate-900">Activity Graph</h3>
-                                            <p className="mt-1 text-sm text-slate-500">Daily review-volume trend from your analytics feed.</p>
+                                            <h3 className="text-xl font-semibold tracking-tight text-slate-900">System Summary</h3>
+                                            <p className="mt-1 text-sm text-slate-500">Overall platform composition across core admin metrics.</p>
                                         </div>
                                         <div className="rounded-xl bg-blue-50 p-2 text-blue-600">
-                                            <BarChart3 className="size-5" />
+                                            <PieChart className="size-5" />
                                         </div>
                                     </div>
 
                                     <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                                        <SparklineChart points={trendChartData} stroke="#0f766e" />
-                                    </div>
-
-                                    <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-                                        <div className="rounded-xl border border-slate-200 bg-slate-50 py-2">
-                                            <p className="text-xs text-slate-500">Today</p>
-                                            <p className="text-lg font-semibold text-slate-900">{formatNumber(todayCount)}</p>
-                                        </div>
-                                        <div className="rounded-xl border border-slate-200 bg-slate-50 py-2">
-                                            <p className="text-xs text-slate-500">This Week</p>
-                                            <p className="text-lg font-semibold text-slate-900">{formatNumber(weekCount)}</p>
-                                        </div>
-                                        <div className="rounded-xl border border-slate-200 bg-slate-50 py-2">
-                                            <p className="text-xs text-slate-500">This Month</p>
-                                            <p className="text-lg font-semibold text-slate-900">{formatNumber(monthCount)}</p>
-                                        </div>
+                                        <SystemSummaryPieChart slices={systemSummarySlices} />
                                     </div>
                                 </article>
 
@@ -874,55 +923,6 @@ export default async function AdminDashboardPage() {
     );
 }
 
-function SparklineChart({
-    points,
-    stroke = "#2563eb",
-}: {
-    points: Array<{ label: string; value: number }>;
-    stroke?: string;
-}) {
-    const width = 520;
-    const height = 160;
-    const padding = 16;
-
-    const safePoints = points.length > 1 ? points : [{ label: "A", value: 0 }, { label: "B", value: points[0]?.value ?? 0 }];
-    const minValue = Math.min(...safePoints.map((point) => point.value));
-    const maxValue = Math.max(...safePoints.map((point) => point.value));
-    const range = Math.max(maxValue - minValue, 1);
-
-    const polylinePoints = safePoints
-        .map((point, index) => {
-            const x = padding + (index * (width - padding * 2)) / Math.max(safePoints.length - 1, 1);
-            const normalized = (point.value - minValue) / range;
-            const y = height - padding - normalized * (height - padding * 2);
-            return `${x},${y}`;
-        })
-        .join(" ");
-
-    return (
-        <svg viewBox={`0 0 ${width} ${height}`} className="h-40 w-full">
-            <defs>
-                <linearGradient id="trendFill" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor={stroke} stopOpacity="0.22" />
-                    <stop offset="100%" stopColor={stroke} stopOpacity="0.02" />
-                </linearGradient>
-            </defs>
-            <polyline
-                fill="none"
-                stroke={stroke}
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                points={polylinePoints}
-            />
-            <polygon
-                fill="url(#trendFill)"
-                points={`${padding},${height - padding} ${polylinePoints} ${width - padding},${height - padding}`}
-            />
-        </svg>
-    );
-}
-
 function DonutChart({
     value,
     total,
@@ -945,5 +945,171 @@ function DonutChart({
                 {Math.round((value / safeTotal) * 100)}%
             </div>
         </div>
+    );
+}
+
+function SystemSummaryPieChart({ slices }: { slices: SummarySlice[] }) {
+    const visibleSlices = slices.filter((slice) => slice.value > 0);
+    const total = visibleSlices.reduce((sum, slice) => sum + slice.value, 0);
+
+    if (total === 0) {
+        return (
+            <div className="flex h-52 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white text-sm text-slate-500">
+                No summary data available
+            </div>
+        );
+    }
+
+    const ordered = [...visibleSlices].sort((a, b) => b.value - a.value);
+    const topThree = ordered.slice(0, 3);
+    const otherValue = ordered.slice(3).reduce((sum, slice) => sum + slice.value, 0);
+
+    const palette = ["#be38b7", "#6d28d9", "#2f2cc8", "#30b6be"];
+    const labelPalette = ["STAT 01", "STAT 04", "STAT 03", "STAT 02"];
+
+    const displaySlices = [
+        ...topThree,
+        ...(otherValue > 0 ? [{ label: "Other", value: otherValue, color: "#64748b" }] : []),
+    ]
+        .slice(0, 4)
+        .map((slice, index) => ({
+            ...slice,
+            color: palette[index] ?? slice.color,
+            statLabel: labelPalette[index] ?? `STAT 0${index + 1}`,
+        }));
+
+    const chartSlices = displaySlices.reduce(
+        (acc, slice) => {
+            const sweep = (slice.value / total) * 360;
+            const startAngle = acc.current;
+            const endAngle = acc.current + sweep;
+
+            return {
+                current: endAngle,
+                segments: [...acc.segments, { ...slice, startAngle, endAngle }],
+            };
+        },
+        {
+            current: -165,
+            segments: [] as Array<SummarySlice & { statLabel: string; startAngle: number; endAngle: number }>,
+        }
+    ).segments;
+
+    return (
+        <div className="flex items-center justify-center">
+            <div className="w-full max-w-170">
+                <ExplodedPieChart3D slices={chartSlices} total={total} />
+            </div>
+        </div>
+    );
+}
+
+function polarToCartesian(cx: number, cy: number, radius: number, angleDeg: number) {
+    const rad = (angleDeg * Math.PI) / 180;
+    return {
+        x: cx + radius * Math.cos(rad),
+        y: cy + radius * Math.sin(rad),
+    };
+}
+
+function arcSlicePath(cx: number, cy: number, radius: number, startAngle: number, endAngle: number) {
+    const start = polarToCartesian(cx, cy, radius, startAngle);
+    const end = polarToCartesian(cx, cy, radius, endAngle);
+    const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0;
+
+    return `M ${cx} ${cy} L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${end.x} ${end.y} Z`;
+}
+
+function darkenHex(hex: string, factor = 0.72) {
+    const safe = hex.replace("#", "");
+    const normalized = safe.length === 3 ? safe.split("").map((c) => `${c}${c}`).join("") : safe;
+
+    if (!/^[0-9a-fA-F]{6}$/.test(normalized)) {
+        return hex;
+    }
+
+    const value = Number.parseInt(normalized, 16);
+    const r = Math.max(0, Math.min(255, Math.floor(((value >> 16) & 255) * factor)));
+    const g = Math.max(0, Math.min(255, Math.floor(((value >> 8) & 255) * factor)));
+    const b = Math.max(0, Math.min(255, Math.floor((value & 255) * factor)));
+
+    return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+}
+
+function ExplodedPieChart3D({
+    slices,
+    total,
+}: {
+    slices: Array<SummarySlice & { statLabel: string; startAngle: number; endAngle: number }>;
+    total: number;
+}) {
+    const cx = 205;
+    const cy = 182;
+    const radius = 112;
+    const depth = 32;
+    const explode = 14;
+
+    const withPosition = slices.map((slice) => {
+        const midAngle = (slice.startAngle + slice.endAngle) / 2;
+        const offset = polarToCartesian(0, 0, explode, midAngle);
+
+        return {
+            ...slice,
+            midAngle,
+            topCx: cx + offset.x,
+            topCy: cy + offset.y,
+        };
+    });
+
+    const orderedForDepth = [...withPosition].sort((a, b) => Math.sin((a.midAngle * Math.PI) / 180) - Math.sin((b.midAngle * Math.PI) / 180));
+
+    return (
+        <svg viewBox="0 0 680 500" className="h-105 w-full">
+            <rect x="8" y="8" width="664" height="484" rx="24" fill="#f8fafc" />
+            <ellipse cx={cx} cy={cy + depth + 24} rx={radius + 34} ry={24} fill="#cbd5e1" opacity="0.45" />
+
+            {orderedForDepth.map((slice) => {
+                const sidePath = arcSlicePath(slice.topCx, slice.topCy + depth, radius, slice.startAngle, slice.endAngle);
+                const topPath = arcSlicePath(slice.topCx, slice.topCy, radius, slice.startAngle, slice.endAngle);
+                const percent = ((slice.value / total) * 100).toFixed(1);
+
+                return (
+                    <g key={slice.label}>
+                        <path d={sidePath} fill={darkenHex(slice.color, 0.7)}>
+                            <title>{`${slice.label}: ${formatNumber(slice.value)} (${percent}%)`}</title>
+                        </path>
+                        <path d={topPath} fill={slice.color} stroke="#f8fafc" strokeWidth="4">
+                            <title>{`${slice.label}: ${formatNumber(slice.value)} (${percent}%)`}</title>
+                        </path>
+                    </g>
+                );
+            })}
+
+            {withPosition.map((slice) => {
+                const percent = ((slice.value / total) * 100).toFixed(1);
+                const angle = (slice.midAngle * Math.PI) / 180;
+                const anchorX = slice.topCx + (radius + 10) * Math.cos(angle);
+                const anchorY = slice.topCy + (radius + 10) * Math.sin(angle);
+                const elbowX = slice.topCx + (radius + 42) * Math.cos(angle);
+                const elbowY = slice.topCy + (radius + 42) * Math.sin(angle);
+                const isRight = Math.cos(angle) >= 0;
+                const lineEndX = isRight ? elbowX + 26 : elbowX - 26;
+                const boxWidth = 110;
+                const boxHeight = 52;
+                const boxX = isRight ? lineEndX : lineEndX - boxWidth;
+                const boxY = elbowY - boxHeight / 2;
+
+                return (
+                    <g key={`${slice.label}-callout`}>
+                        <path d={`M ${anchorX} ${anchorY} L ${elbowX} ${elbowY} L ${lineEndX} ${elbowY}`} fill="none" stroke={slice.color} strokeWidth="4" strokeLinecap="round" />
+                        <circle cx={elbowX} cy={elbowY} r="5" fill={slice.color} />
+                        <rect x={boxX} y={boxY} rx="10" width={boxWidth} height={boxHeight} fill="#f8fafc" stroke={slice.color} strokeWidth="4" />
+                        <text x={boxX + 12} y={boxY + 16} className="fill-slate-500 text-[9px] font-semibold uppercase tracking-[0.8px]">{slice.statLabel}</text>
+                        <text x={boxX + 12} y={boxY + 40} className="fill-slate-900 text-[14px] font-bold">{percent}%</text>
+                        <title>{`${slice.label}: ${formatNumber(slice.value)} (${percent}%)`}</title>
+                    </g>
+                );
+            })}
+        </svg>
     );
 }
