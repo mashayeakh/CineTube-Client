@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { CheckSquare, CreditCard, ImagePlus, Loader2, Lock, Plus, Square, Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -16,7 +16,12 @@ interface SeriesContributionFormProps {
     isPremium: boolean
 }
 
-const AGE_GROUPS = ["KIDS", "TEEN", "ADULT", "ALL"]
+const AGE_GROUPS = [
+    { value: "AGE_7_PLUS", label: "7+" },
+    { value: "AGE_13_PLUS", label: "13+" },
+    { value: "AGE_16_PLUS", label: "16+" },
+    { value: "AGE_18_PLUS", label: "18+" },
+]
 const SERIES_STATUSES = ["ONGOING", "COMPLETED", "UPCOMING"]
 
 export function SeriesContributionForm({ userId, genres, platforms, isPremium }: SeriesContributionFormProps) {
@@ -31,15 +36,24 @@ export function SeriesContributionForm({ userId, genres, platforms, isPremium }:
     const [director, setDirector] = useState("")
     const [language, setLanguage] = useState("")
     const [seasonCount, setSeasonCount] = useState("")
+    const [episodeCount, setEpisodeCount] = useState("")
     const [seriesStatus, setSeriesStatus] = useState("ONGOING")
     const [castInput, setCastInput] = useState("")
     const [cast, setCast] = useState<string[]>([])
     const [selectedGenres, setSelectedGenres] = useState<string[]>([])
     const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
-    const [ageGroup, setAgeGroup] = useState("TEEN")
+    const [ageGroup, setAgeGroup] = useState("AGE_13_PLUS")
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState(false)
+
+    useEffect(() => {
+        return () => {
+            if (posterPreview) {
+                URL.revokeObjectURL(posterPreview)
+            }
+        }
+    }, [posterPreview])
 
     const addCast = () => {
         const name = castInput.trim()
@@ -64,6 +78,9 @@ export function SeriesContributionForm({ userId, genres, platforms, isPremium }:
     const handlePosterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (!file) return
+        if (posterPreview) {
+            URL.revokeObjectURL(posterPreview)
+        }
         setPosterFile(file)
         setPosterPreview(URL.createObjectURL(file))
     }
@@ -85,7 +102,7 @@ export function SeriesContributionForm({ userId, genres, platforms, isPremium }:
             return
         }
 
-        if (!title || !description || !releaseYear || !director) {
+        if (!title || !description || !releaseYear || !director || !seasonCount || !episodeCount || !posterFile) {
             setError("Please fill in all required fields.")
             return
         }
@@ -102,21 +119,28 @@ export function SeriesContributionForm({ userId, genres, platforms, isPremium }:
             return
         }
 
+        const episodes = episodeCount ? parseInt(episodeCount, 10) : undefined
+        if (episodeCount && (isNaN(episodes!) || episodes! < 1)) {
+            setError("Episode count must be a positive number.")
+            return
+        }
+
         setSubmitting(true)
 
         const formData = new FormData()
-        formData.append("userId", userId)
+        formData.append("contributorId", userId)
         formData.append("title", title)
         formData.append("description", description)
         formData.append("releaseYear", String(year))
         formData.append("director", director)
-        if (language) formData.append("language", language)
+        formData.append("priceType", "PREMIUM")
         if (seasons) formData.append("totalSeasons", String(seasons))
-        formData.append("status", seriesStatus)
+        if (episodes) formData.append("totalEpisodes", String(episodes))
+        formData.append("seriesStatus", seriesStatus)
         formData.append("ageGroup", ageGroup)
-        cast.forEach((c) => formData.append("cast", c))
-        selectedGenres.forEach((g) => formData.append("genres", g))
-        selectedPlatforms.forEach((p) => formData.append("platforms", p))
+        if (cast.length > 0) formData.append("cast", JSON.stringify(cast))
+        if (selectedGenres.length > 0) formData.append("genres", JSON.stringify(selectedGenres))
+        if (selectedPlatforms.length > 0) formData.append("platforms", JSON.stringify(selectedPlatforms))
         if (posterFile) formData.append("poster", posterFile)
 
         const result = await submitSeriesContribution(formData)
@@ -191,7 +215,7 @@ export function SeriesContributionForm({ userId, genres, platforms, isPremium }:
             </Field>
 
             {/* Poster Upload */}
-            <Field label="Poster Image">
+            <Field label="Poster Image" required>
                 <input
                     ref={fileInputRef}
                     type="file"
@@ -250,8 +274,8 @@ export function SeriesContributionForm({ userId, genres, platforms, isPremium }:
                 </Field>
             </div>
 
-            {/* Language + Season Count */}
-            <div className="grid gap-4 sm:grid-cols-2">
+            {/* Language + Series Totals */}
+            <div className="grid gap-4 sm:grid-cols-3">
                 <Field label="Language">
                     <Input
                         value={language}
@@ -259,13 +283,24 @@ export function SeriesContributionForm({ userId, genres, platforms, isPremium }:
                         placeholder="e.g. English"
                     />
                 </Field>
-                <Field label="Number of Seasons">
+                <Field label="Number of Seasons" required>
                     <Input
                         value={seasonCount}
                         onChange={(e) => setSeasonCount(e.target.value)}
                         placeholder="e.g. 5"
                         type="number"
                         min={1}
+                        required
+                    />
+                </Field>
+                <Field label="Number of Episodes" required>
+                    <Input
+                        value={episodeCount}
+                        onChange={(e) => setEpisodeCount(e.target.value)}
+                        placeholder="e.g. 62"
+                        type="number"
+                        min={1}
+                        required
                     />
                 </Field>
             </div>
@@ -371,15 +406,15 @@ export function SeriesContributionForm({ userId, genres, platforms, isPremium }:
                 <div className="flex flex-wrap gap-2">
                     {AGE_GROUPS.map((group) => (
                         <button
-                            key={group}
+                            key={group.value}
                             type="button"
-                            onClick={() => setAgeGroup(group)}
-                            className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${ageGroup === group
+                            onClick={() => setAgeGroup(group.value)}
+                            className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${ageGroup === group.value
                                 ? "border-slate-900 bg-slate-900 text-white"
                                 : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                                 }`}
                         >
-                            {group}
+                            {group.label}
                         </button>
                     ))}
                 </div>

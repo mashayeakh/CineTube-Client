@@ -170,15 +170,34 @@ function extractCommentsFromPayload(payload: unknown): ReviewComment[] {
     if (!payload || typeof payload !== "object") return [];
 
     const record = payload as Record<string, unknown>;
-    const candidate = record.result ?? record.data ?? record.comments ?? record.items ?? record.results ?? record.list;
 
-    if (Array.isArray(candidate)) {
-        return buildCommentTree(
-            candidate.map((e) => mapCommentNode(e)).filter((e): e is ReviewComment => Boolean(e))
-        );
-    }
-    const one = mapCommentNode(candidate);
-    return one ? [one] : [];
+    const toTree = (value: unknown): ReviewComment[] | null => {
+        if (Array.isArray(value)) {
+            return buildCommentTree(
+                value.map((e) => mapCommentNode(e)).filter((e): e is ReviewComment => Boolean(e))
+            );
+        }
+        if (value && typeof value === "object") {
+            const obj = value as Record<string, unknown>;
+            const nested = obj.comments ?? obj.data ?? obj.items ?? obj.results ?? obj.list;
+            if (Array.isArray(nested)) {
+                return buildCommentTree(
+                    nested.map((e) => mapCommentNode(e)).filter((e): e is ReviewComment => Boolean(e))
+                );
+            }
+            const oneNested = mapCommentNode(nested);
+            if (oneNested) return [oneNested];
+        }
+        const one = mapCommentNode(value);
+        return one ? [one] : null;
+    };
+
+    const directCandidate = record.comments ?? record.data ?? record.items ?? record.results ?? record.list;
+    return (
+        toTree(directCandidate) ??
+        toTree(record.result) ??
+        []
+    );
 }
 
 function countComments(nodes: ReviewComment[]): number {
@@ -318,6 +337,49 @@ export default function SeriesDetailsClient({ series, isAuthenticated, currentUs
         if (!res.ok) throw new Error("Unable to load comments.");
         setReviewCommentsById((prev) => ({ ...prev, [reviewId]: extractCommentsFromPayload(payload) }));
     };
+
+    // Reload persisted comments from backend after mount so comments don't disappear on refresh.
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        const reviewIds = series.reviews.map((r) => r.id).filter(Boolean);
+        if (reviewIds.length === 0) return;
+
+        let cancelled = false;
+
+        void (async () => {
+            await Promise.all(reviewIds.map(async (reviewId) => {
+                try {
+                    const res = await fetch(`/api/user/comments/review/${reviewId}`, { cache: "no-store" });
+                    const payload = await res.json().catch(() => ({}));
+
+                    if (cancelled) return;
+
+                    if (!res.ok) {
+                        console.warn(`Failed to load comments for review ${reviewId}:`, res.status, payload);
+                        return;
+                    }
+
+                    const extracted = extractCommentsFromPayload(payload);
+                    if (extracted && extracted.length > 0) {
+                        console.log(`Loaded ${extracted.length} comments for review ${reviewId}`);
+                    }
+
+                    setReviewCommentsById((prev) => ({
+                        ...prev,
+                        [reviewId]: extracted,
+                    }));
+                } catch (error) {
+                    console.error(`Error loading comments for review ${reviewId}:`, error);
+                    // Keep existing comment state if background reload fails.
+                }
+            }));
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [isAuthenticated, series.reviews]);
 
     const handleCommentSubmit = (reviewId: string, parentId?: string) => {
         const isReply = Boolean(parentId);

@@ -4,31 +4,52 @@
 import { cookies } from "next/headers"
 
 function getBaseCandidates() {
-    const envBase =
+    const envBase = (
         process.env.NEXT_PUBLIC_API_BASE_URL ||
         process.env.NEXT_PUBLIC_BACKEND_URL ||
-        process.env.NEXT_PUBLIC_API_URL
+        process.env.NEXT_PUBLIC_API_URL ||
+        ""
+    ).replace(/\/$/, "")
 
-    const bases = [
-        envBase,
-        "http://localhost:5000/api/v1",
-        "http://localhost:5000",
-    ]
+    const localBases = ["http://localhost:5000/api/v1", "http://localhost:5000"]
+    const preferredOrder = process.env.NODE_ENV === "development"
+        ? [...localBases, envBase]
+        : [envBase, ...localBases]
+
+    const bases = preferredOrder
         .filter((value): value is string => Boolean(value))
         .map((value) => value.replace(/\/$/, ""))
 
     return Array.from(new Set(bases))
 }
 
-async function postSeries(formData: FormData, cookieHeader: string, accessToken?: string) {
-    const bases = getBaseCandidates()
-    const paths = ["/series/create", "/api/v1/series/create"]
+function getSeriesContributionEndpoints(base: string) {
+    const hasApiV1InBase = /\/api\/v1(?:\/|$)/i.test(base)
 
+    if (hasApiV1InBase) {
+        return ["/series-contributions"]
+    }
+
+    return ["/api/v1/series-contributions", "/series-contributions"]
+}
+
+export async function submitSeriesContribution(formData: FormData) {
+    const cookieStore = await cookies()
+    const accessToken = cookieStore.get("accessToken")?.value
+    const cookieHeader = cookieStore
+        .getAll()
+        .map((cookie) => `${cookie.name}=${cookie.value}`)
+        .join("; ")
+
+    const bases = getBaseCandidates()
     let lastMessage = "Failed to submit series contribution."
+    let lastStatus: number | null = null
 
     for (const base of bases) {
-        for (const path of paths) {
-            const url = `${base}${path}`
+        const endpoints = getSeriesContributionEndpoints(base)
+
+        for (const endpoint of endpoints) {
+            const url = `${base}${endpoint}`
 
             try {
                 const res = await fetch(url, {
@@ -44,49 +65,39 @@ async function postSeries(formData: FormData, cookieHeader: string, accessToken?
                 const payload = await res.json().catch(() => null)
 
                 if (res.ok) {
-                    console.log("[series] submit SUCCESS via:", url)
-                    return payload
+                    const message =
+                        payload && typeof payload === "object" && "message" in payload
+                            ? String((payload as { message?: unknown }).message ?? "")
+                            : ""
+
+                    return {
+                        success: true,
+                        data: payload,
+                        message: message || "Series contribution submitted successfully.",
+                    }
                 }
 
+                lastStatus = res.status
                 lastMessage =
                     payload && typeof payload === "object" && "message" in payload
-                        ? String((payload as { message?: unknown }).message || "")
+                        ? String((payload as { message?: unknown }).message ?? "") || `Request failed with status ${res.status}`
                         : `Request failed with status ${res.status}`
 
-                console.log("[series] submit FAILED via:", url, "| status:", res.status, "| message:", lastMessage)
-            } catch (error) {
-                lastMessage = error instanceof Error ? error.message : lastMessage
-                console.log("[series] submit ERROR via:", url, "| message:", lastMessage)
+                // Only continue to other base/path combinations when route is missing.
+                if (res.status !== 404) {
+                    return { success: false, message: lastMessage }
+                }
+            } catch (error: any) {
+                lastStatus = null
+                lastMessage = error?.message || lastMessage
             }
         }
     }
 
-    throw new Error(lastMessage || "Failed to submit series contribution.")
-}
-
-export async function submitSeriesContribution(formData: FormData) {
-    const cookieStore = await cookies()
-    const accessToken = cookieStore.get("accessToken")?.value
-    const cookieHeader = cookieStore
-        .getAll()
-        .map((cookie) => `${cookie.name}=${cookie.value}`)
-        .join("; ")
-
-    console.log("[series] cookieHeader has session:", cookieHeader.includes("better-auth.session_token="))
-    console.log("[series] accessToken found:", Boolean(accessToken))
-
-    if (!cookieHeader.includes("better-auth.session_token=")) {
-        return { success: false, message: "Not authenticated. Please log in again." }
-    }
-
-    try {
-        const data = await postSeries(formData, cookieHeader, accessToken)
-        return { success: true, data }
-    } catch (error: any) {
-        console.log("[series] submit FAILED — message:", error?.message)
-        return {
-            success: false,
-            message: error?.message || "Failed to submit series contribution. Please try again.",
-        }
+    return {
+        success: false,
+        message: lastStatus === 404
+            ? `${lastMessage} (Checked: ${bases.join(", ")})`
+            : lastMessage,
     }
 }

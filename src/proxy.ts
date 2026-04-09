@@ -61,10 +61,6 @@ export default async function proxy(request: NextRequest) {
         const routeOwner = getRouteOwner(pathname);
         const isAuth = isAuthRoute(pathname);
 
-        if (pathname.startsWith("/premium_user")) {
-            return stampAuthCookie(NextResponse.redirect(new URL("/user/dashboard", request.url)), userRole);
-        }
-
         if (
             isAuth &&
             isLoggedIn &&
