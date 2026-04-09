@@ -272,7 +272,7 @@ export async function AdminSidebar({ activePath }: AdminSidebarProps) {
                             <Compass className="size-4" />
                             Discovery
                         </Link>
-                        <Link
+                        {/* <Link
                             href="/admin/series-management/tracking"
                             className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${activePath === "/admin/series-management/tracking"
                                 ? "bg-blue-600 font-medium text-white shadow-md ring-1 ring-blue-500/30"
@@ -281,7 +281,7 @@ export async function AdminSidebar({ activePath }: AdminSidebarProps) {
                         >
                             <Clapperboard className="size-4" />
                             Tracking
-                        </Link>
+                        </Link> */}
                         <Link
                             href="/admin/series-management/contributions"
                             className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${activePath === "/admin/series-management/contributions"

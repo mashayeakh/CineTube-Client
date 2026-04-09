@@ -137,6 +137,12 @@ async function rejectContributionAction(formData: FormData) {
 
 export default async function AdminMovieContributionsPage() {
     const rawContributions = await getAdminMovieContributions().catch(() => []);
+
+    
+
+
+    console.log("Raw contributions", rawContributions)
+
     const contributions = normalizeContributions(rawContributions);
     const approvedCount = contributions.filter((item) => item.status.includes("APPROV")).length;
     const pendingCount = contributions.filter((item) => item.status.includes("PEND")).length;

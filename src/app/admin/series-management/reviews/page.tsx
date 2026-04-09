@@ -1,16 +1,25 @@
 import Link from "next/link";
-import { Home, MessageSquareText, Search } from "lucide-react";
+import { revalidatePath } from "next/cache";
+import { Home, Search } from "lucide-react";
 
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
-import { getAdminReviews } from "@/service/admin-review.services";
+import { ReviewTableClient } from "@/components/admin/review-table-client";
+import { resolveMediaUrl } from "@/lib/media";
+import { approveReview, getAdminReviews, rejectReview } from "@/service/admin-review.services";
 
 type UnknownRecord = Record<string, unknown>;
 
 type ReviewRow = {
     id: string;
-    title: string;
-    reviewer: string;
+    movieTitle: string;
+    moviePoster: string;
+    reviewerName: string;
+    reviewerEmail: string;
+    rating: number;
+    content: string;
     status: string;
+    createdAt: string;
+    details: UnknownRecord;
 };
 
 function isRecord(value: unknown): value is UnknownRecord {
@@ -26,6 +35,21 @@ function pickString(source: unknown, keys: string[], fallback = "") {
         const value = source[key];
         if (typeof value === "string" && value.trim()) {
             return value.trim();
+        }
+    }
+
+    return fallback;
+}
+
+function pickNumber(source: unknown, keys: string[], fallback = 0) {
+    if (!isRecord(source)) {
+        return fallback;
+    }
+
+    for (const key of keys) {
+        const value = source[key];
+        if (typeof value === "number" && Number.isFinite(value)) {
+            return value;
         }
     }
 
@@ -59,22 +83,79 @@ function normalizeSeriesLikeReviews(raw: unknown): ReviewRow[] {
 
     return list
         .map((item, index) => {
-            const seriesObject = isRecord(item) ? (item.series ?? item.show ?? item.content) : null;
-            const userObject = isRecord(item) ? (item.user ?? item.reviewer) : null;
+            const seriesObject = isRecord(item) ? (item.series ?? item.show ?? item.content ?? null) : null;
+            const movieObject = isRecord(item) ? (item.movie ?? null) : null;
+            const userObject = isRecord(item) ? (item.user ?? item.reviewer ?? item.createdBy) : null;
 
             return {
                 id: pickString(item, ["id", "_id", "reviewId"], `review-${index + 1}`),
-                title: pickString(seriesObject, ["title", "name"], pickString(item, ["seriesTitle", "title"], "Unknown title")),
-                reviewer: pickString(userObject, ["name", "fullName", "username"], pickString(item, ["reviewerName", "author"], "Unknown")),
+                movieTitle: pickString(
+                    seriesObject,
+                    ["title", "name"],
+                    pickString(movieObject, ["title", "name"], pickString(item, ["seriesTitle", "movieTitle", "title"], "Unknown title"))
+                ),
+                moviePoster: resolveMediaUrl(
+                    pickString(
+                        seriesObject,
+                        ["poster", "thumbnail", "image", "coverImage", "banner"],
+                        pickString(movieObject, ["poster", "thumbnail", "image"], pickString(item, ["poster", "moviePoster", "image"], ""))
+                    )
+                ),
+                reviewerName: pickString(
+                    userObject,
+                    ["name", "fullName", "username"],
+                    pickString(item, ["reviewerName", "userName", "author"], "Unknown user")
+                ),
+                reviewerEmail: pickString(userObject, ["email"], pickString(item, ["reviewerEmail", "email"], "N/A")),
+                rating: pickNumber(item, ["rating", "stars", "score"], 0),
+                content: pickString(item, ["content", "review", "message", "text"], ""),
                 status: pickString(item, ["status", "state"], "PENDING").toUpperCase(),
+                createdAt: pickString(item, ["createdAt", "submittedAt", "date"], ""),
+                details: isRecord(item) ? item : {},
             };
         })
         .filter((item) => Boolean(item.id));
 }
 
+async function approveReviewAction(formData: FormData) {
+    "use server";
+
+    const reviewId = String(formData.get("reviewId") ?? "");
+
+    if (!reviewId) {
+        return;
+    }
+
+    try {
+        await approveReview(reviewId);
+    } catch (error) {
+        console.error("Failed to approve review:", error);
+    }
+
+    revalidatePath("/admin/series-management/reviews");
+}
+
+async function rejectReviewAction(formData: FormData) {
+    "use server";
+
+    const reviewId = String(formData.get("reviewId") ?? "");
+
+    if (!reviewId) {
+        return;
+    }
+
+    try {
+        await rejectReview(reviewId);
+    } catch (error) {
+        console.error("Failed to reject review:", error);
+    }
+
+    revalidatePath("/admin/series-management/reviews");
+}
+
 export default async function AdminSeriesReviewsPage() {
     const rawReviews = await getAdminReviews().catch(() => []);
-    const rows = normalizeSeriesLikeReviews(rawReviews);
+    const reviews = normalizeSeriesLikeReviews(rawReviews);
 
     return (
         <div className="min-h-screen bg-slate-100 text-slate-900">
@@ -100,41 +181,18 @@ export default async function AdminSeriesReviewsPage() {
                     </header>
 
                     <main className="p-4 sm:p-6">
-                        <div className="mx-auto max-w-5xl space-y-5">
-                            <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                                <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight text-slate-900">
-                                    <MessageSquareText className="size-7 text-blue-600" />
-                                    Reviews
-                                </h1>
-                                <p className="mt-2 text-sm text-slate-600">Series review moderation list.</p>
+                        <div className="mx-auto max-w-7xl space-y-5">
+                            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                                <p className="text-sm text-slate-500">Admin / Series Management / Reviews</p>
+                                <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">Review Handler</h1>
+                                <p className="mt-2 text-sm text-slate-600">Moderate submitted reviews, then approve or reject each review.</p>
                             </section>
 
-                            <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                                {rows.length === 0 ? (
-                                    <div className="p-8 text-center text-sm text-slate-500">No review records found.</div>
-                                ) : (
-                                    <div className="overflow-x-auto">
-                                        <table className="min-w-full divide-y divide-slate-200 text-sm">
-                                            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
-                                                <tr>
-                                                    <th className="px-4 py-3">Series</th>
-                                                    <th className="px-4 py-3">Reviewer</th>
-                                                    <th className="px-4 py-3">Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100">
-                                                {rows.map((row) => (
-                                                    <tr key={row.id}>
-                                                        <td className="px-4 py-3 font-medium text-slate-900">{row.title}</td>
-                                                        <td className="px-4 py-3 text-slate-700">{row.reviewer}</td>
-                                                        <td className="px-4 py-3 text-slate-700">{row.status}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                )}
-                            </section>
+                            <ReviewTableClient
+                                reviews={reviews}
+                                approveReviewAction={approveReviewAction}
+                                rejectReviewAction={rejectReviewAction}
+                            />
                         </div>
                     </main>
                 </div>
