@@ -25,8 +25,9 @@ async function getAuthorizedContext() {
     };
 }
 
-async function createWatchlist(movieId: string, auth: NonNullable<Awaited<ReturnType<typeof getAuthorizedContext>>>) {
-    const response = await fetch(`${BASE_API_URL}/watchlists`, {
+//! for movie watchlist 
+async function createMovieWatchlist(movieId: string, auth: NonNullable<Awaited<ReturnType<typeof getAuthorizedContext>>>) {
+    const response = await fetch(`${BASE_API_URL}/watchlists/movie`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ message: "Movie ID is required." }, { status: 400 });
     }
 
-    return createWatchlist(movieId, auth);
+    return createMovieWatchlist(movieId, auth);
 }
 
 export async function DELETE(request: NextRequest) {

@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { resolveMediaUrl } from "@/lib/media";
 import { getSeriesById } from "@/app/(public)/public/_actions/series";
 import { getUserInfo } from "@/service/auth.services";
-import { findValue } from "@/lib/user-dashboard.utils";
+import { extractArray, findValue } from "@/lib/user-dashboard.utils";
+import { getMyWatchlists } from "@/service/watchlist.services";
 import SeriesDetailsClient, { type SeriesDetail } from "./SeriesDetailsClient";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -74,7 +75,56 @@ export default async function SeriesDetailPage({
 
     if (!data) return <NotFound />;
 
-    // Normalise all fields
+    // ── auth + permission (mirrors MovieDetails page exactly) ────────────────
+    const role =
+        typeof (currentUser as any)?.role === "string"
+            ? (currentUser as any).role.toUpperCase()
+            : "";
+    const isAuthenticated = Boolean(currentUser);
+    const canSaveToLibrary = role === "USER" || role === "PREMIUM_USER";
+
+    const currentUserId = normalizeId(
+        findValue(currentUser as Record<string, unknown> | null, ["id", "_id", "userId"])
+    );
+
+    // ── watchlist lookup (only for eligible users, same as movie page) ────────
+    let watchlistPayload: unknown = null;
+    if (canSaveToLibrary) {
+        watchlistPayload = await getMyWatchlists()
+            .then((response) => response.data)
+            .catch(() => null);
+    }
+
+    const watchlistItems = extractArray(watchlistPayload, [
+        "watchlist",
+        "items",
+        "movies",
+        "results",
+        "data",
+    ]);
+
+    const matchedWatchlistItem = watchlistItems.find((item) => {
+        const itemId = findValue(item, ["movieId", "id", "_id"]);
+        return typeof itemId === "string" && itemId === String(data.id);
+    });
+
+    const initialSaved = Boolean(matchedWatchlistItem);
+    const initialWatchlistId = (() => {
+        const value = findValue(matchedWatchlistItem, ["watchlistId", "id", "_id"]);
+        return typeof value === "string" ? value : null;
+    })();
+
+    // ── hasUserReviewed (mirrors movie page) ─────────────────────────────────
+    const allReviewsRaw: any[] = toArray(data.reviews ?? data.review) as any[];
+    const hasUserReviewed = Boolean(
+        currentUserId &&
+        allReviewsRaw.some(
+            (r: any) =>
+                r.userId === currentUserId || r.user?.id === currentUserId
+        )
+    );
+
+    // ── Normalise series fields ───────────────────────────────────────────────
     const poster = resolveMediaUrl(
         str(data.poster ?? data.image),
         "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7"
@@ -85,49 +135,65 @@ export default async function SeriesDetailPage({
     const status = str(data.status, "UNKNOWN");
 
     const genres = toArray(data.genres ?? data.genre)
-        .map((g: any) => (typeof g === "string" ? g : str(g?.name ?? g?.id)))
+        .map((g: any) =>
+            typeof g === "string" ? g : str(g?.name ?? g?.id)
+        )
         .filter(Boolean) as string[];
 
-    const cast = toArray(data.cast).map((c: any) => ({
-        name: typeof c === "string" ? c : str(c?.name ?? c),
-        character: typeof c === "object" && c !== null ? str(c.character ?? c.role) : "",
-        avatar: typeof c === "object" && c !== null ? str(c.avatar ?? c.image) : undefined,
-    })).filter((c) => Boolean(c.name));
+    const cast = toArray(data.cast)
+        .map((c: any) => ({
+            name: typeof c === "string" ? c : str(c?.name ?? c),
+            character:
+                typeof c === "object" && c !== null
+                    ? str(c.character ?? c.role)
+                    : "",
+            avatar:
+                typeof c === "object" && c !== null
+                    ? str(c.avatar ?? c.image)
+                    : undefined,
+        }))
+        .filter((c) => Boolean(c.name));
 
     const platforms = toArray(data.platforms ?? data.platform)
-        .map((p: any) => (typeof p === "string" ? p : str(p?.name ?? p?.id ?? p)))
+        .map((p: any) =>
+            typeof p === "string" ? p : str(p?.name ?? p?.id ?? p)
+        )
         .filter(Boolean) as string[];
 
-    const allReviews: any[] = toArray(data.reviews ?? data.review) as any[];
-    const approvedReviews = allReviews.filter(
+    const approvedReviews = allReviewsRaw.filter(
         (r: any) => str(r?.status).toUpperCase() === "APPROVED"
     );
     const avgRating =
         approvedReviews.length > 0
             ? Number(
-                (approvedReviews.reduce((s: number, r: any) => s + num(r?.rating), 0) / approvedReviews.length).toFixed(1)
+                (
+                    approvedReviews.reduce(
+                        (s: number, r: any) => s + num(r?.rating),
+                        0
+                    ) / approvedReviews.length
+                ).toFixed(1)
             )
             : 0;
 
-    const currentUserId = normalizeId(
-        findValue(currentUser as Record<string, unknown> | null, ["id", "_id", "userId"])
-    );
-    const isAuthenticated = Boolean(currentUser);
-
-    const mappedReviews: SeriesDetail["reviews"] = allReviews
+    const mappedReviews: SeriesDetail["reviews"] = allReviewsRaw
         .filter((r: any) => str(r?.status).toUpperCase() === "APPROVED")
         .map((r: any, i: number) => {
-            const tags = toArray(r?.tags).map((t: any) => str(t)).filter(Boolean) as string[];
-            const comments = toArray(r?.comments ?? r?.comment).map((c: any) => ({
-                id: str(c?.id, `c-${i}-${Math.random()}`),
-                userId: str(c?.userId ?? c?.user?.id),
-                userName: str(c?.user?.name),
-                parentId: str(c?.parentId) || null,
-                content: str(c?.content ?? c?.body),
-                isSpoiler: Boolean(c?.isSpoiler),
-                createdAt: str(c?.createdAt, new Date().toISOString()),
-                replies: [] as SeriesDetail["reviews"][number]["comments"],
-            }));
+            const tags = toArray(r?.tags)
+                .map((t: any) => str(t))
+                .filter(Boolean) as string[];
+
+            const comments = toArray(r?.comments ?? r?.comment).map(
+                (c: any) => ({
+                    id: str(c?.id, `c-${i}-${Math.random()}`),
+                    userId: str(c?.userId ?? c?.user?.id),
+                    userName: str(c?.user?.name),
+                    parentId: str(c?.parentId) || null,
+                    content: str(c?.content ?? c?.body),
+                    isSpoiler: Boolean(c?.isSpoiler),
+                    createdAt: str(c?.createdAt, new Date().toISOString()),
+                    replies: [] as SeriesDetail["reviews"][number]["comments"],
+                })
+            );
 
             return {
                 id: str(r?.id, `review-${i}`),
@@ -142,11 +208,15 @@ export default async function SeriesDetailPage({
                 likesCount: num(r?.likesCount ?? r?.likeCount),
                 likedByCurrentUser: Boolean(
                     currentUserId &&
-                    toArray(r?.likes ?? r?.likedBy ?? r?.reviewLikes).some((entry: any) => {
-                        if (typeof entry === "string") return entry === currentUserId;
+                    toArray(
+                        r?.likes ?? r?.likedBy ?? r?.reviewLikes
+                    ).some((entry: any) => {
+                        if (typeof entry === "string")
+                            return entry === currentUserId;
                         if (entry && typeof entry === "object") {
                             return (
-                                normalizeId(entry.userId) === currentUserId ||
+                                normalizeId(entry.userId) ===
+                                currentUserId ||
                                 normalizeId(entry.id) === currentUserId
                             );
                         }
@@ -182,9 +252,12 @@ export default async function SeriesDetailPage({
         <SeriesDetailsClient
             series={series}
             isAuthenticated={isAuthenticated}
+            canSaveToLibrary={canSaveToLibrary}
+            initialSaved={initialSaved}
+            initialWatchlistId={initialWatchlistId}
+            hasUserReviewed={hasUserReviewed}
             currentUserId={currentUserId || null}
             loginHref={`/login?redirect=${encodeURIComponent(`/series/${id}`)}`}
         />
     );
 }
-

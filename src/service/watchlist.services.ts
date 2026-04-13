@@ -32,8 +32,9 @@ export async function getMyWatchlists(options?: ApiRequestOptions) {
     };
 }
 
-export async function createWatchlist(movieId: string) {
-    const response = await httpClient.post<unknown>("/watchlists", { movieId });
+//! for movie
+export async function createMovieWatchlist(movieId: string) {
+    const response = await httpClient.post<unknown>("/watchlists/movie", { movieId });
     return unwrap(response);
 }
 

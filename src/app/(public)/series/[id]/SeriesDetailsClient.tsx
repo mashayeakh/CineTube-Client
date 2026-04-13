@@ -209,15 +209,102 @@ function countComments(nodes: ReviewComment[]): number {
 type Props = {
     series: SeriesDetail;
     isAuthenticated: boolean;
+    // ↓ NEW — mirrors MovieDetailsClient props exactly
+    canSaveToLibrary: boolean;
+    initialSaved: boolean;
+    initialWatchlistId: string | null;
+    // ↑ NEW
     currentUserId: string | null;
+    hasUserReviewed?: boolean;
     loginHref: string;
 };
 
-export default function SeriesDetailsClient({ series, isAuthenticated, currentUserId, loginHref }: Props) {
+export default function SeriesDetailsClient({
+    series,
+    isAuthenticated,
+    canSaveToLibrary,
+    initialSaved,
+    initialWatchlistId,
+    currentUserId,
+    hasUserReviewed = false,
+    loginHref,
+}: Props) {
     const router = useRouter();
 
-    const [isLoginPromptOpen, setIsLoginPromptOpen] = useState(false);
+    // ── watchlist state (mirrors MovieDetailsClient) ──────────────────────────
+    const [isSaved, setIsSaved] = useState(initialSaved);
+    const [watchlistId, setWatchlistId] = useState<string | null>(initialWatchlistId);
+    const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+    const [isMutating, startMutationTransition] = useTransition();
+
+    const actionLabel = isMutating ? (isSaved ? "Removing..." : "Saving...") : undefined;
+
+    const handleProtectedSave = () => {
+        if (!isAuthenticated) {
+            setIsLoginPromptOpen(true);
+            return;
+        }
+
+        if (!canSaveToLibrary) {
+            setFeedbackMessage("Only user and premium_user accounts can save series to the dashboard.");
+            return;
+        }
+
+        const method = isSaved ? "DELETE" : "POST";
+        const nextSavedState = !isSaved;
+
+        startMutationTransition(async () => {
+            try {
+                setFeedbackMessage(null);
+
+                const response = await fetch("/api/user/watchlist", {
+                    method,
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        movieId: series.id, // API uses movieId as the generic content id
+                        watchlistId,
+                    }),
+                });
+
+                const payload = await response.json().catch(() => ({ message: "Unable to update watchlist." }));
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        setIsLoginPromptOpen(true);
+                        return;
+                    }
+                    throw new Error(typeof payload.message === "string" ? payload.message : "Unable to update watchlist.");
+                }
+
+                setIsSaved(nextSavedState);
+
+                if (nextSavedState) {
+                    const result = typeof payload === "object" && payload !== null
+                        ? (payload as { result?: { id?: unknown }; data?: { id?: unknown } })
+                        : null;
+                    const createdId = result?.result?.id ?? result?.data?.id;
+                    if (typeof createdId === "string") {
+                        setWatchlistId(createdId);
+                    }
+                } else {
+                    setWatchlistId(null);
+                }
+
+                setFeedbackMessage(
+                    nextSavedState
+                        ? "Saved to your watchlist. It will appear in your dashboard."
+                        : "Removed from your watchlist dashboard."
+                );
+            } catch (error) {
+                setFeedbackMessage(error instanceof Error ? error.message : "Unable to update watchlist.");
+            }
+        });
+    };
+
+    // ── shared transition for review / comment actions ────────────────────────
     const [, startTransition] = useTransition();
+
+    const [isLoginPromptOpen, setIsLoginPromptOpen] = useState(false);
 
     // Review like state
     const [reviewLikePendingById, setReviewLikePendingById] = useState<Record<string, boolean>>({});
@@ -338,13 +425,11 @@ export default function SeriesDetailsClient({ series, isAuthenticated, currentUs
         setReviewCommentsById((prev) => ({ ...prev, [reviewId]: extractCommentsFromPayload(payload) }));
     };
 
-    // Reload persisted comments from backend after mount so comments don't disappear on refresh.
+    // Reload persisted comments from backend after mount.
     useEffect(() => {
         if (!isAuthenticated) return;
-
         const reviewIds = series.reviews.map((r) => r.id).filter(Boolean);
         if (reviewIds.length === 0) return;
-
         let cancelled = false;
 
         void (async () => {
@@ -352,33 +437,14 @@ export default function SeriesDetailsClient({ series, isAuthenticated, currentUs
                 try {
                     const res = await fetch(`/api/user/comments/review/${reviewId}`, { cache: "no-store" });
                     const payload = await res.json().catch(() => ({}));
-
-                    if (cancelled) return;
-
-                    if (!res.ok) {
-                        console.warn(`Failed to load comments for review ${reviewId}:`, res.status, payload);
-                        return;
-                    }
-
+                    if (cancelled || !res.ok) return;
                     const extracted = extractCommentsFromPayload(payload);
-                    if (extracted && extracted.length > 0) {
-                        console.log(`Loaded ${extracted.length} comments for review ${reviewId}`);
-                    }
-
-                    setReviewCommentsById((prev) => ({
-                        ...prev,
-                        [reviewId]: extracted,
-                    }));
-                } catch (error) {
-                    console.error(`Error loading comments for review ${reviewId}:`, error);
-                    // Keep existing comment state if background reload fails.
-                }
+                    setReviewCommentsById((prev) => ({ ...prev, [reviewId]: extracted }));
+                } catch { /* keep existing */ }
             }));
         })();
 
-        return () => {
-            cancelled = true;
-        };
+        return () => { cancelled = true; };
     }, [isAuthenticated, series.reviews]);
 
     const handleCommentSubmit = (reviewId: string, parentId?: string) => {
@@ -543,17 +609,22 @@ export default function SeriesDetailsClient({ series, isAuthenticated, currentUs
                     className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm"
                     role="dialog"
                     aria-modal="true"
+                    aria-labelledby="login-required-title"
                     onClick={() => setIsLoginPromptOpen(false)}
                 >
                     <div
                         className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-950 p-6 text-white shadow-2xl"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300">Login Required</p>
-                        <h2 className="mt-2 text-2xl font-semibold tracking-tight">You need to log in first</h2>
-                        <p className="mt-2 text-sm leading-6 text-slate-300">
-                            Sign in to like reviews, post comments, and track this series.
-                        </p>
+                        <div className="space-y-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300">Login Required</p>
+                            <h2 id="login-required-title" className="text-2xl font-semibold tracking-tight">
+                                You need to log in first
+                            </h2>
+                            <p className="text-sm leading-6 text-slate-300">
+                                Sign in as a user or premium_user to save series to your favorites and watchlist dashboard.
+                            </p>
+                        </div>
                         <div className="mt-6 flex flex-wrap justify-end gap-3">
                             <Button
                                 type="button"
@@ -667,23 +738,35 @@ export default function SeriesDetailsClient({ series, isAuthenticated, currentUs
                                 </div>
                             </div>
 
-                            {/* Action buttons */}
+                            {/* Action buttons — fully wired like MovieDetailsClient */}
                             <div className="flex flex-wrap gap-2">
                                 <Button
                                     variant="secondary"
-                                    className="gap-2 border border-white/20 bg-white/10 text-white hover:bg-white/20"
-                                    onClick={() => { if (!isAuthenticated) setIsLoginPromptOpen(true); }}
+                                    className={cn(
+                                        "gap-2 border border-white/20 bg-white/10 text-white hover:bg-white/20",
+                                        hasUserReviewed && "cursor-not-allowed opacity-60"
+                                    )}
+                                    onClick={!hasUserReviewed ? handleProtectedSave : undefined}
+                                    disabled={isMutating || hasUserReviewed}
                                 >
-                                    <Heart className="size-4" />
-                                    Favorite
+                                    <Heart className={cn("size-4", (isSaved || hasUserReviewed) && "fill-rose-500 text-rose-500")} />
+                                    {hasUserReviewed
+                                        ? "Already Watched"
+                                        : actionLabel ?? (isSaved ? "Favorited" : "Favorite")}
                                 </Button>
                                 <Button
                                     variant="secondary"
-                                    className="gap-2 border border-white/20 bg-white/10 text-white hover:bg-white/20"
-                                    onClick={() => { if (!isAuthenticated) setIsLoginPromptOpen(true); }}
+                                    className={cn(
+                                        "gap-2 border border-white/20 bg-white/10 text-white hover:bg-white/20",
+                                        hasUserReviewed && "cursor-not-allowed opacity-60"
+                                    )}
+                                    onClick={!hasUserReviewed ? handleProtectedSave : undefined}
+                                    disabled={isMutating || hasUserReviewed}
                                 >
-                                    <Bookmark className="size-4" />
-                                    Track Series
+                                    <Bookmark className={cn("size-4", (isSaved || hasUserReviewed) && "fill-sky-400 text-sky-400")} />
+                                    {hasUserReviewed
+                                        ? "In Your Watchlist"
+                                        : actionLabel ?? (isSaved ? "In Watchlist" : "Add to Watchlist")}
                                 </Button>
                                 <Button
                                     variant="secondary"
@@ -692,6 +775,19 @@ export default function SeriesDetailsClient({ series, isAuthenticated, currentUs
                                     <Share2 className="size-4" />
                                     Share
                                 </Button>
+                            </div>
+
+                            {/* Feedback message — mirrors MovieDetailsClient */}
+                            <div className="min-h-6">
+                                {feedbackMessage ? (
+                                    <p className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs text-slate-200">
+                                        {feedbackMessage}
+                                    </p>
+                                ) : (
+                                    <p className="text-xs text-slate-300/80">
+                                        Saved series appear in your user dashboard watchlist.
+                                    </p>
+                                )}
                             </div>
 
                             {series.platforms.length > 0 && (
