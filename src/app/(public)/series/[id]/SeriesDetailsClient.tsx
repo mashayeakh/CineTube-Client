@@ -261,7 +261,7 @@ export default function SeriesDetailsClient({
                     method,
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        movieId: series.id, // API uses movieId as the generic content id
+                        seriesId: series.id,
                         watchlistId,
                     }),
                 });

@@ -147,7 +147,7 @@ export default function PopularSeriesPage() {
                         ) : null}
                         <div className="absolute inset-0 bg-linear-to-r from-[#050913]/92 via-[#111827]/80 to-[#1e293b]/72" />
                         <div className="absolute inset-0 bg-[radial-gradient(900px_360px_at_82%_38%,rgba(148,163,184,0.22),transparent_62%),radial-gradient(860px_420px_at_14%_78%,rgba(15,23,42,0.55),transparent_66%)]" />
-                        <div className="relative z-10 grid min-h-[360px] items-stretch gap-6 p-6 sm:min-h-[420px] sm:p-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8 lg:p-10">
+                        <div className="relative z-10 grid min-h-90 items-stretch gap-6 p-6 sm:min-h-[420px] sm:p-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8 lg:p-10">
                             <div className="flex flex-col justify-end">
                                 <span className="mb-3 inline-flex w-fit rounded-full bg-red-600/95 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
                                     Featured Series
