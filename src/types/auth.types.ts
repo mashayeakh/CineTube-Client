@@ -21,6 +21,16 @@ export interface IReview {
     rating?: number;
     status?: string;
     spoiler?: boolean;
+    // ✅ ADD THESE
+    movie?: {
+        id: string;
+        title: string;
+    } | null;
+
+    series?: {
+        id: string;
+        title: string;
+    } | null;
     createdAt?: string;
 }
 

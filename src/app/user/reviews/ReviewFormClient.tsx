@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import { useState } from "react"
@@ -6,17 +7,21 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { createReviewAction } from "./_actions/reviewActions"
 
-type WatchlistMovie = {
-    movieId: string
+// ✅ UPDATED TYPE
+type WatchlistItem = {
+    id: string
     title: string
+    type: "MOVIE" | "SERIES"
 }
 
 type ReviewFormClientProps = {
-    watchlistMovies: WatchlistMovie[]
+    watchlistMovies: WatchlistItem[]
 }
 
 export default function ReviewFormClient({ watchlistMovies }: ReviewFormClientProps) {
-    const [selectedMovieId, setSelectedMovieId] = useState("")
+    const [selectedId, setSelectedId] = useState("")
+    const [selectedType, setSelectedType] = useState<"MOVIE" | "SERIES" | null>(null)
+
     const [rating, setRating] = useState(0)
     const [hoverRating, setHoverRating] = useState(0)
     const [content, setContent] = useState("")
@@ -45,27 +50,44 @@ export default function ReviewFormClient({ watchlistMovies }: ReviewFormClientPr
         }
     }
 
+    const handleSelectChange = (value: string) => {
+        setSelectedId(value)
+
+        const selectedItem = watchlistMovies.find((item) => item.id === value)
+        setSelectedType(selectedItem?.type || null)
+    }
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
-        if (!selectedMovieId || !content.trim() || rating === 0) return
+
+        if (!selectedId || !content.trim() || rating === 0 || !selectedType) return
 
         setError(null)
         setSuccess(null)
         setLoading(true)
 
         try {
-            const result = await createReviewAction({
-                movieId: selectedMovieId,
+            const payload: any = {
                 rating,
                 content: content.trim(),
                 tags,
-            })
+            }
+
+            // ✅ dynamically send correct field
+            if (selectedType === "MOVIE") {
+                payload.movieId = selectedId
+            } else {
+                payload.seriesId = selectedId
+            }
+
+            const result = await createReviewAction(payload)
 
             if (!result.success) {
                 setError(result.message)
             } else {
                 setSuccess("Your review is pending. Once the admin approves it, it will be published.")
-                setSelectedMovieId("")
+                setSelectedId("")
+                setSelectedType(null)
                 setRating(0)
                 setContent("")
                 setTags([])
@@ -82,7 +104,7 @@ export default function ReviewFormClient({ watchlistMovies }: ReviewFormClientPr
         return (
             <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
                 <p className="text-sm text-slate-500">
-                    Add movies to your watchlist first, then you can review them here.
+                    Add movies or series to your watchlist first, then you can review them here.
                 </p>
             </div>
         )
@@ -101,25 +123,25 @@ export default function ReviewFormClient({ watchlistMovies }: ReviewFormClientPr
                 </p>
             )}
 
-            {/* Movie Selection */}
+            {/* ✅ UPDATED: Movie + Series Selection */}
             <div className="space-y-1.5">
-                <label className="text-sm font-medium text-slate-700">Select Movie</label>
+                <label className="text-sm font-medium text-slate-700">Select Item</label>
                 <select
-                    value={selectedMovieId}
-                    onChange={(e) => setSelectedMovieId(e.target.value)}
+                    value={selectedId}
+                    onChange={(e) => handleSelectChange(e.target.value)}
                     className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     required
                 >
-                    <option value="">Choose a movie from your watchlist...</option>
-                    {watchlistMovies.map((m) => (
-                        <option key={m.movieId} value={m.movieId}>
-                            {m.title}
+                    <option value="">Choose from your watchlist...</option>
+                    {watchlistMovies.map((item) => (
+                        <option key={item.id} value={item.id}>
+                            {item.title} ({item.type})
                         </option>
                     ))}
                 </select>
             </div>
 
-            {/* Star Rating */}
+            {/* Rating */}
             <div className="space-y-1.5">
                 <label className="text-sm font-medium text-slate-700">Rating</label>
                 <div className="flex items-center gap-1">
@@ -134,8 +156,8 @@ export default function ReviewFormClient({ watchlistMovies }: ReviewFormClientPr
                         >
                             <Star
                                 className={`size-6 ${star <= (hoverRating || rating)
-                                    ? "fill-amber-400 text-amber-400"
-                                    : "text-slate-300"
+                                        ? "fill-amber-400 text-amber-400"
+                                        : "text-slate-300"
                                     }`}
                             />
                         </button>
@@ -146,13 +168,13 @@ export default function ReviewFormClient({ watchlistMovies }: ReviewFormClientPr
                 </div>
             </div>
 
-            {/* Review Content */}
+            {/* Review */}
             <div className="space-y-1.5">
                 <label className="text-sm font-medium text-slate-700">Your Review</label>
                 <textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    placeholder="Share your thoughts about this movie..."
+                    placeholder="Share your thoughts..."
                     rows={4}
                     className="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     required
@@ -169,11 +191,12 @@ export default function ReviewFormClient({ watchlistMovies }: ReviewFormClientPr
                             className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700"
                         >
                             {tag}
-                            <button type="button" onClick={() => removeTag(tag)} className="hover:text-indigo-900">
+                            <button type="button" onClick={() => removeTag(tag)}>
                                 <X className="size-3" />
                             </button>
                         </span>
                     ))}
+
                     {tags.length < 5 && (
                         <div className="flex items-center gap-1">
                             <Input
@@ -183,11 +206,7 @@ export default function ReviewFormClient({ watchlistMovies }: ReviewFormClientPr
                                 placeholder="Add tag..."
                                 className="h-8 w-28 text-xs"
                             />
-                            <button
-                                type="button"
-                                onClick={addTag}
-                                className="rounded-md border border-slate-200 p-1.5 text-slate-500 hover:text-slate-700"
-                            >
+                            <button type="button" onClick={addTag}>
                                 <Plus className="size-3.5" />
                             </button>
                         </div>
@@ -198,7 +217,7 @@ export default function ReviewFormClient({ watchlistMovies }: ReviewFormClientPr
             {/* Submit */}
             <Button
                 type="submit"
-                disabled={loading || !selectedMovieId || !content.trim() || rating === 0}
+                disabled={loading || !selectedId || !content.trim() || rating === 0}
                 className="gap-2"
             >
                 {loading ? (

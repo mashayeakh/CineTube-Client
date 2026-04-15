@@ -1,3 +1,4 @@
+// ...existing code...
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
@@ -57,6 +58,7 @@ interface Review {
 export interface SeriesDetail {
     id: string;
     title: string;
+    content: string,
     releaseYear: number;
     posterPath: string;
     backdropPath?: string;
@@ -229,6 +231,31 @@ export default function SeriesDetailsClient({
     hasUserReviewed = false,
     loginHref,
 }: Props) {
+    // Fetch like count for a review
+    const fetchReviewLikesCount = async (reviewId: string): Promise<number> => {
+        try {
+            const res = await fetch(`/api/reviews/${reviewId}/likes`, { method: "GET" });
+            const data = await res.json();
+            if (res.ok && typeof data.result === "number") {
+                return data.result;
+            }
+        } catch { }
+        return 0;
+    };
+
+    // On mount, fetch like counts for all reviews if not authenticated
+    useEffect(() => {
+        if (isAuthenticated) return;
+        const updateCounts = async () => {
+            const updates: Record<string, { liked: boolean; likesCount: number }> = {};
+            await Promise.all(series.reviews.map(async (r) => {
+                const count = await fetchReviewLikesCount(r.id);
+                updates[r.id] = { liked: false, likesCount: count };
+            }));
+            setReviewLikeStateById((prev) => ({ ...prev, ...updates }));
+        };
+        updateCounts();
+    }, [isAuthenticated, series.reviews]);
     const router = useRouter();
 
     // ── watchlist state (mirrors MovieDetailsClient) ──────────────────────────
@@ -238,6 +265,11 @@ export default function SeriesDetailsClient({
     const [isMutating, startMutationTransition] = useTransition();
 
     const actionLabel = isMutating ? (isSaved ? "Removing..." : "Saving...") : undefined;
+
+    // console.log("====>>>>>SERE", series)
+    // console.log("====>>>>>SEREssssss", series.reviews)
+
+
 
     const handleProtectedSave = () => {
         if (!isAuthenticated) {
@@ -381,37 +413,41 @@ export default function SeriesDetailsClient({
 
     const handleReviewLike = (reviewId: string) => {
         const cur = reviewLikeStateById[reviewId] ?? { liked: false, likesCount: 0 };
-        if (cur.liked) return;
+        const isCurrentlyLiked = cur.liked;
         if (!isAuthenticated) { setIsLoginPromptOpen(true); return; }
 
         setReviewFeedbackById((prev) => ({ ...prev, [reviewId]: null }));
         setReviewLikePendingById((prev) => ({ ...prev, [reviewId]: true }));
-        setReviewLikeStateById((prev) => ({ ...prev, [reviewId]: { liked: true, likesCount: cur.likesCount + 1 } }));
-        persistLikedReview(reviewId);
+        setReviewLikeStateById((prev) => ({
+            ...prev,
+            [reviewId]: {
+                liked: !isCurrentlyLiked,
+                likesCount: isCurrentlyLiked ? Math.max(0, cur.likesCount - 1) : cur.likesCount + 1,
+            },
+        }));
+        if (!isCurrentlyLiked) {
+            persistLikedReview(reviewId);
+        } else {
+            // Optionally remove from localStorage if you want to persist unlikes
+        }
 
         startTransition(async () => {
             try {
-                const res = await fetch(`/api/reviews/${reviewId}/like`, {
-                    method: "POST",
+                // Use correct proxy API route and backend REST endpoint
+                const res = await fetch(`/api/reviews/${reviewId}/${isCurrentlyLiked ? "dislike" : "like"}`, {
+                    method: isCurrentlyLiked ? "DELETE" : "POST",
                     headers: { "Content-Type": "application/json" },
                 });
+
                 const payload = await res.json().catch(() => ({})) as { message?: string };
                 if (!res.ok) {
                     if (res.status === 401) { setIsLoginPromptOpen(true); }
-                    throw new Error(typeof payload.message === "string" ? payload.message : "Unable to like.");
+                    throw new Error(typeof payload.message === "string" ? payload.message : `Unable to ${isCurrentlyLiked ? "dislike" : "like"}.`);
                 }
             } catch (error) {
-                const msg = error instanceof Error ? error.message : "Unable to like.";
-                if (msg.toLowerCase().includes("already")) {
-                    persistLikedReview(reviewId);
-                    setReviewLikeStateById((prev) => ({
-                        ...prev,
-                        [reviewId]: { liked: true, likesCount: Math.max(cur.likesCount, 1) },
-                    }));
-                } else {
-                    setReviewLikeStateById((prev) => ({ ...prev, [reviewId]: cur }));
-                    setReviewFeedbackById((prev) => ({ ...prev, [reviewId]: msg }));
-                }
+                const msg = error instanceof Error ? error.message : `Unable to ${isCurrentlyLiked ? "dislike" : "like"}.`;
+                setReviewLikeStateById((prev) => ({ ...prev, [reviewId]: cur }));
+                setReviewFeedbackById((prev) => ({ ...prev, [reviewId]: msg }));
             } finally {
                 setReviewLikePendingById((prev) => ({ ...prev, [reviewId]: false }));
             }
@@ -972,7 +1008,7 @@ export default function SeriesDetailsClient({
                                                     reviewLikeStateById[review.id]?.liked && "fill-emerald-600 text-emerald-600"
                                                 )}
                                             />
-                                            {reviewLikeStateById[review.id]?.liked ? "Liked" : "Like"}
+                                            {reviewLikeStateById[review.id]?.liked ? "Dislike" : "Like"}
                                             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700">
                                                 {reviewLikeStateById[review.id]?.likesCount ?? 0}
                                             </span>

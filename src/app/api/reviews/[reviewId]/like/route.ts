@@ -32,7 +32,7 @@ async function proxyReviewLike(
     method: "POST" | "DELETE",
     auth: NonNullable<Awaited<ReturnType<typeof getAuthorizedContext>>>
 ) {
-    const response = await fetch(`${BASE_API_URL}/reviews/${reviewId}/like`, {
+    const response = await fetch(`${BASE_API_URL}/review-like/${reviewId}/like`, {
         method,
         headers: {
             "Content-Type": "application/json",

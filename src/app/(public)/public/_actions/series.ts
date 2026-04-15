@@ -65,6 +65,7 @@ export const getFeaturedSeries = async () => {
 export const getSeriesById = async (id: string) => {
     try {
         const res = await httpClient.get(`/series/${id}`) as SeriesResponse
+        // console.log("‼️‼️‼️‼️‼️ RES ", res)
         const result = res?.result ?? res?.data ?? res
         if (result && typeof result === "object" && !Array.isArray(result)) {
             return result as Record<string, unknown>

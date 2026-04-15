@@ -7,7 +7,7 @@ import { resolveMediaUrl } from "@/lib/media";
 import { getSeriesById } from "@/app/(public)/public/_actions/series";
 import { getUserInfo } from "@/service/auth.services";
 import { extractArray, findValue } from "@/lib/user-dashboard.utils";
-import { getMyWatchlists } from "@/service/watchlist.services";
+import { getMySeriesWatchlists } from "@/service/watchlist.services";
 import SeriesDetailsClient, { type SeriesDetail } from "./SeriesDetailsClient";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -73,6 +73,10 @@ export default async function SeriesDetailPage({
         getUserInfo().catch(() => null),
     ]);
 
+console.log("object")
+    console.log("=========‼️‼️‼️‼️‼️ get series by id", getSeriesById)
+
+
     if (!data) return <NotFound />;
 
     // ── auth + permission (mirrors MovieDetails page exactly) ────────────────
@@ -87,10 +91,10 @@ export default async function SeriesDetailPage({
         findValue(currentUser as Record<string, unknown> | null, ["id", "_id", "userId"])
     );
 
-    // ── watchlist lookup (only for eligible users, same as movie page) ────────
+    // ── watchlist lookup — use SERIES endpoint, match by seriesId ────────────
     let watchlistPayload: unknown = null;
     if (canSaveToLibrary) {
-        watchlistPayload = await getMyWatchlists()
+        watchlistPayload = await getMySeriesWatchlists()
             .then((response) => response.data)
             .catch(() => null);
     }
@@ -98,14 +102,18 @@ export default async function SeriesDetailPage({
     const watchlistItems = extractArray(watchlistPayload, [
         "watchlist",
         "items",
-        "movies",
+        "series",
         "results",
         "data",
     ]);
 
-    const matchedWatchlistItem = watchlistItems.find((item) => {
-        const itemId = findValue(item, ["movieId", "id", "_id"]);
-        return typeof itemId === "string" && itemId === String(data.id);
+    const matchedWatchlistItem = watchlistItems.find((item: any) => {
+        const topLevelId = normalizeId(
+            findValue(item, ["seriesId", "id", "_id"])
+        );
+        const nestedId = normalizeId(item?.series?.id ?? item?.series?._id ?? "");
+        const currentId = String(data.id);
+        return topLevelId === currentId || nestedId === currentId;
     });
 
     const initialSaved = Boolean(matchedWatchlistItem);
@@ -234,6 +242,7 @@ export default async function SeriesDetailPage({
         posterPath: poster,
         backdropPath: poster,
         rating: avgRating,
+        content: str(data.contentRating ?? data.rating, "NR"),
         language,
         genre: genres,
         votes: approvedReviews.length,

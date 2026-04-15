@@ -31,7 +31,7 @@ export function PremiumPageShell({ activePath, title, children }: PremiumPageShe
                             {/* <button className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-700" type="button">
                                 <Bell className="size-4" />
                             </button> */}
-                            <Link href="/premium_user/dashboard" className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-700">
+                            <Link href="/user/dashboard" className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-700">
                                 <Home className="size-4" />
                             </Link>
                         </div>

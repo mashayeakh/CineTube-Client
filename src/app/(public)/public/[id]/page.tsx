@@ -9,7 +9,7 @@ import { getGenres } from '../_actions/genres';
 import { resolveMediaUrl } from '@/lib/media';
 import { extractArray, findValue } from '@/lib/user-dashboard.utils';
 import { getUserInfo } from '@/service/auth.services';
-import { getMyWatchlists } from '@/service/watchlist.services';
+import { getMyMoviesWatchlists } from '@/service/watchlist.services';
 
 type GenreOption = {
     id: string;
@@ -23,16 +23,11 @@ function extractGenreNames(rawGenres: unknown, genreOptions: GenreOption[]) {
     const addName = (value: unknown) => {
         if (typeof value === 'string') {
             const trimmed = value.trim();
-
-            if (!trimmed) {
-                return;
-            }
-
+            if (!trimmed) return;
             if (genreMap.has(trimmed)) {
                 names.add(genreMap.get(trimmed) as string);
                 return;
             }
-
             names.add(trimmed);
         }
     };
@@ -52,10 +47,8 @@ function extractGenreNames(rawGenres: unknown, genreOptions: GenreOption[]) {
                 addName(item);
                 continue;
             }
-
             if (item && typeof item === 'object') {
                 const record = item as { id?: unknown; name?: unknown };
-
                 if (typeof record.name === 'string') {
                     addName(record.name);
                 } else if (typeof record.id === 'string') {
@@ -73,19 +66,14 @@ function normalizeId(value: unknown) {
         const trimmed = value.trim();
         return trimmed.length > 0 ? trimmed : "";
     }
-
     if (typeof value === "number" && Number.isFinite(value)) {
         return String(value);
     }
-
     return "";
 }
 
 function parseReactionEntries(source: unknown) {
-    if (Array.isArray(source)) {
-        return source;
-    }
-
+    if (Array.isArray(source)) return source;
     if (typeof source === "string") {
         try {
             const parsed = JSON.parse(source);
@@ -94,32 +82,20 @@ function parseReactionEntries(source: unknown) {
             return [];
         }
     }
-
     if (source && typeof source === "object") {
         const record = source as Record<string, unknown>;
         const candidate = record.items ?? record.data ?? record.results ?? record.list;
         return Array.isArray(candidate) ? candidate : [];
     }
-
     return [] as unknown[];
 }
 
 function parseReactionCount(source: unknown): number {
-    if (Array.isArray(source)) {
-        return source.length;
-    }
-
-    if (typeof source === "number" && Number.isFinite(source)) {
-        return source;
-    }
-
+    if (Array.isArray(source)) return source.length;
+    if (typeof source === "number" && Number.isFinite(source)) return source;
     if (typeof source === "string") {
         const parsedNumber = Number(source);
-
-        if (Number.isFinite(parsedNumber)) {
-            return parsedNumber;
-        }
-
+        if (Number.isFinite(parsedNumber)) return parsedNumber;
         try {
             const parsedJson = JSON.parse(source);
             return parseReactionCount(parsedJson);
@@ -127,38 +103,23 @@ function parseReactionCount(source: unknown): number {
             return 0;
         }
     }
-
     if (source && typeof source === "object") {
         const record = source as Record<string, unknown>;
         const directCandidates = [
-            record.count,
-            record.total,
-            record.length,
-            record.likesCount,
-            record.likeCount,
-            record.dislikesCount,
-            record.dislikeCount,
+            record.count, record.total, record.length,
+            record.likesCount, record.likeCount,
+            record.dislikesCount, record.dislikeCount,
         ];
-
         for (const candidate of directCandidates) {
             const nextCount = parseReactionCount(candidate);
-
-            if (nextCount > 0) {
-                return nextCount;
-            }
+            if (nextCount > 0) return nextCount;
         }
-
         const nestedCandidates = [record.items, record.data, record.results, record.list];
-
         for (const candidate of nestedCandidates) {
             const nextCount = parseReactionCount(candidate);
-
-            if (nextCount > 0) {
-                return nextCount;
-            }
+            if (nextCount > 0) return nextCount;
         }
     }
-
     return 0;
 }
 
@@ -189,14 +150,13 @@ export default async function MovieDetails({
     let data: any;
     let genreOptions: GenreOption[] = [];
     let currentUser: Record<string, unknown> | null = null;
-    let watchlistPayload: unknown = null;
+
     try {
         const [movieData, genresData, userData] = await Promise.all([
             getMovieById(id),
             getGenres(),
             getUserInfo().catch(() => null),
         ]);
-
         data = movieData;
         genreOptions = Array.isArray(genresData) ? genresData as GenreOption[] : [];
         currentUser = userData as Record<string, unknown> | null;
@@ -206,7 +166,7 @@ export default async function MovieDetails({
 
     if (!data) return <NotFound />;
 
-    // Parse cast from JSON string if needed
+    // Parse cast
     let castArray: { name: string; character: string }[] = [];
     try {
         const parsed = JSON.parse(data.cast ?? '[]');
@@ -221,16 +181,12 @@ export default async function MovieDetails({
     const avgRating =
         approvedReviews.length > 0
             ? Number(
-                (
-                    approvedReviews.reduce((sum: number, r: any) => sum + Number(r.rating ?? 0), 0) /
-                    approvedReviews.length
-                ).toFixed(1)
+                (approvedReviews.reduce((sum: number, r: any) => sum + Number(r.rating ?? 0), 0) / approvedReviews.length).toFixed(1)
             )
             : 0;
 
     const currentUserId = normalizeId(findValue(currentUser, ["id", "_id", "userId"]));
 
-    // Parse tags for each review — only show APPROVED reviews on the public page
     const mappedReviews = approvedReviews.map((r: any) => {
         let tags: string[] = [];
         try {
@@ -239,21 +195,13 @@ export default async function MovieDetails({
         } catch { tags = []; }
 
         const likesArray = parseReactionEntries(r.likes ?? r.likedBy ?? r.reviewLikes);
-
         const dislikesArray = parseReactionEntries(r.dislikes ?? r.dislikedBy ?? r.reviewDislikes);
 
         const likedByCurrentUser = Boolean(
             currentUserId && likesArray.some((entry: any) => {
                 const entryId = normalizeId(entry);
-
-                if (entryId) {
-                    return entryId === currentUserId;
-                }
-
-                if (!entry || typeof entry !== "object") {
-                    return false;
-                }
-
+                if (entryId) return entryId === currentUserId;
+                if (!entry || typeof entry !== "object") return false;
                 return (
                     normalizeId(entry.userId) === currentUserId ||
                     normalizeId(entry.id) === currentUserId ||
@@ -268,15 +216,8 @@ export default async function MovieDetails({
         const dislikedByCurrentUser = Boolean(
             currentUserId && dislikesArray.some((entry: any) => {
                 const entryId = normalizeId(entry);
-
-                if (entryId) {
-                    return entryId === currentUserId;
-                }
-
-                if (!entry || typeof entry !== "object") {
-                    return false;
-                }
-
+                if (entryId) return entryId === currentUserId;
+                if (!entry || typeof entry !== "object") return false;
                 return (
                     normalizeId(entry.userId) === currentUserId ||
                     normalizeId(entry.id) === currentUserId ||
@@ -289,50 +230,32 @@ export default async function MovieDetails({
         );
 
         const reactionEntries = parseReactionEntries(r.reactions ?? r.reviewReactions ?? r.reaction ?? r.activity);
-
         const reactionLikeCount = reactionEntries.filter((entry: any) => {
-            if (!entry || typeof entry !== "object") {
-                return false;
-            }
-
+            if (!entry || typeof entry !== "object") return false;
             const type = normalizeId(entry.type ?? entry.reactionType ?? entry.action).toUpperCase();
             return type === "LIKE" || type === "UPVOTE";
         }).length;
-
         const reactionDislikeCount = reactionEntries.filter((entry: any) => {
-            if (!entry || typeof entry !== "object") {
-                return false;
-            }
-
+            if (!entry || typeof entry !== "object") return false;
             const type = normalizeId(entry.type ?? entry.reactionType ?? entry.action).toUpperCase();
             return type === "DISLIKE" || type === "DOWNVOTE";
         }).length;
 
         const parsedLikeCount = Math.max(
-            parseReactionCount(r.likesCount),
-            parseReactionCount(r.likeCount),
-            parseReactionCount(r.totalLikes),
-            parseReactionCount(r.likes),
-            parseReactionCount(r.likedBy),
-            parseReactionCount(r.reviewLikes),
-            likesArray.length,
-            reactionLikeCount
+            parseReactionCount(r.likesCount), parseReactionCount(r.likeCount),
+            parseReactionCount(r.totalLikes), parseReactionCount(r.likes),
+            parseReactionCount(r.likedBy), parseReactionCount(r.reviewLikes),
+            likesArray.length, reactionLikeCount
         );
-
         const parsedDislikeCount = Math.max(
-            parseReactionCount(r.dislikesCount),
-            parseReactionCount(r.dislikeCount),
-            parseReactionCount(r.totalDislikes),
-            parseReactionCount(r.dislikes),
-            parseReactionCount(r.dislikedBy),
-            parseReactionCount(r.reviewDislikes),
-            dislikesArray.length,
-            reactionDislikeCount
+            parseReactionCount(r.dislikesCount), parseReactionCount(r.dislikeCount),
+            parseReactionCount(r.totalDislikes), parseReactionCount(r.dislikes),
+            parseReactionCount(r.dislikedBy), parseReactionCount(r.reviewDislikes),
+            dislikesArray.length, reactionDislikeCount
         );
 
         const mapCommentNode = (c: any) => {
             const nestedReplies = Array.isArray(c?.replies) ? c.replies : [];
-
             return {
                 id: String(c?.id ?? ""),
                 userId: String(c?.userId ?? c?.user?.id ?? c?.user?._id ?? ""),
@@ -344,11 +267,7 @@ export default async function MovieDetails({
             };
         };
 
-        const rawComments = Array.isArray(r.comments)
-            ? r.comments
-            : Array.isArray(r.comment)
-                ? r.comment
-                : [];
+        const rawComments = Array.isArray(r.comments) ? r.comments : Array.isArray(r.comment) ? r.comment : [];
 
         return {
             id: r.id as string,
@@ -377,20 +296,31 @@ export default async function MovieDetails({
         (data.reviews ?? []).some((r: any) => r.userId === currentUserId || r.user?.id === currentUserId)
     );
 
+    // ── watchlist lookup ──────────────────────────────────────────────────────
+    let watchlistPayload: unknown = null;
     if (canSaveToLibrary) {
-        watchlistPayload = await getMyWatchlists()
+        watchlistPayload = await getMyMoviesWatchlists()
             .then((response) => response.data)
             .catch(() => null);
     }
 
+    // The /watchlists/movies/all response returns items where the movie is
+    // nested under item.movie — so we check BOTH top-level movieId AND
+    // the nested item.movie.id to match against the current movie's id.
     const watchlistItems = extractArray(watchlistPayload, ["watchlist", "items", "movies", "results", "data"]);
-    const matchedWatchlistItem = watchlistItems.find((item) => {
-        const movieId = findValue(item, ["movieId", "id", "_id"]);
-        return typeof movieId === 'string' && movieId === String(data.id);
+
+    const matchedWatchlistItem = watchlistItems.find((item: any) => {
+        const topLevelId = normalizeId(
+            findValue(item, ["movieId", "id", "_id"])
+        );
+        const nestedId = normalizeId(item?.movie?.id ?? item?.movie?._id ?? "");
+        const currentId = String(data.id);
+        return topLevelId === currentId || nestedId === currentId;
     });
+
     const initialSaved = Boolean(matchedWatchlistItem);
     const initialWatchlistId = (() => {
-        const value = findValue(matchedWatchlistItem, ["watchlistId", "id", "_id"]);
+        const value = findValue(matchedWatchlistItem as Record<string, unknown> | undefined, ["watchlistId", "id", "_id"]);
         return typeof value === "string" ? value : null;
     })();
 
@@ -402,7 +332,6 @@ export default async function MovieDetails({
         backdropPath: resolveMediaUrl(data.poster as string) || undefined,
         rating: avgRating,
         language: 'English',
-        // duration: 'N/A',
         genre: genreNames,
         votes: approvedReviews.length,
         overview: (data.description as string) ?? '',
@@ -426,4 +355,3 @@ export default async function MovieDetails({
         />
     );
 }
-

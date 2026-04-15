@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Image from "next/image";
 import {
     BadgeCheck,
@@ -109,6 +110,9 @@ export default async function UserProfilePage() {
         profile = null;
     }
 
+
+    console.log("profile", profile)
+
     if (!profile) {
         return (
             <UserPageShell
@@ -137,6 +141,8 @@ export default async function UserProfilePage() {
     const reviewCount = profile.reviews?.length ?? 0;
     const commentCount = profile.comments?.length ?? 0;
     const paymentCount = profile.payments?.length ?? 0;
+
+    console.log("Profile --", profile)
 
     return (
         <UserPageShell
@@ -232,7 +238,7 @@ export default async function UserProfilePage() {
                 </section>
 
                 {/* Movies Table */}
-                {movieCount > 0 && (
+                {/* {movieCount > 0 && (
                     <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                         <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-slate-900">
                             <Film className="h-4 w-4 text-indigo-500" />
@@ -249,7 +255,7 @@ export default async function UserProfilePage() {
                             ])}
                         />
                     </section>
-                )}
+                )} */}
 
                 {/* Contributions Table */}
                 {contributionCount > 0 && (
@@ -276,15 +282,25 @@ export default async function UserProfilePage() {
                             <Star className="h-4 w-4 text-yellow-500" />
                             Reviews ({reviewCount})
                         </h2>
+
                         <SectionTable
-                            headers={["Content", "Rating", "Spoiler", "Status", "Date"]}
-                            rows={profile.reviews!.slice(0, 15).map((r) => [
-                                <span key={r.id} className="line-clamp-1 max-w-xs">{r.content ?? "—"}</span>,
-                                r.rating != null ? String(r.rating) : "—",
-                                r.spoiler ? "Yes" : "No",
-                                r.status ?? "—",
-                                formatDate(r.createdAt),
-                            ])}
+                            headers={["Movie / Series", "Rating", "Spoiler", "Status", "Date"]}
+                            rows={profile.reviews!.slice(0, 15).map((r) => {
+                                const title =
+                                    (r.movie && (r.movie as any).title) ||
+                                    (r.series && (r.series as any).title) ||
+                                    "NA";
+
+                                return [
+                                    <span key={r.id} className="line-clamp-1 max-w-xs">
+                                        {title}
+                                    </span>,
+                                    r.rating != null ? String(r.rating) : "—",
+                                    r.spoiler ? "Yes" : "No",
+                                    r.status ?? "—",
+                                    formatDate(r.createdAt),
+                                ];
+                            })}
                         />
                     </section>
                 )}
@@ -300,7 +316,7 @@ export default async function UserProfilePage() {
                             headers={["Amount", "Method", "Status", "Date"]}
                             rows={profile.payments!.slice(0, 15).map((p) => [
                                 p.amount != null ? `$${p.amount}` : "—",
-                                p.method ?? "—",
+                                p.method ?? "CARD",
                                 p.status ?? "—",
                                 formatDate(p.createdAt),
                             ])}

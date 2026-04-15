@@ -7,7 +7,7 @@ import {
     formatDate,
     parseString,
 } from "@/lib/user-dashboard.utils";
-import { getMyWatchlists, getMySeriesWatchlists } from "@/service/watchlist.services";
+import { getMySeriesWatchlists, getMyMoviesWatchlists, } from "@/service/watchlist.services";
 
 export default async function PremiumWatchlistPage() {
     let moviePayload: unknown = null;
@@ -15,7 +15,7 @@ export default async function PremiumWatchlistPage() {
 
     try {
         const [movieResponse, seriesResponse] = await Promise.all([
-            getMyWatchlists(),
+            getMyMoviesWatchlists(),
             getMySeriesWatchlists(),
         ]);
         moviePayload = movieResponse.data;

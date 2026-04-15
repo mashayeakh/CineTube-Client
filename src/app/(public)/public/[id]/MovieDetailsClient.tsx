@@ -7,6 +7,7 @@ import {
     ArrowLeft,
     Bookmark,
     Calendar,
+    ClockFading,
     Globe,
     Heart,
     MessageCircle,
@@ -243,6 +244,13 @@ export default function MovieDetailsClient({
             return acc;
         }, {});
     });
+
+
+    console.log("Movies from review: ", movie)
+
+
+
+
     const [reviewCommentsById, setReviewCommentsById] = useState<Record<string, ReviewComment[]>>(() => {
         const reviews = movie.reviews ?? [];
 
@@ -397,11 +405,7 @@ export default function MovieDetailsClient({
 
     const handleReviewLike = (reviewId: string) => {
         const currentState = reviewLikeStateById[reviewId] ?? { liked: false, likesCount: 0 };
-
-        // Keep single-click like behavior only.
-        if (currentState.liked) {
-            return;
-        }
+        const isCurrentlyLiked = currentState.liked;
 
         if (!isAuthenticated) {
             setIsLoginPromptOpen(true);
@@ -421,16 +425,20 @@ export default function MovieDetailsClient({
         setReviewLikeStateById((prev) => ({
             ...prev,
             [reviewId]: {
-                liked: true,
-                likesCount: currentState.likesCount + 1,
+                liked: !isCurrentlyLiked,
+                likesCount: isCurrentlyLiked ? Math.max(0, currentState.likesCount - 1) : currentState.likesCount + 1,
             },
         }));
-        persistLikedReview(reviewId);
+        if (!isCurrentlyLiked) {
+            persistLikedReview(reviewId);
+        } else {
+            // Optionally remove from localStorage if you want to persist unlikes
+        }
 
         startTransition(async () => {
             try {
                 const response = await fetch(`/api/reviews/${reviewId}/like`, {
-                    method: "POST",
+                    method: isCurrentlyLiked ? "DELETE" : "POST",
                     headers: {
                         "Content-Type": "application/json",
                     },
@@ -442,11 +450,10 @@ export default function MovieDetailsClient({
                     if (response.status === 401) {
                         setIsLoginPromptOpen(true);
                     }
-
-                    throw new Error(typeof payload.message === "string" ? payload.message : "Unable to like this review.");
+                    throw new Error(typeof payload.message === "string" ? payload.message : `Unable to ${isCurrentlyLiked ? "dislike" : "like"} this review.`);
                 }
             } catch (error) {
-                const message = error instanceof Error ? error.message : "Unable to like this review.";
+                const message = error instanceof Error ? error.message : `Unable to ${isCurrentlyLiked ? "dislike" : "like"} this review.`;
                 const normalizedMessage = message.toLowerCase();
 
                 if (normalizedMessage.includes("already") && normalizedMessage.includes("like")) {
@@ -596,6 +603,8 @@ export default function MovieDetailsClient({
             }
         });
     };
+
+
 
     const renderCommentList = (reviewId: string, comments: ReviewComment[], depth = 0): ReactElement => {
         return (
@@ -1014,7 +1023,7 @@ export default function MovieDetailsClient({
                                                     reviewLikeStateById[review.id]?.liked && "fill-emerald-600 text-emerald-600"
                                                 )}
                                             />
-                                            {reviewLikeStateById[review.id]?.liked ? "Liked" : "Like"}
+                                            {reviewLikeStateById[review.id]?.liked ? "Dislike" : "Like"}
                                             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700">
                                                 {reviewLikeStateById[review.id]?.likesCount ?? 0}
                                             </span>

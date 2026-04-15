@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { UserDataTable } from "@/components/user/user-data-table";
 import { UserPageShell } from "@/components/user/user-page-shell";
 import {
@@ -6,7 +7,7 @@ import {
     formatDate,
     parseString,
 } from "@/lib/user-dashboard.utils";
-import { getMyWatchlists, getMySeriesWatchlists } from "@/service/watchlist.services";
+import { getMyMoviesWatchlists, getMySeriesWatchlists } from "@/service/watchlist.services";
 
 export default async function UserWatchlistPage() {
     let moviePayload: unknown = null;
@@ -14,7 +15,7 @@ export default async function UserWatchlistPage() {
 
     try {
         const [movieResponse, seriesResponse] = await Promise.all([
-            getMyWatchlists(),
+            getMyMoviesWatchlists(),
             getMySeriesWatchlists(),
         ]);
         moviePayload = movieResponse.data;
@@ -24,18 +25,26 @@ export default async function UserWatchlistPage() {
         seriesPayload = null;
     }
 
+
+    console.log("movie palyload---", moviePayload)
+
+
     // ── movie items ───────────────────────────────────────────────────────────
     const movieItems = extractArray(moviePayload, ["watchlist", "items", "movies", "results", "data"]);
 
     const movieRows = movieItems.map((item) => {
         const movieObject = findValue(item, ["movie"]) as Record<string, unknown> | undefined;
         const title = parseString(findValue(movieObject ?? item, ["title", "movieTitle", "name"]));
-        const genre = parseString(findValue(movieObject ?? item, ["genre", "genres", "category"]));
+        const genresArray = findValue(movieObject ?? item, ["genres"]) as unknown[];
+        const genre = Array.isArray(genresArray)
+            ? genresArray.map((g: any) => g.name || g).join(", ")
+            : "—";
+
         const year = parseString(findValue(movieObject ?? item, ["releaseYear", "year"]));
         const addedAt = formatDate(findValue(item, ["addedAt", "createdAt", "date"]));
-        const status = parseString(findValue(item, ["status"]));
+        // const status = parseString(findValue(item, ["status"]));
 
-        return [title || "—", genre || "—", year || "—", addedAt, status || "—"];
+        return [title || "—", genre || "—", year || "—", addedAt];
     });
 
     // ── series items ──────────────────────────────────────────────────────────
@@ -44,7 +53,11 @@ export default async function UserWatchlistPage() {
     const seriesRows = seriesItems.map((item) => {
         const seriesObject = findValue(item, ["series", "tvShow", "show"]) as Record<string, unknown> | undefined;
         const title = parseString(findValue(seriesObject ?? item, ["title", "name", "seriesTitle"]));
-        const genre = parseString(findValue(seriesObject ?? item, ["genre", "genres", "category"]));
+        // 👇 FIXED GENRE HANDLING
+        const genresArray = findValue(seriesObject ?? item, ["genres"]) as unknown[];
+        const genre = Array.isArray(genresArray)
+            ? genresArray.map((g: any) => g.name || g).join(", ")
+            : "—";
         const year = parseString(findValue(seriesObject ?? item, ["releaseYear", "year"]));
         const addedAt = formatDate(findValue(item, ["addedAt", "createdAt", "date"]));
         // const status = parseString(findValue(item, ["status"]));
@@ -68,7 +81,7 @@ export default async function UserWatchlistPage() {
                 </div>
 
                 <UserDataTable
-                    headers={["Title", "Genre", "Year", "Added", "Status"]}
+                    headers={["Title", "Genre", "Year", "Added"]}
                     rows={allRows}
                     emptyMessage="No watchlist items found."
                 />

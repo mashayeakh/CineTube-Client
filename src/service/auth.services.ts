@@ -72,7 +72,7 @@ export async function getUserInfo() {
             },
         });
 
-        console.log("RRES", res)
+        // console.log("RRES", res)
 
         // If Bearer auth fails, retry with cookie-only
         if (!res.ok) {
