@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
@@ -28,6 +29,7 @@ import { cn } from "@/lib/utils";
 interface ReviewComment {
     id: string;
     userId: string;
+    userName?: string;
     parentId: string | null;
     content: string;
     isSpoiler: boolean;
@@ -118,6 +120,9 @@ function mapCommentNode(value: unknown): ReviewComment | null {
     return {
         id,
         userId: normalizeTextId(record.userId ?? (record.user as { id?: unknown; _id?: unknown } | undefined)?.id ?? (record.user as { id?: unknown; _id?: unknown } | undefined)?._id),
+        userName: typeof (record.user as { name?: unknown } | undefined)?.name === "string"
+            ? ((record.user as { name?: string }).name ?? "").trim() || undefined
+            : undefined,
         parentId: normalizeTextId(record.parentId) || null,
         content: typeof record.content === "string" ? record.content : "",
         isSpoiler: Boolean(record.isSpoiler),
@@ -245,10 +250,46 @@ export default function MovieDetailsClient({
         }, {});
     });
 
+    console.log("REview ", movie.reviews)
 
-    console.log("Movies from review: ", movie)
+    // Fetch like count for a review
+    const fetchReviewLikesCount = async (reviewId: string): Promise<number> => {
+        try {
+            const res = await fetch(`/api/reviews/${reviewId}/likes`, { method: "GET" });
+            const data = await res.json();
+            if (res.ok && typeof data.result === "number") {
+                return data.result;
+            }
+        } catch { }
+        return 0;
+    };
 
-
+    // Always fetch like counts for all reviews on mount (for both authenticated and guest users)
+    useEffect(() => {
+        const reviews = movie.reviews ?? [];
+        const updateCounts = async () => {
+            const updates: Record<string, { liked: boolean; likesCount: number }> = {};
+            await Promise.all(reviews.map(async (r) => {
+                const count = await fetchReviewLikesCount(r.id);
+                updates[r.id] = {
+                    liked: Boolean(r.likedByCurrentUser),
+                    likesCount: count,
+                };
+            }));
+            setReviewLikeStateById((prev) => {
+                const next = { ...prev };
+                for (const review of reviews) {
+                    const existing = prev[review.id];
+                    next[review.id] = {
+                        liked: existing?.liked ?? Boolean(review.likedByCurrentUser),
+                        likesCount: updates[review.id]?.likesCount ?? existing?.likesCount ?? 0,
+                    };
+                }
+                return next;
+            });
+        };
+        updateCounts();
+    }, [movie.reviews]);
 
 
     const [reviewCommentsById, setReviewCommentsById] = useState<Record<string, ReviewComment[]>>(() => {
@@ -403,22 +444,12 @@ export default function MovieDetailsClient({
         });
     };
 
+    // ── Like/dislike — mirrors SeriesDetailsClient exactly ────────────────────
     const handleReviewLike = (reviewId: string) => {
-        const currentState = reviewLikeStateById[reviewId] ?? { liked: false, likesCount: 0 };
-        const isCurrentlyLiked = currentState.liked;
+        const cur = reviewLikeStateById[reviewId] ?? { liked: false, likesCount: 0 };
+        const isCurrentlyLiked = cur.liked;
 
-        if (!isAuthenticated) {
-            setIsLoginPromptOpen(true);
-            return;
-        }
-
-        if (!canSaveToLibrary) {
-            setReviewFeedbackById((prev) => ({
-                ...prev,
-                [reviewId]: "Only user and premium_user accounts can react to reviews.",
-            }));
-            return;
-        }
+        if (!isAuthenticated) { setIsLoginPromptOpen(true); return; }
 
         setReviewFeedbackById((prev) => ({ ...prev, [reviewId]: null }));
         setReviewLikePendingById((prev) => ({ ...prev, [reviewId]: true }));
@@ -426,60 +457,45 @@ export default function MovieDetailsClient({
             ...prev,
             [reviewId]: {
                 liked: !isCurrentlyLiked,
-                likesCount: isCurrentlyLiked ? Math.max(0, currentState.likesCount - 1) : currentState.likesCount + 1,
+                likesCount: isCurrentlyLiked ? Math.max(0, cur.likesCount - 1) : cur.likesCount + 1,
             },
         }));
+
         if (!isCurrentlyLiked) {
             persistLikedReview(reviewId);
-        } else {
-            // Optionally remove from localStorage if you want to persist unlikes
         }
 
         startTransition(async () => {
             try {
-                const response = await fetch(`/api/reviews/${reviewId}/like`, {
+                const res = await fetch(`/api/reviews/${reviewId}/${isCurrentlyLiked ? "dislike" : "like"}`, {
                     method: isCurrentlyLiked ? "DELETE" : "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
+                    headers: { "Content-Type": "application/json" },
                 });
 
-                const payload = await response.json().catch(() => ({})) as { message?: string };
-
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        setIsLoginPromptOpen(true);
-                    }
-                    throw new Error(typeof payload.message === "string" ? payload.message : `Unable to ${isCurrentlyLiked ? "dislike" : "like"} this review.`);
+                const payload = await res.json().catch(() => ({})) as { message?: string };
+                if (!res.ok) {
+                    if (res.status === 401) { setIsLoginPromptOpen(true); }
+                    throw new Error(typeof payload.message === "string" ? payload.message : `Unable to ${isCurrentlyLiked ? "dislike" : "like"}.`);
                 }
             } catch (error) {
-                const message = error instanceof Error ? error.message : `Unable to ${isCurrentlyLiked ? "dislike" : "like"} this review.`;
-                const normalizedMessage = message.toLowerCase();
+                const msg = error instanceof Error ? error.message : `Unable to ${isCurrentlyLiked ? "dislike" : "like"}.`;
+                const normalizedMessage = String(msg).toLowerCase();
 
-                if (normalizedMessage.includes("already") && normalizedMessage.includes("like")) {
+                if (!isCurrentlyLiked && normalizedMessage.includes("already") && normalizedMessage.includes("like")) {
                     setReviewLikeStateById((prev) => ({
                         ...prev,
                         [reviewId]: {
                             liked: true,
-                            likesCount: Math.max(currentState.likesCount, 1),
+                            likesCount: Math.max(cur.likesCount, 1),
                         },
                     }));
                     persistLikedReview(reviewId);
-                    setReviewFeedbackById((prev) => ({
-                        ...prev,
-                        [reviewId]: null,
-                    }));
+                    setReviewFeedbackById((prev) => ({ ...prev, [reviewId]: null }));
                     return;
                 }
 
-                setReviewLikeStateById((prev) => ({
-                    ...prev,
-                    [reviewId]: currentState,
-                }));
-                setReviewFeedbackById((prev) => ({
-                    ...prev,
-                    [reviewId]: message,
-                }));
+                setReviewLikeStateById((prev) => ({ ...prev, [reviewId]: cur }));
+                setReviewFeedbackById((prev) => ({ ...prev, [reviewId]: msg }));
             } finally {
                 setReviewLikePendingById((prev) => ({ ...prev, [reviewId]: false }));
             }
@@ -507,6 +523,40 @@ export default function MovieDetailsClient({
             [reviewId]: nextComments,
         }));
     };
+
+    useEffect(() => {
+        if (!isAuthenticated) {
+            return;
+        }
+
+        const reviewIds = (movie.reviews ?? []).map((review) => review.id).filter(Boolean);
+        if (reviewIds.length === 0) {
+            return;
+        }
+
+        let cancelled = false;
+
+        void (async () => {
+            await Promise.all(reviewIds.map(async (reviewId) => {
+                try {
+                    const response = await fetch(`/api/user/comments/review/${reviewId}`, { cache: "no-store" });
+                    const payload = await response.json().catch(() => ({}));
+                    if (cancelled || !response.ok) {
+                        return;
+                    }
+
+                    const extracted = extractCommentsFromPayload(payload);
+                    setReviewCommentsById((prev) => ({ ...prev, [reviewId]: extracted }));
+                } catch {
+                    // Keep existing comments if fetch fails.
+                }
+            }));
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [isAuthenticated, movie.reviews]);
 
     const handleCommentSubmit = (reviewId: string, parentId?: string) => {
         const isReply = Boolean(parentId);
@@ -604,8 +654,6 @@ export default function MovieDetailsClient({
         });
     };
 
-
-
     const renderCommentList = (reviewId: string, comments: ReviewComment[], depth = 0): ReactElement => {
         return (
             <div className="space-y-3">
@@ -614,12 +662,12 @@ export default function MovieDetailsClient({
                         <div className="flex items-start gap-3">
                             <Avatar className="h-7 w-7 border border-slate-200">
                                 <AvatarFallback className="text-[10px]">
-                                    {(comment.userId || "U").slice(0, 2).toUpperCase()}
+                                    {(comment.userName || comment.userId || "U").slice(0, 2).toUpperCase()}
                                 </AvatarFallback>
                             </Avatar>
                             <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <p className="text-xs font-semibold">{shortId(comment.userId || "unknown")}</p>
+                                    <p className="text-xs font-semibold">{shortId(comment.userName || comment.userId || "unknown")}</p>
                                     <p className="text-xs text-slate-500">{formatLongDate(comment.createdAt)}</p>
                                     {comment.isSpoiler && (
                                         <Badge variant="secondary" className="rounded-full text-[10px]">spoiler</Badge>
@@ -792,7 +840,7 @@ export default function MovieDetailsClient({
                                     <p className="text-xs uppercase tracking-wide text-slate-300">Rating</p>
                                     <p className="mt-1 inline-flex items-center gap-1 text-lg font-semibold">
                                         <Star className="size-4 fill-amber-400 text-amber-400" />
-                                        {movie.rating.toFixed(1)}
+                                        {movie.rating.toFixed(1)}/5
                                     </p>
                                 </div>
                                 <div className="rounded-xl border border-white/20 bg-white/10 px-4 py-2">
@@ -830,10 +878,10 @@ export default function MovieDetailsClient({
                                     <Bookmark className={cn("size-4", (isSaved || hasUserReviewed) && "fill-sky-400 text-sky-400")} />
                                     {hasUserReviewed ? "In Your Watchlist" : isMutating ? actionLabel : isSaved ? "In Watchlist" : "Add to Watchlist"}
                                 </Button>
-                                <Button variant="secondary" className="gap-2 border border-white/20 bg-white/10 text-white hover:bg-white/20">
+                                {/* <Button variant="secondary" className="gap-2 border border-white/20 bg-white/10 text-white hover:bg-white/20">
                                     <Share2 className="size-4" />
                                     Share
-                                </Button>
+                                </Button> */}
                             </div>
 
                             <div className="min-h-6">
@@ -1005,6 +1053,7 @@ export default function MovieDetailsClient({
 
                                     <p className="mt-3 leading-7 text-slate-700">{review.content}</p>
 
+                                    {/* ── Like button — mirrors SeriesDetailsClient ── */}
                                     <div className="mt-4 flex flex-wrap items-center gap-3">
                                         <Button
                                             type="button"
@@ -1023,15 +1072,15 @@ export default function MovieDetailsClient({
                                                     reviewLikeStateById[review.id]?.liked && "fill-emerald-600 text-emerald-600"
                                                 )}
                                             />
-                                            {reviewLikeStateById[review.id]?.liked ? "Dislike" : "Like"}
+                                            {reviewLikeStateById[review.id]?.liked ? (
+                                                <span className="text-emerald-700 font-semibold">Liked</span>
+                                            ) : (
+                                                "Like"
+                                            )}
                                             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700">
                                                 {reviewLikeStateById[review.id]?.likesCount ?? 0}
                                             </span>
                                         </Button>
-
-                                        {reviewFeedbackById[review.id] ? (
-                                            <p className="text-xs text-red-600">{reviewFeedbackById[review.id]}</p>
-                                        ) : null}
                                     </div>
 
                                     {review.tags.length > 0 && (

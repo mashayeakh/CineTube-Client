@@ -4,6 +4,8 @@
 
 import { useEffect, useMemo, useState, useTransition, type ReactElement } from "react";
 import { motion } from "framer-motion";
+import { MoreHorizontal } from "lucide-react";
+
 import {
     ArrowLeft,
     Bookmark,
@@ -97,6 +99,7 @@ function normalizeTextId(value: unknown): string {
     if (typeof value === "number" && Number.isFinite(value)) return String(value);
     return "";
 }
+
 
 function statusLabel(status: string) {
     const map: Record<string, { label: string; color: string }> = {
@@ -333,6 +336,19 @@ export default function SeriesDetailsClient({
         });
     };
 
+    // Fetch comment count for a review
+
+    const fetchReviewCommentsCount = async (reviewId: string): Promise<number> => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/v1/comments/count/${reviewId}`, { method: "GET" });
+            const data = await res.json();
+            if (res.ok && typeof data.result === "object" && typeof data.result.count === "number") {
+                return data.result.count;
+            }
+        } catch { }
+        return 0;
+    };
+
     // ── shared transition for review / comment actions ────────────────────────
     const [, startTransition] = useTransition();
 
@@ -351,6 +367,22 @@ export default function SeriesDetailsClient({
         }, {})
     );
 
+    // Always fetch like counts for all reviews on mount (for both authenticated and guest users)
+    useEffect(() => {
+        const updateCounts = async () => {
+            const updates: Record<string, { liked: boolean; likesCount: number }> = {};
+            await Promise.all(series.reviews.map(async (r) => {
+                const count = await fetchReviewLikesCount(r.id);
+                updates[r.id] = {
+                    liked: Boolean(r.likedByCurrentUser),
+                    likesCount: count,
+                };
+            }));
+            setReviewLikeStateById((prev) => ({ ...prev, ...updates }));
+        };
+        updateCounts();
+    }, [series.reviews]);
+
     // Comment state
     const [reviewCommentsById, setReviewCommentsById] = useState<Record<string, ReviewComment[]>>(() =>
         series.reviews.reduce<Record<string, ReviewComment[]>>((acc, r) => {
@@ -360,6 +392,26 @@ export default function SeriesDetailsClient({
             return acc;
         }, {})
     );
+    // Comment count state
+    const [reviewCommentsCountById, setReviewCommentsCountById] = useState<Record<string, number>>(() =>
+        series.reviews.reduce<Record<string, number>>((acc, r) => {
+            acc[r.id] = 0;
+            return acc;
+        }, {})
+    );
+
+    // Always fetch comment counts for all reviews on mount (for both authenticated and guest users)
+    useEffect(() => {
+        const updateCounts = async () => {
+            const updates: Record<string, number> = {};
+            await Promise.all(series.reviews.map(async (r) => {
+                const count = await fetchReviewCommentsCount(r.id);
+                updates[r.id] = count;
+            }));
+            setReviewCommentsCountById((prev) => ({ ...prev, ...updates }));
+        };
+        updateCounts();
+    }, [series.reviews]);
     const [commentDraftByReviewId, setCommentDraftByReviewId] = useState<Record<string, string>>({});
     const [replyDraftByCommentId, setReplyDraftByCommentId] = useState<Record<string, string>>({});
     const [activeReplyTargetByReviewId, setActiveReplyTargetByReviewId] = useState<Record<string, string | null>>({});
@@ -483,6 +535,16 @@ export default function SeriesDetailsClient({
         return () => { cancelled = true; };
     }, [isAuthenticated, series.reviews]);
 
+
+
+    // Edit/delete state
+    const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+    const [editDraftByCommentId, setEditDraftByCommentId] = useState<Record<string, string>>({});
+    const [editPendingByCommentId, setEditPendingByCommentId] = useState<Record<string, boolean>>({});
+    const [editErrorByCommentId, setEditErrorByCommentId] = useState<Record<string, string | null>>({});
+
+
+
     const handleCommentSubmit = (reviewId: string, parentId?: string) => {
         const isReply = Boolean(parentId);
         const draft = isReply
@@ -559,79 +621,184 @@ export default function SeriesDetailsClient({
 
     const renderCommentList = (reviewId: string, comments: ReviewComment[], depth = 0): ReactElement => (
         <div className="space-y-3">
-            {comments.map((comment) => (
-                <div key={comment.id} className={cn("space-y-2", depth > 0 && "ml-6 border-l border-slate-200 pl-4")}>
-                    <div className="flex items-start gap-3">
-                        <Avatar className="h-7 w-7 border border-slate-200">
-                            <AvatarFallback className="text-[10px]">
-                                {(comment.userName || comment.userId || "U").slice(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <p className="text-xs font-semibold">{comment.userName || shortId(comment.userId || "unknown")}</p>
-                                <p className="text-xs text-slate-500">{formatLongDate(comment.createdAt)}</p>
-                                {comment.isSpoiler && (
-                                    <Badge variant="secondary" className="rounded-full text-[10px]">spoiler</Badge>
+            {comments.map((comment) => {
+                const isAuthor = currentUserId && comment.userId === currentUserId;
+                const isEditing = editingCommentId === comment.id;
+                return (
+                    <div key={comment.id} className={cn("space-y-2", depth > 0 && "ml-6 border-l border-slate-200 pl-4")}>
+                        <div className="flex items-start gap-3">
+                            <Avatar className="h-7 w-7 border border-slate-200">
+                                <AvatarFallback className="text-[10px]">
+                                    {(comment.userName || comment.userId || "U").slice(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <p className="text-xs font-semibold">{comment.userName || shortId(comment.userId || "unknown")}</p>
+                                    <p className="text-xs text-slate-500">{formatLongDate(comment.createdAt)}</p>
+                                    {comment.isSpoiler && (
+                                        <Badge variant="secondary" className="rounded-full text-[10px]">spoiler</Badge>
+                                    )}
+                                    {/* Three-dot menu for author */}
+                                    {isAuthor && (
+                                        <div className="relative inline-block">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="size-6 p-0"
+                                                onClick={() => setEditingCommentId(editingCommentId === comment.id ? null : comment.id + "-menu")}
+                                            >
+                                                <MoreHorizontal className="size-4" />
+                                            </Button>
+                                            {editingCommentId === comment.id + "-menu" && (
+                                                <div className="absolute right-0 z-10 mt-2 w-28 rounded-md border border-slate-200 bg-white shadow-lg">
+                                                    <button
+                                                        className="block w-full px-4 py-2 text-left text-xs hover:bg-slate-100"
+                                                        onClick={() => {
+                                                            setEditDraftByCommentId((prev) => ({ ...prev, [comment.id]: comment.content }));
+                                                            setEditingCommentId(comment.id); // Only now enter edit mode
+                                                        }}
+                                                    >Edit</button>
+                                                    <button
+                                                        className="block w-full px-4 py-2 text-left text-xs text-red-600 hover:bg-slate-100"
+                                                        onClick={async () => {
+                                                            setEditPendingByCommentId((prev) => ({ ...prev, [comment.id]: true }));
+                                                            setEditErrorByCommentId((prev) => ({ ...prev, [comment.id]: null }));
+                                                            try {
+                                                                const res = await fetch(`/api/comments/${comment.id}/${currentUserId}`, {
+                                                                    method: "DELETE",
+                                                                    headers: { "Content-Type": "application/json" },
+                                                                });
+                                                                if (!res.ok) {
+                                                                    const data = await res.json().catch(() => ({}));
+                                                                    throw new Error(data.message || "Unable to delete comment.");
+                                                                }
+                                                                // Reload comments
+                                                                await loadComments(reviewId);
+                                                                setEditingCommentId(null);
+                                                            } catch (err) {
+                                                                setEditErrorByCommentId((prev) => ({ ...prev, [comment.id]: err instanceof Error ? err.message : "Unable to delete comment." }));
+                                                            } finally {
+                                                                setEditPendingByCommentId((prev) => ({ ...prev, [comment.id]: false }));
+                                                            }
+                                                        }}
+                                                        disabled={!!editPendingByCommentId[comment.id]}
+                                                    >Delete</button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                {/* Inline edit mode */}
+                                {isEditing ? (
+                                    <div className="mt-1">
+                                        <textarea
+                                            value={editDraftByCommentId[comment.id] ?? comment.content}
+                                            onChange={(e) => setEditDraftByCommentId((prev) => ({ ...prev, [comment.id]: e.target.value }))}
+                                            rows={2}
+                                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none placeholder:text-slate-400 focus:border-slate-300"
+                                        />
+                                        <div className="flex items-center gap-2 mt-2">
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                className="h-8"
+                                                disabled={!!editPendingByCommentId[comment.id]}
+                                                onClick={async () => {
+                                                    setEditPendingByCommentId((prev) => ({ ...prev, [comment.id]: true }));
+                                                    setEditErrorByCommentId((prev) => ({ ...prev, [comment.id]: null }));
+                                                    try {
+                                                        const res = await fetch(`/api/comments/${comment.id}/${currentUserId}`, {
+                                                            method: "PATCH",
+                                                            headers: { "Content-Type": "application/json" },
+                                                            body: JSON.stringify({ content: editDraftByCommentId[comment.id] })
+                                                        });
+                                                        if (!res.ok) {
+                                                            const data = await res.json().catch(() => ({}));
+                                                            throw new Error(data.message || "Unable to update comment.");
+                                                        }
+                                                        await loadComments(reviewId);
+                                                        setEditingCommentId(null);
+                                                    } catch (err) {
+                                                        setEditErrorByCommentId((prev) => ({ ...prev, [comment.id]: err instanceof Error ? err.message : "Unable to update comment." }));
+                                                    } finally {
+                                                        setEditPendingByCommentId((prev) => ({ ...prev, [comment.id]: false }));
+                                                    }
+                                                }}
+                                            >Save</Button>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-8"
+                                                onClick={() => setEditingCommentId(null)}
+                                            >Cancel</Button>
+                                        </div>
+                                        {editErrorByCommentId[comment.id] && (
+                                            <p className="text-xs text-red-600 mt-1">{editErrorByCommentId[comment.id]}</p>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <p className="mt-1 text-sm text-slate-700">{comment.content}</p>
+                                )}
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="mt-1 h-7 px-2 text-xs text-slate-600"
+                                    onClick={() => {
+                                        if (!isAuthenticated) { setIsLoginPromptOpen(true); return; }
+                                        setActiveReplyTargetByReviewId((prev) => ({
+                                            ...prev,
+                                            [reviewId]: prev[reviewId] === comment.id ? null : comment.id,
+                                        }));
+                                    }}
+                                >
+                                    <Reply className="mr-1 size-3" />
+                                    Reply
+                                </Button>
+
+                                {activeReplyTargetByReviewId[reviewId] === comment.id && (
+                                    <div className="mt-2 space-y-2">
+                                        <textarea
+                                            value={replyDraftByCommentId[comment.id] ?? ""}
+                                            onChange={(e) => {
+                                                const v = e.target.value;
+                                                setReplyDraftByCommentId((prev) => ({ ...prev, [comment.id]: v }));
+                                            }}
+                                            rows={2}
+                                            placeholder="Write a reply..."
+                                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none placeholder:text-slate-400 focus:border-slate-300"
+                                        />
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                className="h-8"
+                                                disabled={Boolean(commentPendingByReviewId[reviewId])}
+                                                onClick={() => handleCommentSubmit(reviewId, comment.id)}
+                                            >
+                                                {commentPendingByReviewId[reviewId] ? "Posting..." : "Post Reply"}
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-8"
+                                                onClick={() => setActiveReplyTargetByReviewId((prev) => ({ ...prev, [reviewId]: null }))}
+                                            >
+                                                Cancel
+                                            </Button>
+                                        </div>
+                                    </div>
                                 )}
                             </div>
-                            <p className="mt-1 text-sm text-slate-700">{comment.content}</p>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="mt-1 h-7 px-2 text-xs text-slate-600"
-                                onClick={() => {
-                                    if (!isAuthenticated) { setIsLoginPromptOpen(true); return; }
-                                    setActiveReplyTargetByReviewId((prev) => ({
-                                        ...prev,
-                                        [reviewId]: prev[reviewId] === comment.id ? null : comment.id,
-                                    }));
-                                }}
-                            >
-                                <Reply className="mr-1 size-3" />
-                                Reply
-                            </Button>
-
-                            {activeReplyTargetByReviewId[reviewId] === comment.id && (
-                                <div className="mt-2 space-y-2">
-                                    <textarea
-                                        value={replyDraftByCommentId[comment.id] ?? ""}
-                                        onChange={(e) => {
-                                            const v = e.target.value;
-                                            setReplyDraftByCommentId((prev) => ({ ...prev, [comment.id]: v }));
-                                        }}
-                                        rows={2}
-                                        placeholder="Write a reply..."
-                                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none placeholder:text-slate-400 focus:border-slate-300"
-                                    />
-                                    <div className="flex items-center gap-2">
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            className="h-8"
-                                            disabled={Boolean(commentPendingByReviewId[reviewId])}
-                                            onClick={() => handleCommentSubmit(reviewId, comment.id)}
-                                        >
-                                            {commentPendingByReviewId[reviewId] ? "Posting..." : "Post Reply"}
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            variant="outline"
-                                            className="h-8"
-                                            onClick={() => setActiveReplyTargetByReviewId((prev) => ({ ...prev, [reviewId]: null }))}
-                                        >
-                                            Cancel
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
                         </div>
+                        {comment.replies.length > 0 && renderCommentList(reviewId, comment.replies, depth + 1)}
                     </div>
-                    {comment.replies.length > 0 && renderCommentList(reviewId, comment.replies, depth + 1)}
-                </div>
-            ))}
+                );
+            })}
         </div>
     );
 
@@ -760,7 +927,7 @@ export default function SeriesDetailsClient({
                                         <p className="text-xs uppercase tracking-wide text-slate-300">Rating</p>
                                         <p className="mt-1 inline-flex items-center gap-1 text-lg font-semibold">
                                             <Star className="size-4 fill-amber-400 text-amber-400" />
-                                            {series.rating.toFixed(1)}
+                                            {series.rating.toFixed(1)}/5
                                         </p>
                                     </div>
                                 )}
@@ -804,13 +971,13 @@ export default function SeriesDetailsClient({
                                         ? "In Your Watchlist"
                                         : actionLabel ?? (isSaved ? "In Watchlist" : "Add to Watchlist")}
                                 </Button>
-                                <Button
+                                {/* <Button
                                     variant="secondary"
                                     className="gap-2 border border-white/20 bg-white/10 text-white hover:bg-white/20"
                                 >
                                     <Share2 className="size-4" />
                                     Share
-                                </Button>
+                                </Button> */}
                             </div>
 
                             {/* Feedback message — mirrors MovieDetailsClient */}
@@ -1036,11 +1203,20 @@ export default function SeriesDetailsClient({
                                             const total = countComments(comments);
                                             return (
                                                 <>
+
+                                                    {/* Always show comment count for all users (from API) */}
                                                     <p className="inline-flex items-center gap-2 text-xs uppercase tracking-wide text-slate-500">
                                                         <MessageCircle className="size-3.5" />
-                                                        {total} Comment{total === 1 ? "" : "s"}
+                                                        {reviewCommentsCountById[review.id] ?? 0} Comment{(reviewCommentsCountById[review.id] ?? 0) === 1 ? "" : "s"}
                                                     </p>
 
+                                                    <div className="mt-3">
+                                                        {comments.length > 0
+                                                            ? renderCommentList(review.id, comments)
+                                                            : <p className="text-sm text-slate-500">No comments yet.</p>}
+                                                    </div>
+
+                                                    {/* Show comment box for authenticated users, login prompt for guests */}
                                                     <div className="mt-3 space-y-2">
                                                         {isAuthenticated ? (
                                                             <>
@@ -1080,12 +1256,6 @@ export default function SeriesDetailsClient({
                                                         {commentFeedbackByReviewId[review.id] && (
                                                             <p className="text-xs text-red-600">{commentFeedbackByReviewId[review.id]}</p>
                                                         )}
-                                                    </div>
-
-                                                    <div className="mt-3">
-                                                        {comments.length > 0
-                                                            ? renderCommentList(review.id, comments)
-                                                            : <p className="text-sm text-slate-500">No comments yet.</p>}
                                                     </div>
                                                 </>
                                             );

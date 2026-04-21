@@ -10,7 +10,7 @@ export interface CreateReviewPayload {
     content: string;
     tags?: string[];
 }
-    
+
 export const createReviewAction = async (
     payload: CreateReviewPayload
 ): Promise<ApiResponse | ApiErrorResponse> => {
@@ -20,9 +20,9 @@ export const createReviewAction = async (
         return { success: false, message: "Either Movie or Series is required" };
     }
 
-    if (!seriesId || !content?.trim()) {
-        return { success: false, message: "Series and review content are required" };
-    }
+    // if (!seriesId || !content?.trim()) {
+    //     return { success: false, message: "Series and review content are required" };
+    // }
 
     if (rating < 0 || rating > 5) {
         return { success: false, message: "Rating must be between 0 and 5" };

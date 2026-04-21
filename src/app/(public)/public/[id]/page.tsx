@@ -158,6 +158,8 @@ export default async function MovieDetails({
             getUserInfo().catch(() => null),
         ]);
         data = movieData;
+
+        console.log("DATA ", data)
         genreOptions = Array.isArray(genresData) ? genresData as GenreOption[] : [];
         currentUser = userData as Record<string, unknown> | null;
     } catch {
@@ -186,6 +188,8 @@ export default async function MovieDetails({
             : 0;
 
     const currentUserId = normalizeId(findValue(currentUser, ["id", "_id", "userId"]));
+
+    console.log("APPROVED REVIEWS (raw): ", approvedReviews);
 
     const mappedReviews = approvedReviews.map((r: any) => {
         let tags: string[] = [];
@@ -259,6 +263,7 @@ export default async function MovieDetails({
             return {
                 id: String(c?.id ?? ""),
                 userId: String(c?.userId ?? c?.user?.id ?? c?.user?._id ?? ""),
+                userName: typeof c?.user?.name === "string" ? c.user.name : undefined,
                 content: typeof c?.content === "string" ? c.content : "",
                 isSpoiler: Boolean(c?.isSpoiler),
                 createdAt: typeof c?.createdAt === "string" ? c.createdAt : "",
@@ -283,8 +288,15 @@ export default async function MovieDetails({
             dislikesCount: Number.isFinite(parsedDislikeCount) ? parsedDislikeCount : 0,
             dislikedByCurrentUser: dislikedByCurrentUser || Boolean(r.isDislikedByCurrentUser ?? r.isDisliked ?? r.hasDisliked),
             comments: rawComments.map(mapCommentNode),
+            user: {
+                id: String(r.user?.id ?? r.user?._id ?? r.userId ?? ''),
+                name: typeof r.user?.name === 'string' && r.user.name.trim() ? r.user.name.trim() : (typeof r.name === 'string' && r.name.trim() ? r.name.trim() : 'Unknown'),
+                email: typeof r.user?.email === 'string' ? r.user.email : '',
+            },
         };
     });
+
+    console.log("MAPPED REVIEWS: ", mappedReviews);
 
     const genreNames = extractGenreNames(data.genres ?? data.genre ?? data.genreIds, genreOptions);
     const role = typeof currentUser?.role === 'string' ? currentUser.role.toUpperCase() : '';

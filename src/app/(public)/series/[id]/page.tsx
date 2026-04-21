@@ -73,7 +73,7 @@ export default async function SeriesDetailPage({
         getUserInfo().catch(() => null),
     ]);
 
-console.log("object")
+    console.log("object")
     console.log("=========‼️‼️‼️‼️‼️ get series by id", getSeriesById)
 
 
