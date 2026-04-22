@@ -101,7 +101,7 @@ export default async function proxy(request: NextRequest) {
         const protectedPrefix =
             pathname.startsWith("/user") ||
             pathname.startsWith("/admin") ||
-            pathname.startsWith("/premium_user") ||
+            // pathname.startsWith("/premium_user") ||
             pathname === "/my-profile" ||
             pathname === "/change-password";
 

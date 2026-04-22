@@ -30,22 +30,24 @@ export default async function PremiumCommentsPage() {
     });
 
     return (
-        <PremiumPageShell
-            activePath="/premium_user/comments"
-            title="My Comments"
-        >
-            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="mb-4 flex items-center justify-between">
-                    <p className="text-sm text-slate-500">Total comments</p>
-                    <p className="text-lg font-semibold text-slate-900">{items.length}</p>
-                </div>
+        <>
+        </>
+        // <PremiumPageShell
+        //     activePath="/premium_user/comments"
+        //     title="My Comments"
+        // >
+        //     <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        //         <div className="mb-4 flex items-center justify-between">
+        //             <p className="text-sm text-slate-500">Total comments</p>
+        //             <p className="text-lg font-semibold text-slate-900">{items.length}</p>
+        //         </div>
 
-                <UserDataTable
-                    headers={["Content", "Movie", "Status", "Created"]}
-                    rows={rows}
-                    emptyMessage="No comments found."
-                />
-            </section>
-        </PremiumPageShell>
+        //         <UserDataTable
+        //             headers={["Content", "Movie", "Status", "Created"]}
+        //             rows={rows}
+        //             emptyMessage="No comments found."
+        //         />
+        //     </section>
+        // </PremiumPageShell>
     );
 }

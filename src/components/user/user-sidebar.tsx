@@ -12,6 +12,7 @@ import {
     LayoutDashboard,
     ListVideo,
     LogOut,
+    MessageCircle,
     Star,
     Subtitles,
     Tv,
@@ -30,6 +31,7 @@ const navItems = [
     { label: "My Profile", href: "/user/profile", icon: CircleUserRound },
     { label: "My Watchlist", href: "/user/watchlist", icon: ListVideo },
     { label: "My Reviews", href: "/user/reviews", icon: Star },
+    { label: "My Comments", href: "/user/comments", icon: MessageCircle },
     { label: "My Subscription", href: "/user/subscription", icon: Subtitles },
     { label: "Payment History", href: "/user/payment-history", icon: History },
 ];

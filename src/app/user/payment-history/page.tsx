@@ -23,7 +23,10 @@ export default async function UserPaymentHistoryPage() {
 
     const rows = items.slice(0, 20).map((item) => {
         const amount = formatCurrency(findValue(item, ["amount", "price", "total"]));
-        const method = parseString(findValue(item, ["method", "paymentMethod"]));
+        let method = parseString(findValue(item, ["method", "paymentMethod"])).trim();
+        if (!method || method === "-" || method === "–" || method === "—") {
+            method = "CARD";
+        }
         const status = parseString(findValue(item, ["status"]));
         const transactionId = parseString(findValue(item, ["transactionId", "txnId", "id"]));
         const createdAt = formatDate(findValue(item, ["createdAt", "paidAt", "date"]));

@@ -9,6 +9,8 @@ export function UserDataTable({ headers, rows, emptyMessage = "No records found.
         return <p className="text-sm text-slate-500">{emptyMessage}</p>;
     }
 
+    // console.log("Row", rows);
+
     return (
         <div className="overflow-x-auto">
             <table className="w-full text-sm">

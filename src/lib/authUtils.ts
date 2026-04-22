@@ -68,7 +68,7 @@ export const getDefaultDashboardRoute = (role: UserRole) => {
         case "ADMIN":
             return "/admin/dashboard";
         case "PREMIUM_USER":
-            return "/premium_user/dashboard";
+            return "/user/dashboard";
         case "USER":
             return "/user/dashboard";
         default:

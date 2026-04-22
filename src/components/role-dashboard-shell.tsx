@@ -29,11 +29,16 @@ const roleConfig = {
         description: "Operations dashboard for administrative users.",
     },
     PREMIUM_USER: {
-        label: "Premium user",
-        icon: Crown,
-        dashboardHref: "/premium_user/dashboard",
-        accent: "from-violet-500 via-fuchsia-500 to-pink-500",
-        description: "Premium experience dashboard for subscribed members.",
+        // label: "Premium user",
+        // icon: Crown,
+        // dashboardHref: "/premium_user/dashboard",
+        // accent: "from-violet-500 via-fuchsia-500 to-pink-500",
+        // description: "Premium experience dashboard for subscribed members.",
+        label: "Premium User",
+        icon: UserCircle2,
+        dashboardHref: "/user/dashboard",
+        accent: "from-sky-500 via-cyan-500 to-emerald-500",
+        description: "Personal dashboard for regular users.",
     },
 } as const;
 

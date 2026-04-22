@@ -14,7 +14,7 @@ export function PremiumPageShell({ activePath, title, children }: PremiumPageShe
     return (
         <div className="min-h-screen bg-slate-100 text-slate-900">
             <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)]">
-                <PremiumSidebar activePath={activePath} />
+                {/* <PremiumSidebar activePath={activePath} /> */}
 
                 <div className="min-w-0">
                     <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200/80 bg-slate-50/95 px-4 backdrop-blur sm:px-6">
