@@ -1,6 +1,8 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
     CalendarRange,
     Clapperboard,
@@ -50,7 +52,14 @@ type MovieViewClientProps = {
     deleteMovieAction: (formData: FormData) => Promise<void>;
     deleteAllMoviesAction: () => Promise<void>;
     actionError?: string;
+    successMessage?: string;
 };
+
+// ✅ FIX 1: Helper to safely display releaseYear — 0 and null/undefined all show "N/A"
+function formatReleaseYear(year: number | null | undefined): string {
+    if (!year || year === 0) return "N/A";
+    return String(year);
+}
 
 export function MovieViewClient({
     movies,
@@ -63,6 +72,7 @@ export function MovieViewClient({
     deleteMovieAction,
     deleteAllMoviesAction,
     actionError = "",
+    successMessage = "",
 }: MovieViewClientProps) {
     const [query, setQuery] = useState("");
     const [priceType, setPriceType] = useState("ALL");
@@ -79,6 +89,27 @@ export function MovieViewClient({
     const selectedPlatformName = platforms.find((platform) => platform.id === platformId)?.name;
     const withPosterCount = movies.filter((movie) => Boolean(resolveMediaUrl(movie.poster))).length;
     const premiumCount = movies.filter((movie) => movie.priceType === "PREMIUM").length;
+
+    const router = useRouter();
+    const initialToast = useMemo(() => {
+        const message = successMessage || actionError;
+        const type: "success" | "error" | undefined = successMessage ? "success" : actionError ? "error" : undefined;
+
+        return message && type ? { type, message } : null;
+    }, [actionError, successMessage]);
+
+    const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(initialToast);
+
+    useEffect(() => {
+        if (!toast) {
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => setToast(null), 4000);
+        router.replace(window.location.pathname, { scroll: false });
+
+        return () => window.clearTimeout(timeoutId);
+    }, [router, toast]);
 
     const filteredMovies = useMemo(() => {
         const q = deferredQuery.trim().toLowerCase();
@@ -156,6 +187,17 @@ export function MovieViewClient({
                 </div>
             </section>
 
+            {toast ? (
+                <div className="fixed left-1/2 top-6 z-50 -translate-x-1/2 rounded-2xl px-5 py-4 text-sm font-semibold shadow-2xl ring-1 ring-slate-200"
+                    style={{
+                        backgroundColor: toast.type === "success" ? "#ecfdf5" : "#fef2f2",
+                        color: toast.type === "success" ? "#166534" : "#991b1b",
+                    }}
+                >
+                    {toast.message}
+                </div>
+            ) : null}
+
             <section className="rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-[0_10px_35px_rgba(15,23,42,0.07)] backdrop-blur">
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.2fr)_repeat(4,minmax(0,0.75fr))_auto]">
                     <label className="relative block">
@@ -172,8 +214,10 @@ export function MovieViewClient({
                         <option value="FREE">FREE</option>
                         <option value="PREMIUM">PREMIUM</option>
                     </select>
+                    {/* ✅ FIX 2: Added ALL_AGES option to the filter dropdown */}
                     <select value={ageGroup} onChange={(event) => setAgeGroup(event.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
                         <option value="ALL">All Age Groups</option>
+                        <option value="ALL_AGES">ALL_AGES</option>
                         <option value="AGE_7_PLUS">AGE_7_PLUS</option>
                         <option value="AGE_13_PLUS">AGE_13_PLUS</option>
                         <option value="AGE_16_PLUS">AGE_16_PLUS</option>
@@ -248,7 +292,8 @@ export function MovieViewClient({
                                         )}
                                         <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-slate-950/90 via-slate-900/45 to-transparent p-4 text-white">
                                             <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-white/70">
-                                                <span>{movie.releaseYear || "TBA"}</span>
+                                                {/* ✅ FIX 1 applied: use helper for card display too */}
+                                                <span>{formatReleaseYear(movie.releaseYear)}</span>
                                                 <span className="h-1 w-1 rounded-full bg-white/50" />
                                                 <span>{movie.priceType}</span>
                                             </div>
@@ -269,7 +314,7 @@ export function MovieViewClient({
                                             )}
                                         </div>
                                         <div className="flex items-center justify-between text-xs text-slate-500">
-                                            <span>{movie.platforms[0] ?? "No platform"}</span>
+                                            {/* <span>{movie.platforms[0] ?? "No platform"}</span> */}
                                             <span>{movie.ageGroup}</span>
                                         </div>
                                     </div>
@@ -287,7 +332,7 @@ export function MovieViewClient({
                         <SheetDescription>Add a new movie with poster, metadata, genres, and streaming platforms.</SheetDescription>
                     </SheetHeader>
 
-                    <form action={createMovieAction} className="space-y-5 px-6 py-6" encType="multipart/form-data">
+                    <form action={createMovieAction} className="space-y-5 px-6 py-6">
                         {actionError ? (
                             <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
                                 {actionError}
@@ -334,9 +379,11 @@ export function MovieViewClient({
                                     <option value="PREMIUM">PREMIUM</option>
                                 </select>
                             </label>
+                            {/* ✅ FIX 2: Added ALL_AGES to create form */}
                             <label className="space-y-1.5">
                                 <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Age Group</span>
                                 <select name="ageGroup" defaultValue="AGE_13_PLUS" className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
+                                    <option value="ALL_AGES">ALL_AGES</option>
                                     <option value="AGE_7_PLUS">AGE_7_PLUS</option>
                                     <option value="AGE_13_PLUS">AGE_13_PLUS</option>
                                     <option value="AGE_16_PLUS">AGE_16_PLUS</option>
@@ -365,9 +412,7 @@ export function MovieViewClient({
                             <fieldset className="rounded-2xl border border-slate-200 p-4">
                                 <legend className="px-1 text-sm font-semibold text-slate-800">Streaming Platforms</legend>
                                 <div className="mt-3 grid max-h-56 gap-2 overflow-auto pr-1">
-                                    {platforms.length === 0 ? (
-                                        <p className="text-sm text-slate-500">No platforms found.</p>
-                                    ) : (
+                                    {(
                                         platforms.map((platform) => (
                                             <label key={platform.id} className="flex items-center gap-2 rounded-lg px-1 py-1 text-sm text-slate-700">
                                                 <input type="checkbox" name="platforms" value={platform.id} className="size-4 rounded border-slate-300" />
@@ -419,7 +464,8 @@ export function MovieViewClient({
                                         </article>
                                         <article className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
                                             <p className="text-xs uppercase tracking-wider text-slate-500">Release Year</p>
-                                            <p className="mt-2 text-sm font-semibold text-slate-900">{selectedMovie.releaseYear || "N/A"}</p>
+                                            {/* ✅ FIX 1 applied: use helper so 0 shows as N/A */}
+                                            <p className="mt-2 text-sm font-semibold text-slate-900">{formatReleaseYear(selectedMovie.releaseYear)}</p>
                                         </article>
                                         <article className="rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
                                             <p className="text-xs uppercase tracking-wider text-slate-500">Genres</p>
@@ -433,13 +479,7 @@ export function MovieViewClient({
                                         </article>
                                         <article className="rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
                                             <p className="text-xs uppercase tracking-wider text-slate-500">Platforms</p>
-                                            <div className="mt-2 flex flex-wrap gap-2">
-                                                {selectedMovie.platforms.length > 0 ? selectedMovie.platforms.map((platform) => (
-                                                    <span key={`${selectedMovie.id}-${platform}`} className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 ring-1 ring-slate-200">
-                                                        {platform}
-                                                    </span>
-                                                )) : <span className="text-sm text-slate-500">No platforms</span>}
-                                            </div>
+
                                         </article>
                                     </div>
                                 </div>
@@ -457,7 +497,8 @@ export function MovieViewClient({
                                         </label>
                                         <label className="space-y-1.5">
                                             <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Release Year</span>
-                                            <input name="releaseYear" defaultValue={selectedMovie.releaseYear || ""} className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100" />
+                                            {/* ✅ FIX 1 applied: show empty string instead of 0 in the edit input */}
+                                            <input name="releaseYear" defaultValue={selectedMovie.releaseYear !== 0 ? selectedMovie.releaseYear : ""} placeholder="e.g. 2024" className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100" />
                                         </label>
                                         <label className="space-y-1.5">
                                             <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Price Type</span>
@@ -466,9 +507,11 @@ export function MovieViewClient({
                                                 <option value="PREMIUM">PREMIUM</option>
                                             </select>
                                         </label>
+                                        {/* ✅ FIX 2: Added ALL_AGES to edit form so existing movies with ALL_AGES render correctly */}
                                         <label className="space-y-1.5">
                                             <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Age Group</span>
                                             <select name="ageGroup" defaultValue={selectedMovie.ageGroup} className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
+                                                <option value="ALL_AGES">ALL_AGES</option>
                                                 <option value="AGE_7_PLUS">AGE_7_PLUS</option>
                                                 <option value="AGE_13_PLUS">AGE_13_PLUS</option>
                                                 <option value="AGE_16_PLUS">AGE_16_PLUS</option>
@@ -479,6 +522,38 @@ export function MovieViewClient({
                                             <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Description</span>
                                             <textarea name="description" defaultValue={selectedMovie.description} className="min-h-28 w-full rounded-2xl border border-slate-200 px-3 py-3 text-sm outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100" />
                                         </label>
+                                    </div>
+
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <fieldset className="rounded-2xl border border-slate-200 p-4">
+                                            <legend className="px-1 text-sm font-semibold text-slate-800">Genres</legend>
+                                            <div className="mt-3 grid max-h-56 gap-2 overflow-auto pr-1">
+                                                {genres.length === 0 ? (
+                                                    <p className="text-sm text-slate-500">No genres found.</p>
+                                                ) : (
+                                                    genres.map((genre) => (
+                                                        <label key={genre.id} className="flex items-center gap-2 rounded-lg px-1 py-1 text-sm text-slate-700">
+                                                            <input type="checkbox" name="genres" value={genre.id} defaultChecked={selectedMovie.genres.includes(genre.name)} className="size-4 rounded border-slate-300" />
+                                                            <span>{genre.name}</span>
+                                                        </label>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </fieldset>
+
+                                        <fieldset className="rounded-2xl border border-slate-200 p-4">
+                                            <legend className="px-1 text-sm font-semibold text-slate-800">Streaming Platforms</legend>
+                                            <div className="mt-3 grid max-h-56 gap-2 overflow-auto pr-1">
+                                                {(
+                                                    platforms.map((platform) => (
+                                                        <label key={platform.id} className="flex items-center gap-2 rounded-lg px-1 py-1 text-sm text-slate-700">
+                                                            <input type="checkbox" name="platforms" value={platform.id} defaultChecked={selectedMovie.platforms.includes(platform.name)} className="size-4 rounded border-slate-300" />
+                                                            <span>{platform.name}</span>
+                                                        </label>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </fieldset>
                                     </div>
 
                                     <div className="flex flex-wrap gap-3 border-t border-slate-100 pt-2">

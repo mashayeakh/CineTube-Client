@@ -27,14 +27,19 @@ const axiosInstance = async () => {
 
     const accessToken = cookieStore.get("accessToken")?.value;
 
+    const headers: Record<string, string> = {
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    };
+
+    if (cookieHeader) {
+        headers.Cookie = cookieHeader;
+    }
+
     const instance = axios.create({
         baseURL: apiBaseUrl,
         timeout: 30000,
-        headers: {
-            Cookie: cookieHeader,
-            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-        }
-    })
+        headers,
+    });
 
     return instance;
 }
@@ -109,8 +114,8 @@ const httpGet = async <TData>(endpoint: string, options?: ApiRequestOptions): Pr
             console.error(`GET request to ${endpoint} failed:`, error);
         }
         throw error;
-    }
 }
+    }
 
 const httpPost = async <TData>(endpoint: string, data: unknown, options?: ApiRequestOptions): Promise<ApiResponse<TData>> => {
     try {

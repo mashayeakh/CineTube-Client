@@ -15,7 +15,6 @@ import {
     Layers,
     MessageCircle,
     Reply,
-    Share2,
     Sparkles,
     Star,
     ThumbsUp,
@@ -205,10 +204,6 @@ function extractCommentsFromPayload(payload: unknown): ReviewComment[] {
     );
 }
 
-function countComments(nodes: ReviewComment[]): number {
-    return nodes.reduce((sum, node) => sum + 1 + countComments(node.replies), 0);
-}
-
 // ─── component ───────────────────────────────────────────────────────────────
 
 type Props = {
@@ -265,9 +260,23 @@ export default function SeriesDetailsClient({
     const [isSaved, setIsSaved] = useState(initialSaved);
     const [watchlistId, setWatchlistId] = useState<string | null>(initialWatchlistId);
     const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+    const [feedbackType, setFeedbackType] = useState<"success" | "error" | null>(null);
     const [isMutating, startMutationTransition] = useTransition();
 
     const actionLabel = isMutating ? (isSaved ? "Removing..." : "Saving...") : undefined;
+
+    useEffect(() => {
+        if (!feedbackMessage) {
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            setFeedbackMessage(null);
+            setFeedbackType(null);
+        }, 4000);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [feedbackMessage]);
 
     // console.log("====>>>>>SERE", series)
     // console.log("====>>>>>SEREssssss", series.reviews)
@@ -282,6 +291,7 @@ export default function SeriesDetailsClient({
 
         if (!canSaveToLibrary) {
             setFeedbackMessage("Only user and premium_user accounts can save series to the dashboard.");
+            setFeedbackType("error");
             return;
         }
 
@@ -330,8 +340,10 @@ export default function SeriesDetailsClient({
                         ? "Saved to your watchlist. It will appear in your dashboard."
                         : "Removed from your watchlist dashboard."
                 );
+                setFeedbackType("success");
             } catch (error) {
                 setFeedbackMessage(error instanceof Error ? error.message : "Unable to update watchlist.");
+                setFeedbackType("error");
             }
         });
     };
@@ -806,6 +818,18 @@ export default function SeriesDetailsClient({
 
     return (
         <div className="min-h-screen bg-white text-slate-900">
+            {feedbackMessage ? (
+                <div
+                    className="fixed left-1/2 top-6 z-50 -translate-x-1/2 rounded-2xl px-5 py-3 text-sm font-semibold shadow-2xl ring-1 ring-slate-200"
+                    style={{
+                        backgroundColor: feedbackType === "success" ? "#ecfdf5" : "#fef2f2",
+                        color: feedbackType === "success" ? "#166534" : "#991b1b",
+                    }}
+                >
+                    {feedbackMessage}
+                </div>
+            ) : null}
+
             {/* Login prompt modal */}
             {isLoginPromptOpen && (
                 <div
@@ -982,15 +1006,9 @@ export default function SeriesDetailsClient({
 
                             {/* Feedback message — mirrors MovieDetailsClient */}
                             <div className="min-h-6">
-                                {feedbackMessage ? (
-                                    <p className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs text-slate-200">
-                                        {feedbackMessage}
-                                    </p>
-                                ) : (
-                                    <p className="text-xs text-slate-300/80">
-                                        Saved series appear in your user dashboard watchlist.
-                                    </p>
-                                )}
+                                <p className="text-xs text-slate-300/80">
+                                    Saved series appear in your user dashboard watchlist.
+                                </p>
                             </div>
 
                             {series.platforms.length > 0 && (
@@ -1200,7 +1218,6 @@ export default function SeriesDetailsClient({
                                     <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
                                         {(() => {
                                             const comments = reviewCommentsById[review.id] ?? [];
-                                            const total = countComments(comments);
                                             return (
                                                 <>
 

@@ -349,9 +349,7 @@ export default async function AdminCreateSeriesPage({
                                         <fieldset className="rounded-lg border border-slate-200 p-3">
                                             <legend className="px-1 text-sm font-semibold text-slate-800">Streaming Platforms</legend>
                                             <div className="mt-2 grid max-h-48 gap-2 overflow-auto">
-                                                {platforms.length === 0 ? (
-                                                    <p className="text-sm text-slate-500">No platforms found.</p>
-                                                ) : (
+                                                {(
                                                     platforms.map((platform) => (
                                                         <label key={platform.id} className="flex items-center gap-2 text-sm text-slate-700">
                                                             <input type="checkbox" name="platforms" value={platform.id} className="size-4" />

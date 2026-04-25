@@ -8,7 +8,7 @@ import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { MovieViewClient } from "@/components/admin/movie-view-client";
 import { getUserInfo } from "@/service/auth.services";
 import { getAdminGenres, getAdminStreamingPlatforms } from "@/service/admin-content.services";
-import { createAdminMovie, deleteAdminMovie, deleteAllAdminMovies, getAdminMovies, updateAdminMovie } from "@/service/admin-movie.services";
+import { createAdminMovie, deleteAdminMovie, deleteAllAdminMovies, getAdminMovies, updateAdminMovie, type MoviePayload } from "@/service/admin-movie.services";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -114,14 +114,53 @@ function extractStringArray(source: unknown): string[] {
         .filter(Boolean);
 }
 
-function normalizeMovies(raw: unknown): MovieRow[] {
+function normalizeMovies(raw: unknown, genresList: OptionItem[] = [], platformsList: OptionItem[] = []): MovieRow[] {
     const list = extractArray(raw, ["movies", "result", "data", "items"]);
+
+    // Create lookup maps for ID to name
+    const genresMap = new Map(genresList.map(g => [g.id, g.name]));
+    const platformsMap = new Map(platformsList.map(p => [p.id, p.name]));
 
     return list.map((item, index) => {
         const releaseYearRaw = pickString(item, ["releaseYear"], "0");
         const releaseYear = Number(releaseYearRaw) || 0;
-        const genres = extractArray(isRecord(item) ? item.genres : [], ["genres"]).map((genre) => pickString(genre, ["name", "title", "id", "_id"], "")).filter(Boolean);
-        const platforms = extractArray(isRecord(item) ? item.platforms : [], ["platforms"]).map((platform) => pickString(platform, ["name", "title", "id", "_id"], "")).filter(Boolean);
+
+        // Extract genres - handle objects, strings, and IDs that need lookup
+        const genresRaw = extractArray(isRecord(item) ? item.genres : [], ["genres"]);
+        const genres = genresRaw.map((genre) => {
+            if (typeof genre === "string") {
+                // Could be a genre ID or name
+                const genreName = genresMap.get(genre.trim());
+                return genreName || genre.trim();
+            }
+            if (isRecord(genre)) {
+                // Could be an object with name, title, or id properties
+                const name = pickString(genre, ["name", "title"], "");
+                if (name) return name;
+                const id = pickString(genre, ["id", "_id"], "");
+                return genresMap.get(id) || id;
+            }
+            return "";
+        }).filter(Boolean);
+
+        // Extract platforms - handle objects, strings, and IDs that need lookup
+        const platformsRaw = extractArray(isRecord(item) ? item.platforms : [], ["platforms"]);
+        const platforms = platformsRaw.map((platform) => {
+            if (typeof platform === "string") {
+                // Could be a platform ID or name
+                const platformName = platformsMap.get(platform.trim());
+                return platformName || platform.trim();
+            }
+            if (isRecord(platform)) {
+                // Could be an object with name, title, or id properties
+                const name = pickString(platform, ["name", "title"], "");
+                if (name) return name;
+                const id = pickString(platform, ["id", "_id"], "");
+                return platformsMap.get(id) || id;
+            }
+            return "";
+        }).filter(Boolean);
+
         const cast = extractStringArray(isRecord(item) ? item.cast : []);
 
         return {
@@ -304,6 +343,8 @@ async function updateMovieAction(formData: FormData) {
     const priceType = String(formData.get("priceType") ?? "PREMIUM");
     const ageGroup = String(formData.get("ageGroup") ?? "AGE_13_PLUS");
     const director = String(formData.get("director") ?? "").trim();
+    const genres = formData.getAll("genres").map((value) => String(value));
+    const platforms = formData.getAll("platforms").map((value) => String(value));
 
     if (!id || !title) {
         return;
@@ -317,12 +358,19 @@ async function updateMovieAction(formData: FormData) {
             priceType,
             ageGroup,
             director,
-        });
+            genres,
+            platforms,
+        } as Partial<MoviePayload>);
     } catch (error) {
         console.error("Failed to update movie:", error);
+        const rawMessage = extractActionErrorMessage(error);
+        const message = String(rawMessage || "Unable to update movie.");
+        revalidatePath("/admin/movie-management/view-movies");
+        redirect(buildActionRedirectPath({ error: message }));
     }
 
     revalidatePath("/admin/movie-management/view-movies");
+    redirect(buildActionRedirectPath({ success: "Movie updated successfully." }));
 }
 
 async function deleteMovieAction(formData: FormData) {
@@ -373,7 +421,7 @@ export default async function AdminViewMoviesPage({
 
     const genres = normalizeOptions(rawGenres, "genre");
     const platforms = normalizeOptions(rawPlatforms, "platform");
-    const allMovies = normalizeMovies(moviesResponse.data);
+    const allMovies = normalizeMovies(moviesResponse.data, genres, platforms);
     const adminName = pickString(userResult, ["name", "fullName", "username"], "Logged in admin");
 
     return (
@@ -404,22 +452,12 @@ export default async function AdminViewMoviesPage({
 
                     <main className="p-4 sm:p-6">
                         <div className="mx-auto max-w-7xl space-y-5">
-                            {/* <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                                 <p className="text-sm text-slate-500">Admin / Movie Management / View Movies</p>
                                 <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">View Movies With Filters</h1>
                                 <p className="mt-2 text-sm text-slate-600">Browse movies as cards, open details in a modal, and create new entries from the same screen.</p>
-                                <p className="mt-1 text-xs text-slate-500">Creating as: {adminName}</p>
-                                {errorMessage ? (
-                                    <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                                        {errorMessage}
-                                    </div>
-                                ) : null}
-                                {successMessage ? (
-                                    <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-                                        {successMessage}
-                                    </div>
-                                ) : null}
-                            </section> */}
+                                <p className="mt-1 text-xs text-slate-500">Managing as: {adminName}</p>
+                            </section>
 
                             <MovieViewClient
                                 movies={allMovies}
@@ -432,6 +470,7 @@ export default async function AdminViewMoviesPage({
                                 deleteMovieAction={deleteMovieAction}
                                 deleteAllMoviesAction={deleteAllMoviesAction}
                                 actionError={errorMessage}
+                                successMessage={successMessage}
                             />
                         </div>
                     </main>

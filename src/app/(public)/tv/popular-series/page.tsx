@@ -176,7 +176,7 @@ export default function PopularSeriesPage() {
                                         className="inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-200"
                                     >
                                         <Play className="size-4" />
-                                        Watch Now
+                                        See Details
                                     </Link>
                                 </div>
                             </div>

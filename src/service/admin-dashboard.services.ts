@@ -32,6 +32,7 @@ function unwrapEnvelope<TData>(response: ApiEnvelope<TData> | TData): AdminServi
 
 async function adminGet<TData>(endpoint: string, options?: ApiRequestOptions) {
     const response = await httpClient.get<TData>(endpoint, options);
+    console.log("respone axius", response)
     return unwrapEnvelope(response as ApiEnvelope<TData>);
 }
 

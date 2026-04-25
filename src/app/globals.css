@@ -4,10 +4,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* html {
-  font-family: var(--font-body); 
-} */
-
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading); 
 }
@@ -102,35 +98,58 @@ h1, h2, h3, h4, h5, h6 {
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+
+  /* ── Cards & surfaces: deep navy, not grey ── */
+  --card: oklch(0.16 0.02 265);
+  --card-foreground: oklch(0.92 0.01 265);
+
+  /* ── POPOVER: this is what NavigationMenu dropdown uses ──
+     Was oklch(0.205 0 0) which is a near-white grey in dark mode.
+     Now set to a deep indigo-navy so dropdowns stay dark.        */
+  --popover: oklch(0.14 0.025 265);
+  --popover-foreground: oklch(0.88 0.02 265);
+
+  /* ── PRIMARY ── */
+  --primary: oklch(0.62 0.18 265);
+  --primary-foreground: oklch(0.98 0 0);
+
+  /* ── SECONDARY: used by NavigationMenuTrigger background ──
+     Was oklch(0.269 0 0) which renders as a light grey.
+     Now deep indigo-tinted dark.                               */
+  --secondary: oklch(0.18 0.03 265);
+  --secondary-foreground: oklch(0.82 0.04 265);
+
+  /* ── MUTED: used for muted backgrounds / placeholder ── */
+  --muted: oklch(0.19 0.025 265);
+  --muted-foreground: oklch(0.58 0.03 265);
+
+  /* ── ACCENT: used by NavigationMenuTrigger hover + open state ──
+     Was oklch(0.269 0 0) — a visible light grey.
+     Now indigo-tinted so hover/active states stay on-brand.    */
+  --accent: oklch(0.22 0.05 265);
+  --accent-foreground: oklch(0.85 0.06 265);
+
+  --destructive: oklch(0.6 0.2 22);
+
+  /* ── BORDER & INPUT ── */
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 10%);
+  --ring: oklch(0.55 0.15 265);
+
   --chart-1: oklch(0.809 0.105 251.813);
   --chart-2: oklch(0.623 0.214 259.815);
   --chart-3: oklch(0.546 0.245 262.881);
   --chart-4: oklch(0.488 0.243 264.376);
   --chart-5: oklch(0.424 0.199 265.638);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
+
+  --sidebar: oklch(0.16 0.025 265);
+  --sidebar-foreground: oklch(0.88 0.02 265);
+  --sidebar-primary: oklch(0.55 0.2 265);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-accent: oklch(0.22 0.05 265);
+  --sidebar-accent-foreground: oklch(0.85 0.06 265);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.55 0.15 265);
 }
 
 @layer base {

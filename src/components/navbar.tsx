@@ -1,6 +1,6 @@
 "use client";
 
-import { Clapperboard, Film, Home, LogOut, Menu, Search, Settings, Star, Trophy, Tv, X, Zap } from "lucide-react";
+import { Clapperboard, Film, Home, LogOut, Menu, Search, Settings, Star, Trophy, Tv, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
@@ -64,7 +64,6 @@ const Navbar = ({ className }: { className?: string }) => {
   const [isPremiumPromptOpen, setIsPremiumPromptOpen] = React.useState(false);
 
   React.useEffect(() => {
-    // Read the non-HttpOnly _auth cookie stamped by proxy — instant, no API call needed
     const authCookie = document.cookie
       .split(";")
       .map((c) => c.trim())
@@ -72,17 +71,14 @@ const Navbar = ({ className }: { className?: string }) => {
     const authRole = authCookie ? authCookie.split("=")[1] : null;
 
     if (!authRole) {
-      // Not logged in — stop checking immediately
       setUser(null);
       setIsAuthChecking(false);
       return;
     }
 
-    // Logged in — show placeholder "My Account" instantly, then fetch full profile
     setUser({ name: "My Account", email: "", image: null, role: authRole.toUpperCase() });
     setIsAuthChecking(false);
 
-    // Fetch full profile details in background
     fetch("/api/me", { method: "GET", cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((profile) => {
@@ -95,21 +91,14 @@ const Navbar = ({ className }: { className?: string }) => {
           });
         }
       })
-      .catch(() => {
-        // Keep showing "My Account" — we know they're logged in from the cookie
-      });
+      .catch(() => { });
   }, []);
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/logout", {
-        method: "POST",
-        credentials: "include",
-        cache: "no-store",
-      });
+      await fetch("/api/logout", { method: "POST", credentials: "include", cache: "no-store" });
     } finally {
       setUser(null);
-      // Clear the client-readable auth cookie immediately
       document.cookie = "_auth=; path=/; max-age=0; samesite=lax";
       router.push("/");
       router.refresh();
@@ -117,173 +106,118 @@ const Navbar = ({ className }: { className?: string }) => {
   };
 
   const handleContributionMoviesClick = () => {
-    if (!user) {
-      setIsPremiumPromptOpen(true);
-      return;
-    }
-
+    if (!user) { setIsPremiumPromptOpen(true); return; }
     router.push("/premium_user/contributions");
   };
-
-  const isAdmin = user?.role === "ADMIN";
-
-  const moreMenuItems: MenuItem[] = [
-    ...(!isAdmin
-      ? [
-        {
-          title: "Contribute Movie",
-          description: "Submit movie contributions",
-          icon: <Clapperboard className="size-4" />,
-          url: "/premium_user/contributions",
-          onClick: handleContributionMoviesClick,
-        },
-      ]
-      : []),
-    {
-      title: "Leaderboard",
-      description: "Top contributors and rankings",
-      icon: <Trophy className="size-4" />,
-      url: "/leaderboard",
-    },
-  ];
 
   const menu: MenuItem[] = [
     {
       title: "Movies",
       url: "/popular",
       items: [
-        {
-          title: "Popular Movies",
-          description: "Trending films right now",
-          icon: <Film className="size-4" />,
-          url: "/popular",
-        },
-        {
-          title: "Top Rated Movies",
-          description: "Critic and audience favorites",
-          icon: <Star className="size-4" />,
-          url: "/movies/top-rated",
-        },
+        { title: "Popular Movies", description: "Trending films right now", icon: <Film className="size-4" />, url: "/popular" },
+        { title: "Top Rated Movies", description: "Critic and audience favorites", icon: <Star className="size-4" />, url: "/movies/top-rated" },
       ],
     },
     {
       title: "TV Shows",
       url: "/tv/popular-series",
       items: [
-        {
-          title: "Popular Series",
-          description: "Series people are watching now",
-          icon: <Tv className="size-4" />,
-          url: "/tv/popular-series",
-        },
-        {
-          title: "On TV",
-          description: "Browse what is airing now",
-          icon: <Zap className="size-4" />,
-          url: "/tv/on-tv",
-        },
+        { title: "Popular Series", description: "Series people are watching now", icon: <Tv className="size-4" />, url: "/tv/popular-series" },
       ],
     },
-    isAdmin
-      ? {
-        title: "Leaderboard",
-        description: "Top contributors and rankings",
-        icon: <Trophy className="size-4" />,
-        url: "/leaderboard",
-      }
-      : {
-        title: "More",
-        url: "/leaderboard",
-        items: moreMenuItems,
-      },
+    { title: "Leaderboard", url: "/leaderboard", icon: <Trophy className="size-4" /> },
   ];
 
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full border-b border-white/8 bg-[rgba(7,7,22,0.82)] backdrop-blur-xl backdrop-saturate-150",
+        "sticky top-0 z-50 w-full border-b backdrop-blur-xl backdrop-saturate-150 transition-colors duration-300",
+        // Light mode: white glass  |  Dark mode: deep navy
+        "border-black/[0.06] bg-white/85",
+        "dark:border-white/[0.06] dark:bg-[rgba(6,6,20,0.92)]",
         className
       )}
     >
+      {/* Search overlay */}
       {searchOpen && (
-        <div className="absolute inset-0 z-10 flex items-center gap-3 px-4 sm:px-6 lg:px-8">
-          <Search className="size-4 shrink-0 text-slate-400" />
+        <div className="absolute inset-0 z-10 flex items-center gap-3 px-4 sm:px-6 lg:px-8 bg-white/96 dark:bg-[rgba(6,6,20,0.97)]">
+          <Search className="size-4 shrink-0 text-indigo-500 dark:text-indigo-400" />
           <input
             autoFocus
             type="text"
             placeholder="Search movies, series, people..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Escape" && setSearchOpen(false)}
-            className="flex-1 bg-transparent text-sm text-white placeholder-slate-400 outline-none"
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setSearchOpen(false);
+              if (e.key === "Enter" && searchQuery.trim()) {
+                router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+                setSearchOpen(false);
+              }
+            }}
+            className="flex-1 bg-transparent text-sm outline-none text-slate-800 placeholder-slate-400 dark:text-white dark:placeholder-slate-500"
           />
           <button
-            onClick={() => {
-              setSearchOpen(false);
-              setSearchQuery("");
-            }}
-            className="rounded-full p-1 text-slate-400 transition hover:text-white"
+            onClick={() => { setSearchOpen(false); setSearchQuery(""); }}
+            className="rounded-full p-1 transition text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
           >
             <X className="size-4" />
           </button>
         </div>
       )}
 
-      {isPremiumPromptOpen ? (
+      {/* Premium modal */}
+      {isPremiumPromptOpen && (
         <div
-          className="fixed inset-0 z-70 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="premium-required-title"
+          className="fixed inset-0 z-70 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          role="dialog" aria-modal="true" aria-labelledby="premium-required-title"
           onClick={() => setIsPremiumPromptOpen(false)}
         >
           <div
-            className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-950 p-6 text-white shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
+            className="w-full max-w-md rounded-2xl border p-6 shadow-2xl bg-white border-indigo-100 dark:bg-[#0c0c28] dark:border-indigo-500/20"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-indigo-300">Premium Feature</p>
-              <h2 id="premium-required-title" className="text-2xl font-semibold tracking-tight">
-                You need to be a premium user
-              </h2>
-              <p className="text-sm leading-6 text-slate-300">
-                Contribution Movies is available for premium users. Please log in first.
-              </p>
-            </div>
-
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-indigo-500 dark:text-indigo-400">Premium Feature</p>
+            <h2 id="premium-required-title" className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+              You need to be a premium user
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+              Contribution Movies is available for premium users. Please log in first.
+            </p>
             <div className="mt-6 flex flex-wrap justify-end gap-3">
               <button
                 type="button"
-                className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm text-white transition hover:bg-white/10"
+                className="rounded-full border px-4 py-2 text-sm transition border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.08]"
                 onClick={() => setIsPremiumPromptOpen(false)}
-              >
-                Not now
-              </button>
+              >Not now</button>
               <button
                 type="button"
-                className="rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-indigo-400"
+                className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.4)]"
                 onClick={() => router.push(`/login?redirect=${encodeURIComponent("/premium_user/contributions")}`)}
-              >
-                Go to Login
-              </button>
+              >Go to Login</button>
             </div>
           </div>
         </div>
-      ) : null}
+      )}
 
       <div className={cn("container mx-auto px-4 py-0 lg:py-0", searchOpen && "invisible")}>
+        {/* ── Desktop nav ── */}
         <nav className="hidden h-14 items-center lg:grid lg:grid-cols-3">
+          {/* Logo */}
           <div className="flex items-center gap-2">
             <Link href="/" className="group flex items-center gap-2">
-              <span className="flex size-8 items-center justify-center rounded-lg bg-linear-to-br from-indigo-500 to-violet-600 shadow-[0_0_18px_rgba(99,102,241,0.55)]">
+              <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 shadow-[0_0_18px_rgba(99,102,241,0.45)]">
                 <Clapperboard className="size-4 text-white" />
               </span>
-              <span className="bg-linear-to-r from-white via-indigo-200 to-violet-300 bg-clip-text text-lg font-black tracking-tight text-transparent">
+              {/* Light: indigo text  |  Dark: white→indigo gradient */}
+              <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-500 bg-clip-text text-lg font-black tracking-tight text-transparent dark:from-white dark:via-indigo-200 dark:to-violet-300">
                 CineTube
               </span>
             </Link>
           </div>
 
+          {/* Center menu */}
           <div className="flex justify-center">
             <NavigationMenu>
               <NavigationMenuList>
@@ -292,23 +226,30 @@ const Navbar = ({ className }: { className?: string }) => {
             </NavigationMenu>
           </div>
 
+          {/* Right controls */}
           <div className="flex items-center justify-end gap-1.5">
             <button
               onClick={() => setSearchOpen(true)}
-              className="inline-flex size-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/8 hover:text-white"
+              className="inline-flex size-8 items-center justify-center rounded-full transition text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 dark:text-slate-400 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-300"
             >
               <Search className="size-4" />
             </button>
 
-            <ThemeToggle className="size-8 border-white/12 bg-white/6 text-slate-300 shadow-none transition hover:bg-white/12 hover:text-white" />
+            <ThemeToggle className="size-8 shadow-none transition text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 dark:text-slate-400 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-300" />
 
-            <div className="mx-1 h-5 w-px bg-white/10" />
+            <div className="mx-1 h-5 w-px bg-slate-200 dark:bg-white/8" />
 
             {isAuthChecking ? (
-              <div className="h-8 w-28 rounded-full border border-white/10 bg-white/5" />
+              <div className="h-8 w-28 animate-pulse rounded-full bg-slate-100 dark:bg-white/[0.04]" />
             ) : user ? (
               <DropdownMenu>
-                <DropdownMenuTrigger className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/6 px-2 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-white/12 hover:text-white">
+                <DropdownMenuTrigger className={cn(
+                  "inline-flex items-center gap-2 rounded-full border px-2 py-1.5 text-xs font-medium transition focus:outline-none",
+                  "border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700",
+                  "dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300 dark:hover:border-indigo-500/30 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-200",
+                  "data-[state=open]:border-indigo-300 data-[state=open]:bg-indigo-50 data-[state=open]:text-indigo-700",
+                  "dark:data-[state=open]:border-indigo-500/30 dark:data-[state=open]:bg-indigo-500/10 dark:data-[state=open]:text-indigo-200"
+                )}>
                   <Avatar className="h-7 w-7 shrink-0">
                     <AvatarImage src={user.image ?? undefined} alt={user.name} />
                     <AvatarFallback className="text-xs bg-indigo-600 text-white">
@@ -318,27 +259,28 @@ const Navbar = ({ className }: { className?: string }) => {
                   <span className="pr-1 text-xs font-semibold">My Account</span>
                 </DropdownMenuTrigger>
 
-                <DropdownMenuContent align="end" className="w-56 border-white/12 bg-slate-900/95 text-slate-100 backdrop-blur-xl">
-                  <div className="px-1.5 py-1">
-                    <p className="text-sm font-semibold text-white">{user.name}</p>
-                    <p className="text-xs text-slate-300">{user.email}</p>
+                <DropdownMenuContent align="end" className={cn(
+                  "w-56 backdrop-blur-xl shadow-xl border",
+                  "border-slate-200 bg-white text-slate-700",
+                  "dark:border-white/8 dark:bg-[#0d0d26] dark:text-slate-200"
+                )}>
+                  <div className="px-2 py-2">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{user.name}</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">{user.email}</p>
                   </div>
-                  <DropdownMenuSeparator className="bg-white/10" />
-                  <DropdownMenuItem onClick={() => router.push("/user/dashboard")} className="cursor-pointer">
-                    <Home className="mr-2 h-4 w-4" />
-                    Dashboard
+                  <DropdownMenuSeparator className="bg-slate-100 dark:bg-white/8" />
+                  <DropdownMenuItem onClick={() => router.push("/user/dashboard")} className="cursor-pointer text-slate-600 focus:bg-indigo-50 focus:text-indigo-700 dark:text-slate-300 dark:focus:bg-indigo-500/15 dark:focus:text-indigo-200">
+                    <Home className="mr-2 h-4 w-4 text-indigo-500 dark:text-indigo-400" />Dashboard
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push("/change-password")} className="cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
+                  <DropdownMenuItem onClick={() => router.push("/change-password")} className="cursor-pointer text-slate-600 focus:bg-indigo-50 focus:text-indigo-700 dark:text-slate-300 dark:focus:bg-indigo-500/15 dark:focus:text-indigo-200">
+                    <Settings className="mr-2 h-4 w-4 text-indigo-500 dark:text-indigo-400" />Settings
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer">
+                  <DropdownMenuItem className="cursor-pointer text-slate-600 focus:bg-indigo-50 focus:text-indigo-700 dark:text-slate-300 dark:focus:bg-indigo-500/15 dark:focus:text-indigo-200">
                     Earnings
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-white/10" />
-                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-300 focus:text-red-200">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign out
+                  <DropdownMenuSeparator className="bg-slate-100 dark:bg-white/8" />
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600 dark:text-red-400 dark:focus:bg-red-500/10 dark:focus:text-red-300">
+                    <LogOut className="mr-2 h-4 w-4" />Sign out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -346,27 +288,24 @@ const Navbar = ({ className }: { className?: string }) => {
               <>
                 <button
                   onClick={() => router.push("/login")}
-                  className="inline-flex h-8 items-center rounded-full px-4 text-xs font-semibold text-slate-300 transition hover:text-white"
-                >
-                  Login
-                </button>
+                  className="inline-flex h-8 items-center rounded-full px-4 text-xs font-semibold transition text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-slate-100"
+                >Login</button>
                 <button
                   onClick={() => router.push("/signup")}
-                  className="inline-flex h-8 items-center rounded-full bg-linear-to-r from-indigo-600 to-violet-600 px-4 text-xs font-semibold text-white shadow-[0_0_20px_rgba(99,102,241,0.4)] transition hover:from-indigo-500 hover:to-violet-500"
-                >
-                  Sign up
-                </button>
+                  className="inline-flex h-8 items-center rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-4 text-xs font-semibold text-white shadow-[0_0_20px_rgba(99,102,241,0.35)] transition hover:from-indigo-500 hover:to-violet-500"
+                >Sign up</button>
               </>
             )}
           </div>
         </nav>
 
+        {/* ── Mobile nav ── */}
         <div className="flex h-14 items-center justify-between lg:hidden">
           <Link href="/" className="flex items-center gap-2">
-            <span className="flex size-7 items-center justify-center rounded-md bg-linear-to-br from-indigo-500 to-violet-600 shadow-[0_0_14px_rgba(99,102,241,0.5)]">
+            <span className="flex size-7 items-center justify-center rounded-md bg-gradient-to-br from-indigo-500 to-violet-600 shadow-[0_0_14px_rgba(99,102,241,0.45)]">
               <Clapperboard className="size-3.5 text-white" />
             </span>
-            <span className="bg-linear-to-r from-white to-indigo-200 bg-clip-text text-base font-black tracking-tight text-transparent">
+            <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-base font-black tracking-tight text-transparent dark:from-white dark:to-indigo-200">
               CineTube
             </span>
           </Link>
@@ -374,33 +313,26 @@ const Navbar = ({ className }: { className?: string }) => {
           <div className="flex items-center gap-1">
             <button
               onClick={() => setSearchOpen(true)}
-              className="inline-flex size-8 items-center justify-center rounded-full text-slate-400 transition hover:text-white"
-            >
-              <Search className="size-4" />
-            </button>
+              className="inline-flex size-8 items-center justify-center rounded-full transition text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-300"
+            ><Search className="size-4" /></button>
 
-            <ThemeToggle className="size-8 border-white/12 bg-white/6 text-slate-300 shadow-none transition hover:bg-white/12 hover:text-white" />
+            <ThemeToggle className="size-8 shadow-none transition text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-300" />
 
             <Sheet>
-              <SheetTrigger
-                render={
-                  <button className="inline-flex size-8 items-center justify-center rounded-full text-slate-400 transition hover:text-white">
-                    <Menu className="size-5" />
-                  </button>
-                }
-              />
+              <SheetTrigger render={
+                <button className="inline-flex size-8 items-center justify-center rounded-full transition text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-300">
+                  <Menu className="size-5" />
+                </button>
+              } />
 
-              <SheetContent
-                side="right"
-                className="w-70 border-l border-white/8 bg-[rgba(7,7,22,0.97)] p-0 backdrop-blur-xl"
-              >
-                <SheetHeader className="border-b border-white/8 px-5 py-4">
+              <SheetContent side="right" className="w-72 border-l p-0 backdrop-blur-xl border-slate-200 bg-white/95 dark:border-white/[0.06] dark:bg-[rgba(6,6,20,0.98)]">
+                <SheetHeader className="border-b px-5 py-4 border-slate-100 dark:border-white/[0.06]">
                   <SheetTitle>
                     <Link href="/" className="flex items-center gap-2">
-                      <span className="flex size-7 items-center justify-center rounded-md bg-linear-to-br from-indigo-500 to-violet-600">
+                      <span className="flex size-7 items-center justify-center rounded-md bg-gradient-to-br from-indigo-500 to-violet-600">
                         <Clapperboard className="size-3.5 text-white" />
                       </span>
-                      <span className="bg-linear-to-r from-white to-indigo-200 bg-clip-text text-base font-black text-transparent">
+                      <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-base font-black text-transparent dark:from-white dark:to-indigo-200">
                         CineTube
                       </span>
                     </Link>
@@ -413,50 +345,34 @@ const Navbar = ({ className }: { className?: string }) => {
                   </Accordion>
                 </div>
 
-                <div className="absolute bottom-0 left-0 right-0 space-y-2 border-t border-white/8 px-4 py-4">
+                <div className="absolute bottom-0 left-0 right-0 space-y-2 border-t px-4 py-4 border-slate-100 dark:border-white/[0.06]">
                   {isAuthChecking ? (
-                    <div className="h-20 w-full rounded-2xl border border-white/10 bg-white/5" />
+                    <div className="h-20 w-full animate-pulse rounded-2xl bg-slate-100 dark:bg-white/[0.04]" />
                   ) : user ? (
                     <>
-                      <button
-                        onClick={() => router.push("/user/dashboard")}
-                        className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full border border-white/15 text-sm font-semibold text-slate-200 transition hover:bg-white/8"
-                      >
-                        <Home className="h-4 w-4" />
-                        Dashboard
-                      </button>
-                      <button
-                        onClick={() => router.push("/change-password")}
-                        className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full border border-white/15 text-sm font-semibold text-slate-200 transition hover:bg-white/8"
-                      >
-                        <Settings className="h-4 w-4" />
-                        Settings
-                      </button>
-                      <button className="inline-flex h-9 w-full items-center justify-center rounded-full border border-white/15 text-sm font-semibold text-slate-200 transition hover:bg-white/8">
-                        Earnings
-                      </button>
+                      {[
+                        { label: "Dashboard", icon: <Home className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />, href: "/user/dashboard" },
+                        { label: "Settings", icon: <Settings className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />, href: "/change-password" },
+                      ].map(({ label, icon, href }) => (
+                        <button key={label} onClick={() => router.push(href)} className={mobileAuthBtnClass}>
+                          {icon}{label}
+                        </button>
+                      ))}
+                      <button className={mobileAuthBtnClass}>Earnings</button>
                       <button
                         onClick={handleLogout}
-                        className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 text-sm font-semibold text-red-300 transition hover:bg-red-500/20"
+                        className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full border text-sm font-semibold transition border-red-200 bg-red-50 text-red-500 hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/[0.06] dark:text-red-400 dark:hover:bg-red-500/15"
                       >
-                        <LogOut className="h-4 w-4" />
-                        Sign out
+                        <LogOut className="h-4 w-4" />Sign out
                       </button>
                     </>
                   ) : (
                     <>
-                      <button
-                        onClick={() => router.push("/login")}
-                        className="inline-flex h-9 w-full items-center justify-center rounded-full border border-white/15 text-sm font-semibold text-slate-200 transition hover:bg-white/8"
-                      >
-                        Login
-                      </button>
+                      <button onClick={() => router.push("/login")} className={mobileAuthBtnClass}>Login</button>
                       <button
                         onClick={() => router.push("/signup")}
-                        className="inline-flex h-9 w-full items-center justify-center rounded-full bg-linear-to-r from-indigo-600 to-violet-600 text-sm font-semibold text-white shadow-[0_0_18px_rgba(99,102,241,0.35)] transition hover:from-indigo-500 hover:to-violet-500"
-                      >
-                        Sign up
-                      </button>
+                        className="inline-flex h-9 w-full items-center justify-center rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 text-sm font-semibold text-white shadow-[0_0_18px_rgba(99,102,241,0.35)] transition hover:from-indigo-500 hover:to-violet-500"
+                      >Sign up</button>
                     </>
                   )}
                 </div>
@@ -469,49 +385,80 @@ const Navbar = ({ className }: { className?: string }) => {
   );
 };
 
+// Shared mobile auth button
+const mobileAuthBtnClass = cn(
+  "inline-flex h-9 w-full items-center justify-center gap-2 rounded-full border text-sm font-semibold transition",
+  "border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700",
+  "dark:border-white/10 dark:bg-transparent dark:text-slate-300 dark:hover:border-indigo-500/30 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-200"
+);
+
+// ─── Desktop renderer ──────────────────────────────────────────────────────────
+
 const renderMenuItem = (item: MenuItem, pathname: string) => {
   if (item.items) {
     return (
       <NavigationMenuItem key={item.title}>
-        <NavigationMenuTrigger className="h-9 rounded-full border border-transparent bg-transparent px-4 text-sm font-semibold text-slate-300 transition hover:border-white/10 hover:bg-white/8 hover:text-white data-[state=open]:border-white/12 data-[state=open]:bg-white/10 data-[state=open]:text-white">
+        <NavigationMenuTrigger
+          className={cn(
+            "h-9 rounded-full border bg-transparent px-4 text-sm font-semibold transition-all duration-200",
+            // Light
+            "border-transparent text-slate-600",
+            "hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700",
+            "data-[state=open]:border-indigo-200 data-[state=open]:bg-indigo-50 data-[state=open]:text-indigo-700",
+            // Dark
+            "dark:text-slate-400",
+            "dark:hover:border-indigo-500/25 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-200",
+            "dark:data-[state=open]:border-indigo-500/30 dark:data-[state=open]:bg-indigo-500/12 dark:data-[state=open]:text-indigo-200",
+            pathname.startsWith(item.url)
+              ? "border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-500/25 dark:bg-indigo-500/10 dark:text-indigo-200"
+              : ""
+          )}
+        >
           {item.title}
         </NavigationMenuTrigger>
+
         <NavigationMenuContent>
-          <ul className="grid w-72 gap-1 p-2.5">
+          <ul className={cn(
+            "grid w-72 gap-1 p-2.5 rounded-xl border shadow-xl",
+            // Light: white panel
+            "bg-white border-slate-200 shadow-slate-200/50",
+            // Dark: navy panel
+            "dark:bg-[#0d0d26] dark:border-white/[0.07] dark:shadow-[0_8px_40px_rgba(0,0,0,0.6)]"
+          )}>
             {item.items.map((sub) => (
               <li key={sub.title}>
                 <NavigationMenuLink
                   href={sub.url}
-                  onClick={(event) => {
-                    if (!sub.onClick) {
-                      return;
-                    }
-
-                    event.preventDefault();
-                    sub.onClick();
-                  }}
+                  onClick={(e) => { if (!sub.onClick) return; e.preventDefault(); sub.onClick(); }}
                   className={cn(
-                    "group flex items-start gap-3 rounded-xl border border-transparent px-3.5 py-3 text-sm transition duration-200 hover:border-white/10 hover:bg-white/6",
+                    "group flex items-start gap-3 rounded-xl border border-transparent px-3.5 py-3 text-sm transition-all duration-200",
                     pathname === sub.url
-                      ? "border-indigo-400/20 bg-indigo-500/14 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
-                      : "text-slate-200"
+                      ? "border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-500/25 dark:bg-indigo-500/12 dark:text-indigo-200"
+                      : "text-slate-600 hover:border-indigo-100 hover:bg-indigo-50/70 hover:text-slate-800 dark:text-slate-400 dark:hover:border-indigo-500/20 dark:hover:bg-indigo-500/8 dark:hover:text-slate-200"
                   )}
                 >
-                  {sub.icon ? (
-                    <span
-                      className={cn(
-                        "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg border transition",
-                        pathname === sub.url
-                          ? "border-indigo-400/25 bg-indigo-400/12 text-indigo-200"
-                          : "border-white/10 bg-white/5 text-indigo-300 group-hover:border-white/14 group-hover:bg-white/8"
-                      )}
-                    >
+                  {sub.icon && (
+                    <span className={cn(
+                      "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg border transition-all duration-200",
+                      pathname === sub.url
+                        ? "border-indigo-200 bg-indigo-100 text-indigo-600 dark:border-indigo-500/30 dark:bg-indigo-500/15 dark:text-indigo-300"
+                        : "border-slate-100 bg-slate-50 text-indigo-500 group-hover:border-indigo-100 group-hover:bg-indigo-50 group-hover:text-indigo-600 dark:border-white/8 dark:bg-white/[0.04] dark:text-indigo-400 dark:group-hover:border-indigo-500/25 dark:group-hover:bg-indigo-500/10"
+                    )}>
                       {sub.icon}
                     </span>
-                  ) : null}
-                  <div className="space-y-1">
-                    <p className="font-semibold leading-none tracking-tight">{sub.title}</p>
-                    {sub.description ? <p className="text-xs leading-5 text-slate-400">{sub.description}</p> : null}
+                  )}
+                  <div className="space-y-1 min-w-0">
+                    <p className={cn(
+                      "font-semibold leading-none tracking-tight",
+                      pathname === sub.url
+                        ? "text-indigo-700 dark:text-indigo-200"
+                        : "text-slate-700 dark:text-slate-200"
+                    )}>
+                      {sub.title}
+                    </p>
+                    {sub.description && (
+                      <p className="text-xs leading-5 text-slate-400 dark:text-slate-500">{sub.description}</p>
+                    )}
                   </div>
                 </NavigationMenuLink>
               </li>
@@ -526,31 +473,34 @@ const renderMenuItem = (item: MenuItem, pathname: string) => {
     <NavigationMenuItem key={item.title}>
       <NavigationMenuLink
         href={item.url}
-        onClick={(event) => {
-          if (!item.onClick) {
-            return;
-          }
-
-          event.preventDefault();
-          item.onClick();
-        }}
+        onClick={(e) => { if (!item.onClick) return; e.preventDefault(); item.onClick(); }}
         className={cn(
-          "inline-flex h-8 items-center rounded-full px-3.5 text-xs font-semibold transition hover:bg-white/8 hover:text-white",
-          pathname === item.url ? "text-indigo-300" : "text-slate-300"
+          "inline-flex h-9 items-center rounded-full border border-transparent bg-transparent px-4 text-sm font-semibold transition-all duration-200",
+          item.title === "Leaderboard"
+            ? [
+              "border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:border-indigo-300 hover:text-indigo-700",
+              "dark:border-indigo-500/25 dark:bg-indigo-500/10 dark:text-indigo-300 dark:hover:bg-indigo-500/18 dark:hover:border-indigo-500/35 dark:hover:text-indigo-200",
+            ]
+            : [
+              "text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 dark:text-slate-400 dark:hover:bg-indigo-500/8 dark:hover:text-slate-200",
+              pathname === item.url ? "text-indigo-600 dark:text-indigo-300" : "",
+            ]
         )}
       >
-        {item.icon ? <span className="mr-1.5 text-indigo-400">{item.icon}</span> : null}
+        {item.icon && <span className="mr-1.5 text-indigo-500 dark:text-indigo-400">{item.icon}</span>}
         {item.title}
       </NavigationMenuLink>
     </NavigationMenuItem>
   );
 };
 
+// ─── Mobile renderer ───────────────────────────────────────────────────────────
+
 const renderMobileMenuItem = (item: MenuItem, pathname: string) => {
   if (item.items) {
     return (
-      <AccordionItem key={item.title} value={item.title} className="border-b border-white/6">
-        <AccordionTrigger className="px-2 py-2.5 text-sm font-semibold text-slate-300 hover:text-white">
+      <AccordionItem key={item.title} value={item.title} className="border-b border-slate-100 dark:border-white/[0.05]">
+        <AccordionTrigger className="px-2 py-2.5 text-sm font-semibold text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-200 data-[state=open]:text-indigo-600 dark:data-[state=open]:text-indigo-300">
           {item.title}
         </AccordionTrigger>
         <AccordionContent className="pb-1">
@@ -558,20 +508,20 @@ const renderMobileMenuItem = (item: MenuItem, pathname: string) => {
             <Link
               key={sub.title}
               href={sub.url}
-              onClick={(event) => {
-                if (!sub.onClick) {
-                  return;
-                }
-
-                event.preventDefault();
-                sub.onClick();
-              }}
+              onClick={(e) => { if (!sub.onClick) return; e.preventDefault(); sub.onClick(); }}
               className={cn(
-                "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition hover:bg-white/8",
-                pathname === sub.url ? "text-indigo-300" : "text-slate-400 hover:text-slate-200"
+                "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-all duration-200",
+                pathname === sub.url
+                  ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/12 dark:text-indigo-300"
+                  : "text-slate-500 hover:bg-indigo-50 hover:text-slate-700 dark:hover:bg-indigo-500/8 dark:hover:text-slate-200"
               )}
             >
-              {sub.icon ? <span className="text-indigo-400">{sub.icon}</span> : null}
+              {sub.icon && (
+                <span className={pathname === sub.url
+                  ? "text-indigo-500 dark:text-indigo-400"
+                  : "text-indigo-400 dark:text-indigo-500"
+                }>{sub.icon}</span>
+              )}
               {sub.title}
             </Link>
           ))}
@@ -584,21 +534,16 @@ const renderMobileMenuItem = (item: MenuItem, pathname: string) => {
     <Link
       key={item.title}
       href={item.url}
-      onClick={(event) => {
-        if (!item.onClick) {
-          return;
-        }
-
-        event.preventDefault();
-        item.onClick();
-      }}
+      onClick={(e) => { if (!item.onClick) return; e.preventDefault(); item.onClick(); }}
       className={cn(
-        "block rounded-lg px-3 py-2.5 text-sm font-semibold transition hover:bg-white/8",
-        pathname === item.url ? "text-indigo-300" : "text-slate-300 hover:text-white"
+        "block rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200",
+        pathname === item.url
+          ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/12 dark:text-indigo-300"
+          : "text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 dark:text-slate-400 dark:hover:bg-indigo-500/8 dark:hover:text-slate-200"
       )}
     >
       <span className="inline-flex items-center gap-2">
-        {item.icon ? <span className="text-indigo-400">{item.icon}</span> : null}
+        {item.icon && <span className="text-indigo-500 dark:text-indigo-400">{item.icon}</span>}
         {item.title}
       </span>
     </Link>

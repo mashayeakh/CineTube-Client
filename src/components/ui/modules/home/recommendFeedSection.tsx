@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import React from "react";
-import { Film, LogIn, Sparkles, SlidersHorizontal, X, Clapperboard, Check } from "lucide-react";
+import { Film, LogIn, Sparkles, SlidersHorizontal, X, Clapperboard, Check, ChevronRight, Star, TrendingUp, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { resolveMediaUrl } from "@/lib/media";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,6 +23,7 @@ type RawMovie = {
     releaseYear?: number;
     description?: string;
     director?: string;
+    rating?: number;
 };
 
 type RecommendedMovie = {
@@ -32,6 +33,7 @@ type RecommendedMovie = {
     releaseYear?: number;
     description?: string;
     director?: string;
+    rating?: number;
 };
 
 type OptionsPayload = {
@@ -76,7 +78,7 @@ function extractMovies(payload: RecommendationPayload): RawMovie[] {
 function normalizeMovieList(list: RawMovie[]): RecommendedMovie[] {
     return list
         .map((movie, index) => {
-            const id = movie.id ?? movie._id ?? movie.movieId ?? `recommended-${index + 1}`;
+            const id = movie.id ?? movie._id ?? movie.movieId ?? `recommended - ${index + 1} `;
             const title = movie.title ?? movie.name ?? "Untitled";
 
             return {
@@ -84,10 +86,11 @@ function normalizeMovieList(list: RawMovie[]): RecommendedMovie[] {
                 title,
                 poster:
                     resolveMediaUrl(movie.poster ?? movie.posterPath) ||
-                    "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba",
+                    "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070&auto=format",
                 releaseYear: movie.releaseYear,
                 description: movie.description,
                 director: movie.director,
+                rating: movie.rating,
             };
         })
         .filter((movie) => Boolean(movie.id && movie.title));
@@ -167,7 +170,6 @@ export default function RecommendFeedSection() {
             const isUserLoggedIn = Boolean(getAuthRoleCookie());
             setIsLoggedIn(isUserLoggedIn);
 
-            // Condition 3: logged out → show nothing
             if (!isUserLoggedIn) {
                 setRecommendedMovies([]);
                 setErrorMessage("");
@@ -175,10 +177,6 @@ export default function RecommendFeedSection() {
                 return;
             }
 
-            // Condition 1 & 2: let the recommendations endpoint decide.
-            // If user has saved preferences → backend returns movies → show them.
-            // If user has no saved preferences → backend returns empty → show nothing.
-            // This survives page reloads reliably without a brittle preference-check detour.
             await fetchRecommendations(true);
             setIsInitialLoading(false);
         };
@@ -285,80 +283,101 @@ export default function RecommendFeedSection() {
     };
 
     return (
-        <section className="relative overflow-hidden py-16">
-            {/* Background */}
-            <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-muted/10 via-background to-muted/30" />
-            <div className="pointer-events-none absolute left-1/4 top-0 h-64 w-64 rounded-full bg-primary/5 blur-3xl" />
-            <div className="pointer-events-none absolute bottom-0 right-1/4 h-64 w-64 rounded-full bg-primary/5 blur-3xl" />
+        <section className="relative overflow-hidden py-20">
+            {/* Enhanced Background with gradient orbs */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background" />
+            <div className="pointer-events-none absolute -left-20 top-20 h-80 w-80 rounded-full bg-primary/10 blur-[100px]" />
+            <div className="pointer-events-none absolute -right-20 bottom-20 h-80 w-80 rounded-full bg-purple-500/10 blur-[100px]" />
+            <div className="pointer-events-none absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-500/5 blur-[120px]" />
 
             <div className="container relative mx-auto px-4">
-                {/* Header card */}
-                <div className="mx-auto max-w-6xl overflow-hidden rounded-3xl border border-border/60 bg-card/80 shadow-lg backdrop-blur-sm">
-                    <div className="flex flex-col gap-6 p-6 md:flex-row md:items-center md:justify-between md:p-10">
-                        <div className="space-y-4">
-                            <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary">
-                                <Sparkles className="size-3.5" />
-                                Recommend Your Feed
-                            </span>
-                            <h2 className="text-2xl font-bold leading-tight md:text-4xl">
-                                Personalized picks <br className="hidden md:block" />based on your taste
-                            </h2>
-                            <p className="max-w-lg text-sm text-muted-foreground md:text-base">
-                                Tell us what you love &mdash; genres, platforms &mdash; and we&apos;ll surface movies made for you.
-                            </p>
-                            <div className="flex flex-wrap gap-2 text-xs">
-                                {["Quick setup", "Genre + platform based", "Instant recommendations"].map((tag) => (
-                                    <span key={tag} className="rounded-full border border-border/80 bg-muted/50 px-3 py-1 text-muted-foreground">
-                                        {tag}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
+                {/* Header card - Enhanced with glassmorphism */}
+                <div className="group mx-auto max-w-5xl overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-card/90 via-card/80 to-card/90 shadow-2xl shadow-primary/5 backdrop-blur-md transition-all duration-500 hover:shadow-primary/10">
+                    <div className="relative">
+                        {/* Decorative accent line */}
+                        <div className="absolute left-0 top-0 h-1 w-32 rounded-full bg-gradient-to-r from-primary to-purple-500" />
 
-                        <div className="shrink-0">
-                            {!isLoggedIn ? (
-                                <Link
-                                    href="/login"
-                                    className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-7 text-sm font-semibold text-primary-foreground shadow-md transition-all hover:bg-primary/90 hover:shadow-primary/30"
-                                >
-                                    <LogIn className="size-4" />
-                                    Login To Get Recommendations
-                                </Link>
-                            ) : (
-                                <button
-                                    type="button"
-                                    onClick={handleOpenPreferences}
-                                    className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-7 text-sm font-semibold text-primary-foreground shadow-md transition-all hover:bg-primary/90 hover:shadow-primary/30"
-                                >
-                                    <SlidersHorizontal className="size-4" />
-                                    Set Preferences
-                                </button>
-                            )}
+                        <div className="flex flex-col gap-8 p-8 md:flex-row md:items-center md:justify-between md:p-10">
+                            <div className="space-y-5">
+                                <div className="inline-flex animate-in fade-in slide-in-from-top-3 duration-500">
+                                    <span className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary backdrop-blur-sm">
+                                        <Sparkles className="size-3.5" />
+                                        AI-Powered Recommendations
+                                    </span>
+                                </div>
+                                <div className="space-y-2">
+                                    <h2 className="text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
+                                        Discover your next
+                                        <br />
+                                        <span className="bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+                                            favorite movie
+                                        </span>
+                                    </h2>
+                                    <p className="max-w-md text-sm text-muted-foreground/80 md:text-base">
+                                        Get personalized recommendations based on your unique taste in genres and streaming platforms.
+                                    </p>
+                                </div>
+                                <div className="flex flex-wrap gap-2 pt-2">
+                                    {["Smart Matching", "Genre Based", "Platform Aware", "Daily Updates"].map((tag) => (
+                                        <span
+                                            key={tag}
+                                            className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-muted-foreground backdrop-blur-sm transition-colors hover:border-primary/30 hover:text-primary"
+                                        >
+                                            {tag}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="shrink-0">
+                                {!isLoggedIn ? (
+                                    <Link
+                                        href="/login"
+                                        className="group relative inline-flex h-12 items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-primary to-purple-600 px-8 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:scale-105 hover:shadow-primary/40"
+                                    >
+                                        <LogIn className="size-4 transition-transform group-hover:rotate-12" />
+                                        Get Started
+                                        <ChevronRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+                                    </Link>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={handleOpenPreferences}
+                                        className="group relative inline-flex h-12 items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-primary to-purple-600 px-8 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:scale-105 hover:shadow-primary/40"
+                                    >
+                                        <SlidersHorizontal className="size-4 transition-transform group-hover:rotate-12" />
+                                        Set Preferences
+                                        <ChevronRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Error message */}
+                {/* Enhanced Error message */}
                 {errorMessage ? (
-                    <div className="mx-auto mt-4 max-w-6xl rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-400">
-                        {errorMessage}
+                    <div className="mx-auto mt-6 max-w-5xl animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-400 backdrop-blur-sm">
+                            <span className="font-medium">⚠️</span> {errorMessage}
+                        </div>
                     </div>
                 ) : null}
 
-                {/* Skeleton loading */}
+                {/* Skeleton loading with shimmer effect */}
                 {isInitialLoading && isLoggedIn ? (
-                    <div className="mx-auto mt-10 max-w-6xl">
-                        <div className="mb-5 flex items-center gap-2">
-                            <Skeleton className="h-5 w-5 rounded-full" />
-                            <Skeleton className="h-5 w-52 rounded-full" />
+                    <div className="mx-auto mt-12 max-w-6xl">
+                        <div className="mb-6 flex animate-pulse items-center gap-2">
+                            <div className="h-5 w-5 rounded-full bg-muted" />
+                            <div className="h-5 w-48 rounded-full bg-muted" />
                         </div>
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                             {Array.from({ length: 4 }).map((_, i) => (
-                                <div key={`rec-skeleton-${i}`} className="overflow-hidden rounded-2xl border border-border">
-                                    <Skeleton className="aspect-2/3 w-full" />
-                                    <div className="space-y-2 p-3">
+                                <div key={`rec - skeleton - ${i} `} className="overflow-hidden rounded-xl border border-white/10 bg-card/50">
+                                    <Skeleton className="aspect-[2/3] w-full" />
+                                    <div className="space-y-2 p-4">
                                         <Skeleton className="h-4 w-4/5 rounded-full" />
-                                        <Skeleton className="h-3 w-1/2 rounded-full" />
+                                        <Skeleton className="h-3 w-1/3 rounded-full" />
                                     </div>
                                 </div>
                             ))}
@@ -366,13 +385,15 @@ export default function RecommendFeedSection() {
                     </div>
                 ) : null}
 
-                {/* Recommended Movies grid */}
+                {/* Recommended Movies grid - Enhanced with better cards */}
                 {!isInitialLoading && recommendedMovies.length > 0 ? (
-                    <div className="mx-auto mt-10 max-w-6xl">
-                        <div className="mb-5 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Film className="size-5 text-primary" />
-                                <h3 className="text-lg font-bold">Recommended For You</h3>
+                    <div className="mx-auto mt-12 max-w-6xl">
+                        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className="rounded-full bg-primary/15 p-2">
+                                    <TrendingUp className="size-4 text-primary" />
+                                </div>
+                                <h3 className="text-xl font-bold tracking-tight">Recommended For You</h3>
                                 <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
                                     {recommendedMovies.length}
                                 </span>
@@ -380,39 +401,64 @@ export default function RecommendFeedSection() {
                             <button
                                 type="button"
                                 onClick={handleOpenPreferences}
-                                className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                                className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-all hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
                             >
                                 <SlidersHorizontal className="size-3" />
                                 Update Preferences
                             </button>
                         </div>
 
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                            {recommendedMovies.map((movie) => (
+                        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                            {recommendedMovies.map((movie, index) => (
                                 <Link
                                     key={movie.id}
-                                    href={`/movie/${movie.id}`}
-                                    className="group relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10"
+                                    href={`/ movie / ${movie.id} `}
+                                    className="group relative animate-in fade-in slide-in-from-bottom-3 duration-500"
+                                    style={{ animationDelay: `${index * 50} ms` }}
                                 >
-                                    <div className="relative aspect-2/3 overflow-hidden">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                            src={movie.poster}
-                                            alt={movie.title}
-                                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                        />
-                                        {/* Gradient overlay */}
-                                        <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/10 to-transparent" />
-                                        {/* Title on hover overlay */}
-                                        <div className="absolute bottom-0 left-0 right-0 p-3">
-                                            <p className="line-clamp-2 text-sm font-bold text-white drop-shadow-md">
-                                                {movie.title}
-                                            </p>
-                                            {(movie.releaseYear ?? movie.director) ? (
-                                                <p className="mt-0.5 text-xs text-white/70">
-                                                    {[movie.releaseYear, movie.director].filter(Boolean).join(" • ")}
-                                                </p>
-                                            ) : null}
+                                    <div className="relative overflow-hidden rounded-xl border border-white/10 bg-card/60 shadow-lg backdrop-blur-sm transition-all duration-300 hover:-translate-y-2 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/10">
+                                        <div className="relative aspect-[2/3] overflow-hidden">
+                                            <img
+                                                src={movie.poster}
+                                                alt={movie.title}
+                                                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                            />
+                                            {/* Dark gradient overlay */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-60 transition-opacity group-hover:opacity-80" />
+
+                                            {/* Rating badge */}
+                                            {movie.rating && (
+                                                <div className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-yellow-400 backdrop-blur-sm">
+                                                    <Star className="size-2.5 fill-yellow-400" />
+                                                    {movie.rating.toFixed(1)}
+                                                </div>
+                                            )}
+
+                                            {/* Year badge */}
+                                            {movie.releaseYear && (
+                                                <div className="absolute right-3 top-3 rounded-full bg-black/60 px-2 py-0.5 text-xs text-white/80 backdrop-blur-sm">
+                                                    {movie.releaseYear}
+                                                </div>
+                                            )}
+
+                                            {/* Content overlay */}
+                                            <div className="absolute bottom-0 left-0 right-0 p-4">
+                                                <h4 className="line-clamp-2 text-sm font-bold text-white drop-shadow-lg">
+                                                    {movie.title}
+                                                </h4>
+                                                {movie.director && (
+                                                    <p className="mt-1 text-xs text-white/60">
+                                                        {movie.director}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Hover action indicator */}
+                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                                            <div className="rounded-full bg-primary/90 p-2 shadow-lg">
+                                                <Film className="size-5 text-white" />
+                                            </div>
                                         </div>
                                     </div>
                                 </Link>
@@ -421,55 +467,62 @@ export default function RecommendFeedSection() {
                     </div>
                 ) : null}
 
-                {/* Empty state: logged in, no preferences set, not loading */}
+                {/* Enhanced Empty state */}
                 {!isInitialLoading && isLoggedIn && recommendedMovies.length === 0 && !errorMessage ? (
-                    <div className="mx-auto mt-10 max-w-6xl">
-                        <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border/70 bg-muted/20 px-6 py-16 text-center">
-                            <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-primary/10">
-                                <Clapperboard className="size-8 text-primary/70" />
+                    <div className="mx-auto mt-12 max-w-5xl">
+                        <div className="animate-in fade-in zoom-in-95 duration-500">
+                            <div className="relative overflow-hidden rounded-2xl border border-dashed border-white/15 bg-gradient-to-br from-muted/30 to-muted/10 px-6 py-16 text-center backdrop-blur-sm">
+                                <div className="absolute inset-0 bg-grid-white/5 [mask-image:radial-gradient(ellipse_at_center,white,transparent)]" />
+                                <div className="relative">
+                                    <div className="mx-auto mb-5 flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20">
+                                        <Clapperboard className="size-9 text-primary/70" />
+                                    </div>
+                                    <h3 className="mb-2 text-xl font-bold">No recommendations yet</h3>
+                                    <p className="mx-auto mb-7 max-w-xs text-sm text-muted-foreground">
+                                        Tell us what you love — select your favorite genres and streaming platforms to get personalized movie picks.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={handleOpenPreferences}
+                                        className="inline-flex h-11 items-center gap-2 rounded-full bg-gradient-to-r from-primary to-purple-600 px-6 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/25 transition-all hover:scale-105 hover:shadow-primary/40"
+                                    >
+                                        <Sparkles className="size-4" />
+                                        Set My Preferences
+                                    </button>
+                                </div>
                             </div>
-                            <h3 className="mb-2 text-lg font-semibold">No recommendations yet</h3>
-                            <p className="mb-6 max-w-xs text-sm text-muted-foreground">
-                                Select your favorite genres and streaming platforms to get personalized movie picks.
-                            </p>
-                            <button
-                                type="button"
-                                onClick={handleOpenPreferences}
-                                className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-                            >
-                                <SlidersHorizontal className="size-4" />
-                                Set My Preferences
-                            </button>
                         </div>
                     </div>
                 ) : null}
             </div>
 
-            {/* Modal */}
+            {/* Enhanced Modal with better animations */}
             {isModalOpen ? (
                 <div
-                    className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 backdrop-blur-sm sm:items-center"
+                    className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 p-4 backdrop-blur-md sm:items-center animate-in fade-in duration-200"
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="preference-modal-title"
                     onClick={() => setIsModalOpen(false)}
                 >
                     <div
-                        className="w-full max-w-2xl rounded-3xl border border-border bg-background shadow-2xl"
+                        className="w-full max-w-2xl animate-in zoom-in-95 slide-in-from-bottom-5 duration-300 rounded-2xl border border-white/10 bg-gradient-to-br from-card to-card/95 shadow-2xl"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Modal header */}
-                        <div className="flex items-center justify-between border-b border-border/60 px-6 py-4">
-                            <div className="flex items-center gap-2">
-                                <Sparkles className="size-4 text-primary" />
-                                <h3 id="preference-modal-title" className="font-semibold">
-                                    Choose your genres &amp; platforms
+                        <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+                            <div className="flex items-center gap-2.5">
+                                <div className="rounded-full bg-primary/15 p-1.5">
+                                    <Sparkles className="size-4 text-primary" />
+                                </div>
+                                <h3 id="preference-modal-title" className="font-semibold text-lg">
+                                    Customize your feed
                                 </h3>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setIsModalOpen(false)}
-                                className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                                className="rounded-full p-1.5 text-muted-foreground transition-all hover:bg-white/10 hover:text-foreground"
                             >
                                 <X className="size-4" />
                             </button>
@@ -478,25 +531,32 @@ export default function RecommendFeedSection() {
                         {/* Modal body */}
                         <div className="max-h-[60vh] overflow-y-auto p-6">
                             {isOptionsLoading ? (
-                                <div className="space-y-4">
-                                    <Skeleton className="h-4 w-20 rounded-full" />
-                                    <div className="flex flex-wrap gap-2">
-                                        {Array.from({ length: 8 }).map((_, i) => (
-                                            <Skeleton key={`genre-sk-${i}`} className="h-8 w-20 rounded-full" />
-                                        ))}
+                                <div className="space-y-6">
+                                    <div>
+                                        <Skeleton className="mb-3 h-4 w-20 rounded-full" />
+                                        <div className="flex flex-wrap gap-2">
+                                            {Array.from({ length: 8 }).map((_, i) => (
+                                                <Skeleton key={`genre - sk - ${i} `} className="h-8 w-20 rounded-full" />
+                                            ))}
+                                        </div>
                                     </div>
-                                    <Skeleton className="mt-4 h-4 w-24 rounded-full" />
-                                    <div className="flex flex-wrap gap-2">
-                                        {Array.from({ length: 5 }).map((_, i) => (
-                                            <Skeleton key={`plat-sk-${i}`} className="h-8 w-24 rounded-full" />
-                                        ))}
+                                    <div>
+                                        <Skeleton className="mb-3 h-4 w-24 rounded-full" />
+                                        <div className="flex flex-wrap gap-2">
+                                            {Array.from({ length: 5 }).map((_, i) => (
+                                                <Skeleton key={`plat - sk - ${i} `} className="h-8 w-24 rounded-full" />
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="space-y-7">
+                                <div className="space-y-8">
                                     <div>
-                                        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Genres</p>
-                                        <div className="flex flex-wrap gap-2">
+                                        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                                            <span className="rounded-full bg-primary/20 px-1.5 py-0.5 text-[10px] text-primary">1</span>
+                                            Select Genres
+                                        </p>
+                                        <div className="flex flex-wrap gap-2.5">
                                             {genres.length === 0 ? (
                                                 <p className="text-sm text-muted-foreground">No genres found.</p>
                                             ) : (
@@ -506,10 +566,10 @@ export default function RecommendFeedSection() {
                                                         type="button"
                                                         onClick={() => toggleSelection(genre.id, selectedGenres, setSelectedGenres)}
                                                         className={cn(
-                                                            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
+                                                            "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all duration-200",
                                                             selectedGenres.includes(genre.id)
-                                                                ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                                                                : "border-border bg-background hover:border-primary/50 hover:bg-muted",
+                                                                ? "border-primary/50 bg-primary text-primary-foreground shadow-md shadow-primary/25"
+                                                                : "border-white/10 bg-white/5 hover:border-primary/40 hover:bg-primary/10 hover:text-primary",
                                                         )}
                                                     >
                                                         {selectedGenres.includes(genre.id) && <Check className="size-3" />}
@@ -521,8 +581,11 @@ export default function RecommendFeedSection() {
                                     </div>
 
                                     <div>
-                                        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Streaming Platforms</p>
-                                        <div className="flex flex-wrap gap-2">
+                                        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                                            <span className="rounded-full bg-primary/20 px-1.5 py-0.5 text-[10px] text-primary">2</span>
+                                            Select Platforms
+                                        </p>
+                                        <div className="flex flex-wrap gap-2.5">
                                             {platforms.length === 0 ? (
                                                 <p className="text-sm text-muted-foreground">No platforms found.</p>
                                             ) : (
@@ -532,10 +595,10 @@ export default function RecommendFeedSection() {
                                                         type="button"
                                                         onClick={() => toggleSelection(platform.id, selectedPlatforms, setSelectedPlatforms)}
                                                         className={cn(
-                                                            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
+                                                            "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all duration-200",
                                                             selectedPlatforms.includes(platform.id)
-                                                                ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                                                                : "border-border bg-background hover:border-primary/50 hover:bg-muted",
+                                                                ? "border-primary/50 bg-primary text-primary-foreground shadow-md shadow-primary/25"
+                                                                : "border-white/10 bg-white/5 hover:border-primary/40 hover:bg-primary/10 hover:text-primary",
                                                         )}
                                                     >
                                                         {selectedPlatforms.includes(platform.id) && <Check className="size-3" />}
@@ -550,15 +613,15 @@ export default function RecommendFeedSection() {
                         </div>
 
                         {/* Modal footer */}
-                        <div className="flex items-center justify-between border-t border-border/60 px-6 py-4">
+                        <div className="flex items-center justify-between border-t border-white/10 px-6 py-4">
                             <p className="text-xs text-muted-foreground">
-                                {selectedGenres.length + selectedPlatforms.length} selected
+                                {selectedGenres.length + selectedPlatforms.length} {selectedGenres.length + selectedPlatforms.length === 1 ? 'selection' : 'selections'}
                             </p>
-                            <div className="flex gap-2">
+                            <div className="flex gap-3">
                                 <button
                                     type="button"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="rounded-full border border-border px-5 py-2 text-sm font-medium hover:bg-muted"
+                                    className="rounded-full border border-white/10 px-5 py-2 text-sm font-medium transition-all hover:bg-white/10"
                                 >
                                     Cancel
                                 </button>
@@ -566,7 +629,7 @@ export default function RecommendFeedSection() {
                                     type="button"
                                     onClick={handleGetRecommendations}
                                     disabled={isOptionsLoading || isRecommendationsLoading}
-                                    className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="rounded-full bg-gradient-to-r from-primary to-purple-600 px-6 py-2 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/25 transition-all hover:scale-105 hover:shadow-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {isRecommendationsLoading ? (
                                         <span className="flex items-center gap-2">
