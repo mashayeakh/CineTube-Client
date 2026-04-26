@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/purity */
 "use client";
 
@@ -140,7 +141,7 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
     return (
       <section className={cn("py-24 relative overflow-hidden", className)}>
         {/* Premium Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" />
+        <div className="absolute inset-0 bg-linear-to-br from-amber-50 via-orange-50 to-red-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" />
 
         {/* Animated gradient orbs */}
         <motion.div
@@ -149,7 +150,7 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
             rotate: [0, 90, 0]
           }}
           transition={{ duration: 20, repeat: Infinity }}
-          className="absolute top-20 right-20 w-96 h-96 bg-gradient-to-r from-amber-300/30 to-orange-300/30 rounded-full blur-3xl"
+          className="absolute top-20 right-20 w-96 h-96 bg-linear-to-r from-amber-300/30 to-orange-300/30 rounded-full blur-3xl"
         />
         <motion.div
           animate={{
@@ -157,7 +158,7 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
             rotate: [0, -90, 0]
           }}
           transition={{ duration: 25, repeat: Infinity }}
-          className="absolute bottom-20 left-20 w-96 h-96 bg-gradient-to-r from-red-300/20 to-pink-300/20 rounded-full blur-3xl"
+          className="absolute bottom-20 left-20 w-96 h-96 bg-linear-to-r from-red-300/20 to-pink-300/20 rounded-full blur-3xl"
         />
 
         <div className="container mx-auto px-4 relative z-10">
@@ -169,13 +170,13 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
               variants={containerVariants}
               className="text-center mb-16"
             >
-              <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-full mb-6">
+              <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-4 py-2 bg-linear-to-r from-amber-500/20 to-orange-500/20 rounded-full mb-6">
                 <Crown className="size-4 text-amber-600" />
-                <span className="text-sm font-semibold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">Premium Experience</span>
+                <span className="text-sm font-semibold bg-linear-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">Premium Experience</span>
               </motion.div>
 
               <motion.h2 variants={itemVariants} className="text-5xl md:text-6xl font-bold mb-6">
-                <span className="bg-gradient-to-r from-amber-600 via-orange-600 to-red-600 bg-clip-text text-transparent">
+                <span className="bg-linear-to-r from-amber-600 via-orange-600 to-red-600 bg-clip-text text-transparent">
                   Upgrade to Premium
                 </span>
               </motion.h2>
@@ -225,7 +226,7 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
                 whileHover={{ y: -10 }}
-                className="relative bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl shadow-2xl overflow-hidden transform scale-105"
+                className="relative bg-linear-to-br from-amber-500 to-orange-600 rounded-3xl shadow-2xl overflow-hidden transform scale-105"
               >
                 <div className="absolute top-6 right-6">
                   <div className="bg-yellow-400 text-gray-900 px-3 py-1 rounded-full text-sm font-bold">
@@ -299,7 +300,7 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
       className
     )}>
       {/* Enhanced Background Elements */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background" />
+      <div className="absolute inset-0 bg-background" />
 
       {/* Animated gradient orbs */}
       <motion.div
@@ -309,7 +310,7 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
           y: [0, 30, 0]
         }}
         transition={{ duration: 15, repeat: Infinity }}
-        className="absolute top-20 right-20 w-96 h-96 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-3xl"
+        className="pointer-events-none absolute top-20 right-20 w-96 h-96 bg-linear-to-r from-purple-500/15 to-pink-500/15 rounded-full blur-3xl"
       />
       <motion.div
         animate={{
@@ -318,7 +319,7 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
           y: [0, -30, 0]
         }}
         transition={{ duration: 20, repeat: Infinity }}
-        className="absolute bottom-20 left-20 w-96 h-96 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-full blur-3xl"
+        className="pointer-events-none absolute bottom-20 left-20 w-96 h-96 bg-linear-to-r from-blue-500/15 to-cyan-500/15 rounded-full blur-3xl"
       />
       <motion.div
         animate={{
@@ -326,11 +327,11 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
           rotate: [0, 180, 0]
         }}
         transition={{ duration: 25, repeat: Infinity }}
-        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-full blur-3xl"
+        className="pointer-events-none absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-150 h-150 bg-linear-to-r from-amber-500/8 to-orange-500/8 rounded-full blur-3xl"
       />
 
       {/* Animated grid pattern */}
-      <div className="absolute inset-0 bg-grid-pattern opacity-5" />
+      <div className="pointer-events-none absolute inset-0 bg-grid-pattern opacity-2" />
 
       {/* Floating particles */}
       <div className="absolute inset-0 overflow-hidden">
@@ -376,10 +377,10 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/20 to-primary/10 rounded-full backdrop-blur-sm"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-linear-to-r from-primary/20 to-primary/10 rounded-full backdrop-blur-sm"
               >
                 <Sparkles className="size-4 text-primary animate-pulse" />
-                <span className="text-sm font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                <span className="text-sm font-semibold bg-linear-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                   Join Our Community
                 </span>
               </motion.div>
@@ -387,7 +388,7 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
               {/* Enhanced Heading */}
               <motion.div variants={itemVariants}>
                 <h2 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
-                  <span className="bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent animate-gradient">
+                  <span className="bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent animate-gradient">
                     Join Today
                   </span>
                   <br />
@@ -415,12 +416,12 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
                     className={cn(
                       "flex items-center gap-3 p-3 rounded-xl transition-all duration-300",
                       benefit.highlight
-                        ? "bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20"
+                        ? "bg-linear-to-r from-primary/10 to-primary/5 border border-primary/20"
                         : "bg-secondary/50 hover:bg-secondary"
                     )}
                   >
                     <div className={cn(
-                      "p-1.5 rounded-lg bg-gradient-to-br text-white",
+                      "p-1.5 rounded-lg bg-linear-to-br text-white",
                       benefit.color
                     )}>
                       {benefit.icon}
@@ -443,7 +444,7 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
                 <Link href="/signup">
                   <Button
                     size="lg"
-                    className="group relative overflow-hidden bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-lg transition-all duration-300 hover:shadow-xl text-base px-8 rounded-full"
+                    className="group relative overflow-hidden bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-lg transition-all duration-300 hover:shadow-xl text-base px-8 rounded-full"
                   >
                     <span className="relative z-10 flex items-center gap-2">
                       Sign Up Free
@@ -458,16 +459,6 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
                   </Button>
                 </Link>
 
-                <Link href="/learn-more">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="group border-2 hover:bg-primary/5 transition-all duration-300 text-base px-8 rounded-full"
-                  >
-                    <span>Learn More</span>
-                    <ArrowRight className="size-4 ml-2 transition-transform group-hover:translate-x-1" />
-                  </Button>
-                </Link>
               </motion.div>
 
               {/* Trust Badges */}
@@ -480,7 +471,7 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
                 <div className="flex items-center gap-2">
                   <div className="flex -space-x-2">
                     {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/60 border-2 border-background" />
+                      <div key={i} className="w-8 h-8 rounded-full bg-linear-to-br from-primary to-primary/60 border-2 border-background" />
                     ))}
                   </div>
                   <span className="text-sm text-muted-foreground">Join 10M+ users</span>
@@ -503,9 +494,9 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
               transition={{ duration: 0.6, delay: 0.3 }}
               className="relative"
             >
-              <div className="bg-gradient-to-br from-background/80 to-background/40 backdrop-blur-xl rounded-3xl p-6 border border-border/50 shadow-2xl">
+              <div className="bg-linear-to-br from-background/80 to-background/40 backdrop-blur-xl rounded-3xl p-6 border border-border/50 shadow-2xl">
                 <div className="text-center mb-6">
-                  <h3 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                  <h3 className="text-2xl font-bold bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                     Platform Statistics
                   </h3>
                   <p className="text-sm text-muted-foreground">Real-time analytics</p>
@@ -518,7 +509,7 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
                       whileHover={{ scale: 1.02 }}
                       className="flex items-center gap-4 p-4 bg-background/50 rounded-2xl border border-border/50 hover:border-primary/30 transition-all duration-300"
                     >
-                      <div className="p-3 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl">
+                      <div className="p-3 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl">
                         <div className="text-primary">
                           {stat.icon}
                         </div>
@@ -548,7 +539,7 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
                       initial={{ width: 0 }}
                       animate={{ width: "68%" }}
                       transition={{ duration: 1.5, delay: 0.5 }}
-                      className="h-full bg-gradient-to-r from-primary to-primary/60 rounded-full"
+                      className="h-full bg-linear-to-r from-primary to-primary/60 rounded-full"
                     />
                   </div>
                 </div>
@@ -558,7 +549,7 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
               <motion.div
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 3, repeat: Infinity }}
-                className="absolute -top-4 -right-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-full shadow-lg"
+                className="absolute -top-4 -right-4 bg-linear-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-full shadow-lg"
               >
                 <div className="flex items-center gap-2 text-sm font-semibold">
                   <Zap className="size-4" />
