@@ -113,6 +113,29 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
     visible: { opacity: 1, y: 0 }
   };
 
+  const particleProps = [
+    { left: "6%", top: "18%", x: [0, 18, 0], y: [0, -22, 0], duration: 4.3, delay: 0.4 },
+    { left: "12%", top: "26%", x: [0, -16, 0], y: [0, -18, 0], duration: 4.8, delay: 1.2 },
+    { left: "22%", top: "12%", x: [0, 12, 0], y: [0, -16, 0], duration: 4.1, delay: 0.9 },
+    { left: "28%", top: "42%", x: [0, -20, 0], y: [0, -24, 0], duration: 5.0, delay: 0.2 },
+    { left: "35%", top: "8%", x: [0, 15, 0], y: [0, -20, 0], duration: 4.5, delay: 1.4 },
+    { left: "42%", top: "36%", x: [0, -18, 0], y: [0, -22, 0], duration: 4.7, delay: 0.7 },
+    { left: "50%", top: "22%", x: [0, 21, 0], y: [0, -19, 0], duration: 4.2, delay: 1.0 },
+    { left: "58%", top: "10%", x: [0, -14, 0], y: [0, -17, 0], duration: 4.6, delay: 0.3 },
+    { left: "64%", top: "32%", x: [0, 17, 0], y: [0, -21, 0], duration: 4.9, delay: 0.8 },
+    { left: "70%", top: "18%", x: [0, -13, 0], y: [0, -15, 0], duration: 4.4, delay: 1.3 },
+    { left: "76%", top: "40%", x: [0, 20, 0], y: [0, -23, 0], duration: 4.1, delay: 0.6 },
+    { left: "82%", top: "16%", x: [0, -19, 0], y: [0, -20, 0], duration: 4.8, delay: 0.9 },
+    { left: "88%", top: "26%", x: [0, 14, 0], y: [0, -18, 0], duration: 4.5, delay: 1.1 },
+    { left: "18%", top: "58%", x: [0, -17, 0], y: [0, -22, 0], duration: 4.7, delay: 0.5 },
+    { left: "30%", top: "60%", x: [0, 16, 0], y: [0, -19, 0], duration: 4.3, delay: 0.8 },
+    { left: "44%", top: "54%", x: [0, -15, 0], y: [0, -20, 0], duration: 4.9, delay: 1.2 },
+    { left: "52%", top: "62%", x: [0, 18, 0], y: [0, -21, 0], duration: 4.2, delay: 0.9 },
+    { left: "60%", top: "58%", x: [0, -12, 0], y: [0, -16, 0], duration: 4.6, delay: 0.4 },
+    { left: "68%", top: "52%", x: [0, 19, 0], y: [0, -23, 0], duration: 5.0, delay: 1.0 },
+    { left: "78%", top: "56%", x: [0, -14, 0], y: [0, -18, 0], duration: 4.4, delay: 0.7 }
+  ];
+
   if (variant === 'premium') {
     return (
       <section className={cn("py-24 relative overflow-hidden", className)}>
@@ -311,23 +334,23 @@ export default function JoinSection({ className, variant = 'default' }: JoinSect
 
       {/* Floating particles */}
       <div className="absolute inset-0 overflow-hidden">
-        {[...Array(20)].map((_, i) => (
+        {particleProps.map((particle, i) => (
           <motion.div
             key={i}
             className="absolute w-1 h-1 bg-primary/20 rounded-full"
             animate={{
-              y: [0, -100, 0],
-              x: [0, Math.random() * 100 - 50, 0],
+              y: particle.y,
+              x: particle.x,
               opacity: [0, 1, 0]
             }}
             transition={{
-              duration: Math.random() * 5 + 3,
+              duration: particle.duration,
               repeat: Infinity,
-              delay: Math.random() * 5
+              delay: particle.delay
             }}
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`
+              left: particle.left,
+              top: particle.top
             }}
           />
         ))}

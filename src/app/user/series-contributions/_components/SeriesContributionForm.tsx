@@ -43,6 +43,7 @@ export function SeriesContributionForm({ userId, genres, platforms, isPremium }:
     const [selectedGenres, setSelectedGenres] = useState<string[]>([])
     const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
     const [ageGroup, setAgeGroup] = useState("AGE_13_PLUS")
+    const [streamingLink, setStreamingLink] = useState("")
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState(false)
@@ -134,6 +135,9 @@ export function SeriesContributionForm({ userId, genres, platforms, isPremium }:
         formData.append("releaseYear", String(year))
         formData.append("director", director)
         formData.append("priceType", "PREMIUM")
+        if (streamingLink.trim()) {
+            formData.append("streamingLink", streamingLink.trim())
+        }
         if (seasons) formData.append("totalSeasons", String(seasons))
         if (episodes) formData.append("totalEpisodes", String(episodes))
         formData.append("seriesStatus", seriesStatus)
@@ -183,7 +187,7 @@ export function SeriesContributionForm({ userId, genres, platforms, isPremium }:
                         </p>
                     </div>
                     <a
-                        href="/user/subscription#pricing"
+                        href="/subscription#pricing"
                         className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-amber-700"
                     >
                         <CreditCard className="size-3.5" />
@@ -273,6 +277,16 @@ export function SeriesContributionForm({ userId, genres, platforms, isPremium }:
                     />
                 </Field>
             </div>
+
+            {/* Streaming Link */}
+            <Field label="Streaming Link">
+                <Input
+                    value={streamingLink}
+                    onChange={(e) => setStreamingLink(e.target.value)}
+                    placeholder="https://..."
+                    type="url"
+                />
+            </Field>
 
             {/* Language + Series Totals */}
             <div className="grid gap-4 sm:grid-cols-3">

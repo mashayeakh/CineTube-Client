@@ -9,6 +9,26 @@ import {
 } from "@/lib/user-dashboard.utils";
 import { getUserDashboardPayments } from "@/service/user-dashboard.services";
 
+type PaymentStatus = "ACTIVE" | "PENDING" | "CANCELLED" | "FAILED" | "UNKNOWN";
+
+function normalizePaymentStatus(status: string): PaymentStatus {
+    const normalized = status.trim().toUpperCase();
+    if (!normalized) return "UNKNOWN";
+    if (normalized.includes("ACTIVE") || normalized.includes("COMPLETED") || normalized.includes("SUCCEEDED")) {
+        return "ACTIVE";
+    }
+    if (normalized.includes("PENDING") || normalized.includes("PROCESS") || normalized.includes("REVIEW")) {
+        return "PENDING";
+    }
+    if (normalized.includes("CANCEL") || normalized.includes("CANCELED")) {
+        return "CANCELLED";
+    }
+    if (normalized.includes("FAIL") || normalized.includes("ERROR") || normalized.includes("DECLINE")) {
+        return "FAILED";
+    }
+    return normalized as PaymentStatus;
+}
+
 export default async function UserPaymentHistoryPage() {
     let payload: unknown = null;
 
@@ -27,7 +47,8 @@ export default async function UserPaymentHistoryPage() {
         if (!method || method === "-" || method === "–" || method === "—") {
             method = "CARD";
         }
-        const status = parseString(findValue(item, ["status"]));
+        const rawStatus = parseString(findValue(item, ["status"]));
+        const status = normalizePaymentStatus(rawStatus);
         const transactionId = parseString(findValue(item, ["transactionId", "txnId", "id"]));
         const createdAt = formatDate(findValue(item, ["createdAt", "paidAt", "date"]));
 

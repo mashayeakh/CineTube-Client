@@ -339,10 +339,10 @@ export function AuthFlipShell({ initialMode, LoginFormProps = {} }: { initialMod
 
                                     {!isSignup && (
                                         <div className="flex items-center justify-between gap-3 text-sm">
-                                            <label className="flex items-center gap-2 text-slate-500">
+                                            {/* <label className="flex items-center gap-2 text-slate-500">
                                                 <input type="checkbox" className="size-4 rounded border-slate-300" />
                                                 Keep me signed in
-                                            </label>
+                                            </label> */}
                                             <Link href="/forgetPassword" className="font-medium text-indigo-600 hover:text-indigo-500">
                                                 Forgot password?
                                             </Link>
@@ -392,21 +392,21 @@ export function AuthFlipShell({ initialMode, LoginFormProps = {} }: { initialMod
                                             </form.Subscribe>
                                         )}
 
-                                        <div className="flex items-center gap-2.5 text-sm text-slate-400">
+                                        {/* <div className="flex items-center gap-2.5 text-sm text-slate-400">
                                             <span>Or</span>
-                                            {/* <button
+                                            <button
                                                 type="button"
                                                 className="inline-flex size-9 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
                                             >
                                                 f
-                                            </button> */}
+                                            </button>
                                             <button
                                                 type="button"
                                                 className="inline-flex size-9 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
                                             >
                                                 G
                                             </button>
-                                        </div>
+                                        </div> */}
                                     </div>
                                 </form>
                             </motion.div>

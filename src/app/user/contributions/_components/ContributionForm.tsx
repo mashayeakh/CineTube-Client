@@ -33,6 +33,7 @@ export function ContributionForm({ userId, genres, platforms, isPremium }: Contr
     const [selectedGenres, setSelectedGenres] = useState<string[]>([])
     const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
     const [ageGroup, setAgeGroup] = useState("TEEN")
+    const [streamingLink, setStreamingLink] = useState("")
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState(false)
@@ -101,6 +102,9 @@ export function ContributionForm({ userId, genres, platforms, isPremium }: Contr
         formData.append("releaseYear", String(year))
         formData.append("director", director)
         formData.append("ageGroup", ageGroup)
+        if (streamingLink.trim()) {
+            formData.append("streamingLink", streamingLink.trim())
+        }
         cast.forEach((c) => formData.append("cast", c))
         selectedGenres.forEach((g) => formData.append("genres", g))
         selectedPlatforms.forEach((p) => formData.append("platforms", p))
@@ -146,7 +150,7 @@ export function ContributionForm({ userId, genres, platforms, isPremium }: Contr
                         </p>
                     </div>
                     <a
-                        href="/user/subscription#pricing"
+                        href="/subscription#pricing"
                         className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-amber-700"
                     >
                         <CreditCard className="size-3.5" />
@@ -236,6 +240,16 @@ export function ContributionForm({ userId, genres, platforms, isPremium }: Contr
                     />
                 </Field>
             </div>
+
+            {/* Streaming Link */}
+            <Field label="Streaming Link">
+                <Input
+                    value={streamingLink}
+                    onChange={(e) => setStreamingLink(e.target.value)}
+                    placeholder="https://..."
+                    type="url"
+                />
+            </Field>
 
             {/* Cast */}
             <Field label="Cast">

@@ -183,7 +183,7 @@ export default function SeriesPage() {
                                     <Link href={`/series/${effectiveFeatured.id}`}>
                                         <Button className="mt-2 h-11 rounded-full bg-red-600 px-6 text-white hover:bg-red-500">
                                             <Play className="mr-2 h-4 w-4" />
-                                            Watch
+                                            See more
                                         </Button>
                                     </Link>
                                 </div>

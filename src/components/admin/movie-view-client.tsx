@@ -55,7 +55,6 @@ type MovieViewClientProps = {
     successMessage?: string;
 };
 
-// ✅ FIX 1: Helper to safely display releaseYear — 0 and null/undefined all show "N/A"
 function formatReleaseYear(year: number | null | undefined): string {
     if (!year || year === 0) return "N/A";
     return String(year);
@@ -214,7 +213,6 @@ export function MovieViewClient({
                         <option value="FREE">FREE</option>
                         <option value="PREMIUM">PREMIUM</option>
                     </select>
-                    {/* ✅ FIX 2: Added ALL_AGES option to the filter dropdown */}
                     <select value={ageGroup} onChange={(event) => setAgeGroup(event.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
                         <option value="ALL">All Age Groups</option>
                         <option value="ALL_AGES">ALL_AGES</option>
@@ -365,6 +363,10 @@ export function MovieViewClient({
                                 <input name="releaseYear" required type="number" placeholder="2012" className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100" />
                             </label>
                         </div>
+                        <label className="space-y-1.5">
+                            <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Streaming Link</span>
+                            <input name="streamingLink" type="url" placeholder="https://..." className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100" />
+                        </label>
 
                         <label className="space-y-1.5">
                             <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Cast</span>
@@ -462,12 +464,8 @@ export function MovieViewClient({
                                             <p className="text-xs uppercase tracking-wider text-slate-500">Director</p>
                                             <p className="mt-2 wrap-break-word text-sm font-semibold text-slate-900">{selectedMovie.director}</p>
                                         </article>
-                                        <article className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                                            <p className="text-xs uppercase tracking-wider text-slate-500">Release Year</p>
-                                            {/* ✅ FIX 1 applied: use helper so 0 shows as N/A */}
-                                            <p className="mt-2 text-sm font-semibold text-slate-900">{formatReleaseYear(selectedMovie.releaseYear)}</p>
-                                        </article>
-                                        <article className="rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
+
+                                        {/* <article className="rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
                                             <p className="text-xs uppercase tracking-wider text-slate-500">Genres</p>
                                             <div className="mt-2 flex flex-wrap gap-2">
                                                 {selectedMovie.genres.length > 0 ? selectedMovie.genres.map((genre) => (
@@ -476,11 +474,11 @@ export function MovieViewClient({
                                                     </span>
                                                 )) : <span className="text-sm text-slate-500">No genres</span>}
                                             </div>
-                                        </article>
-                                        <article className="rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
+                                        </article> */}
+                                        {/* <article className="rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
                                             <p className="text-xs uppercase tracking-wider text-slate-500">Platforms</p>
 
-                                        </article>
+                                        </article> */}
                                     </div>
                                 </div>
 

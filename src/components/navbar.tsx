@@ -272,12 +272,12 @@ const Navbar = ({ className }: { className?: string }) => {
                   <DropdownMenuItem onClick={() => router.push("/user/dashboard")} className="cursor-pointer text-slate-600 focus:bg-indigo-50 focus:text-indigo-700 dark:text-slate-300 dark:focus:bg-indigo-500/15 dark:focus:text-indigo-200">
                     <Home className="mr-2 h-4 w-4 text-indigo-500 dark:text-indigo-400" />Dashboard
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push("/change-password")} className="cursor-pointer text-slate-600 focus:bg-indigo-50 focus:text-indigo-700 dark:text-slate-300 dark:focus:bg-indigo-500/15 dark:focus:text-indigo-200">
+                  {/* <DropdownMenuItem onClick={() => router.push("/change-password")} className="cursor-pointer text-slate-600 focus:bg-indigo-50 focus:text-indigo-700 dark:text-slate-300 dark:focus:bg-indigo-500/15 dark:focus:text-indigo-200">
                     <Settings className="mr-2 h-4 w-4 text-indigo-500 dark:text-indigo-400" />Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer text-slate-600 focus:bg-indigo-50 focus:text-indigo-700 dark:text-slate-300 dark:focus:bg-indigo-500/15 dark:focus:text-indigo-200">
+                  </DropdownMenuItem> */}
+                  {/* <DropdownMenuItem className="cursor-pointer text-slate-600 focus:bg-indigo-50 focus:text-indigo-700 dark:text-slate-300 dark:focus:bg-indigo-500/15 dark:focus:text-indigo-200">
                     Earnings
-                  </DropdownMenuItem>
+                  </DropdownMenuItem> */}
                   <DropdownMenuSeparator className="bg-slate-100 dark:bg-white/8" />
                   <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600 dark:text-red-400 dark:focus:bg-red-500/10 dark:focus:text-red-300">
                     <LogOut className="mr-2 h-4 w-4" />Sign out

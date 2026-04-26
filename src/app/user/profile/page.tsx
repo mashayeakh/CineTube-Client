@@ -111,7 +111,7 @@ export default async function UserProfilePage() {
     }
 
 
-    console.log("profile", profile)
+    console.log("profile====", profile)
 
     if (!profile) {
         return (

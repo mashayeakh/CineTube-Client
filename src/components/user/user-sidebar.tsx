@@ -14,7 +14,6 @@ import {
     LogOut,
     MessageCircle,
     Star,
-    Subtitles,
     Tv,
 } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
@@ -32,7 +31,6 @@ const navItems = [
     { label: "My Watchlist", href: "/user/watchlist", icon: ListVideo },
     { label: "My Reviews", href: "/user/reviews", icon: Star },
     { label: "My Comments", href: "/user/comments", icon: MessageCircle },
-    { label: "My Subscription", href: "/user/subscription", icon: Subtitles },
     { label: "Payment History", href: "/user/payment-history", icon: History },
 ];
 

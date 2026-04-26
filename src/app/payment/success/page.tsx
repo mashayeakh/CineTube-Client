@@ -16,5 +16,5 @@ export default async function PaymentSuccessPage() {
         // Best-effort — still redirect even if refresh fails
     }
 
-    redirect("/user/subscription")
+    redirect("/subscription")
 }

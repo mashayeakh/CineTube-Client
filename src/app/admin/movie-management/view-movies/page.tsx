@@ -236,6 +236,7 @@ async function createMovieAction(formData: FormData) {
     const poster = formData.get("poster");
     const releaseYear = Number(formData.get("releaseYear") ?? 0);
     const director = String(formData.get("director") ?? "").trim();
+    const streamingLink = String(formData.get("streamingLink") ?? "").trim();
     const castInput = String(formData.get("cast") ?? "").trim();
     const priceType = String(formData.get("priceType") ?? "PREMIUM").trim();
     const ageGroup = String(formData.get("ageGroup") ?? "AGE_13_PLUS").trim();
@@ -299,6 +300,9 @@ async function createMovieAction(formData: FormData) {
     payload.append("priceType", priceType);
     payload.append("ageGroup", ageGroup);
     payload.append("userId", userId);
+    if (streamingLink) {
+        payload.append("streamingLink", streamingLink);
+    }
 
     for (const item of cast) {
         payload.append("cast", item);
@@ -343,6 +347,7 @@ async function updateMovieAction(formData: FormData) {
     const priceType = String(formData.get("priceType") ?? "PREMIUM");
     const ageGroup = String(formData.get("ageGroup") ?? "AGE_13_PLUS");
     const director = String(formData.get("director") ?? "").trim();
+    const streamingLink = String(formData.get("streamingLink") ?? "").trim();
     const genres = formData.getAll("genres").map((value) => String(value));
     const platforms = formData.getAll("platforms").map((value) => String(value));
 
@@ -358,6 +363,7 @@ async function updateMovieAction(formData: FormData) {
             priceType,
             ageGroup,
             director,
+            streamingLink: streamingLink || undefined,
             genres,
             platforms,
         } as Partial<MoviePayload>);

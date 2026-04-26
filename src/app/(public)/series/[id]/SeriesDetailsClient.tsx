@@ -366,19 +366,6 @@ export default function SeriesDetailsClient({
 
     const [isLoginPromptOpen, setIsLoginPromptOpen] = useState(false);
 
-    // Review like state
-    const [reviewLikePendingById, setReviewLikePendingById] = useState<Record<string, boolean>>({});
-    const [reviewFeedbackById, setReviewFeedbackById] = useState<Record<string, string | null>>({});
-    const [reviewLikeStateById, setReviewLikeStateById] = useState<Record<string, { liked: boolean; likesCount: number }>>(() =>
-        series.reviews.reduce<Record<string, { liked: boolean; likesCount: number }>>((acc, r) => {
-            acc[r.id] = {
-                liked: Boolean(r.likedByCurrentUser),
-                likesCount: Number.isFinite(r.likesCount) ? Number(r.likesCount) : 0,
-            };
-            return acc;
-        }, {})
-    );
-
     // Always fetch like counts for all reviews on mount (for both authenticated and guest users)
     useEffect(() => {
         const updateCounts = async () => {
@@ -390,7 +377,17 @@ export default function SeriesDetailsClient({
                     likesCount: count,
                 };
             }));
-            setReviewLikeStateById((prev) => ({ ...prev, ...updates }));
+            setReviewLikeStateById((prev) => {
+                const next = { ...prev };
+                for (const review of series.reviews) {
+                    const existing = prev[review.id];
+                    next[review.id] = {
+                        liked: existing?.liked ?? Boolean(review.likedByCurrentUser),
+                        likesCount: updates[review.id]?.likesCount ?? existing?.likesCount ?? 0,
+                    };
+                }
+                return next;
+            });
         };
         updateCounts();
     }, [series.reviews]);
@@ -430,11 +427,41 @@ export default function SeriesDetailsClient({
     const [commentPendingByReviewId, setCommentPendingByReviewId] = useState<Record<string, boolean>>({});
     const [commentFeedbackByReviewId, setCommentFeedbackByReviewId] = useState<Record<string, string | null>>({});
 
-    // Persist liked reviews in localStorage
     const likedStorageKey = useMemo(() => {
         if (!currentUserId) return null;
         return `cinetube:liked-reviews:${currentUserId}:${series.id}`;
     }, [currentUserId, series.id]);
+
+    const getPersistedLikedReviewIds = (storageKey: string | null) => {
+        if (!storageKey || typeof window === "undefined") {
+            return new Set<string>();
+        }
+
+        try {
+            const raw = window.localStorage.getItem(storageKey);
+            if (!raw) return new Set<string>();
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed)
+                ? new Set(parsed.map((value) => String(value)))
+                : new Set<string>();
+        } catch {
+            return new Set<string>();
+        }
+    };
+
+    const [reviewLikePendingById, setReviewLikePendingById] = useState<Record<string, boolean>>({});
+    const [reviewFeedbackById, setReviewFeedbackById] = useState<Record<string, string | null>>({});
+    const [reviewLikeStateById, setReviewLikeStateById] = useState<Record<string, { liked: boolean; likesCount: number }>>(() => {
+        const persistedLikes = getPersistedLikedReviewIds(likedStorageKey);
+        return series.reviews.reduce<Record<string, { liked: boolean; likesCount: number }>>((acc, r) => {
+            const isLiked = Boolean(r.likedByCurrentUser) || persistedLikes.has(r.id);
+            acc[r.id] = {
+                liked: isLiked,
+                likesCount: isLiked ? Math.max(1, Number.isFinite(r.likesCount) ? Number(r.likesCount) : 0) : (Number.isFinite(r.likesCount) ? Number(r.likesCount) : 0),
+            };
+            return acc;
+        }, {});
+    });
 
     useEffect(() => {
         if (!likedStorageKey) return;
@@ -505,8 +532,31 @@ export default function SeriesDetailsClient({
 
                 const payload = await res.json().catch(() => ({})) as { message?: string };
                 if (!res.ok) {
-                    if (res.status === 401) { setIsLoginPromptOpen(true); }
-                    throw new Error(typeof payload.message === "string" ? payload.message : `Unable to ${isCurrentlyLiked ? "dislike" : "like"}.`);
+                    if (res.status === 401) {
+                        setIsLoginPromptOpen(true);
+                    }
+
+                    const normalizedMessage = typeof payload.message === "string" ? payload.message : "";
+                    const alreadyLiked = normalizedMessage.toLowerCase().includes("already liked");
+                    const alreadyDisliked = normalizedMessage.toLowerCase().includes("already disliked");
+
+                    if (alreadyLiked && !isCurrentlyLiked) {
+                        setReviewLikeStateById((prev) => ({
+                            ...prev,
+                            [reviewId]: { liked: true, likesCount: Math.max(1, cur.likesCount) },
+                        }));
+                        return;
+                    }
+
+                    if (alreadyDisliked && isCurrentlyLiked) {
+                        setReviewLikeStateById((prev) => ({
+                            ...prev,
+                            [reviewId]: { liked: false, likesCount: Math.max(0, cur.likesCount - 1) },
+                        }));
+                        return;
+                    }
+
+                    throw new Error(normalizedMessage || `Unable to ${isCurrentlyLiked ? "dislike" : "like"}.`);
                 }
             } catch (error) {
                 const msg = error instanceof Error ? error.message : `Unable to ${isCurrentlyLiked ? "dislike" : "like"}.`;
@@ -1193,7 +1243,7 @@ export default function SeriesDetailsClient({
                                                     reviewLikeStateById[review.id]?.liked && "fill-emerald-600 text-emerald-600"
                                                 )}
                                             />
-                                            {reviewLikeStateById[review.id]?.liked ? "Dislike" : "Like"}
+                                            {reviewLikeStateById[review.id]?.liked ? "Liked" : "Like"}
                                             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700">
                                                 {reviewLikeStateById[review.id]?.likesCount ?? 0}
                                             </span>

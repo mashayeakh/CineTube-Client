@@ -114,6 +114,7 @@ async function createSeriesAction(formData: FormData) {
     const poster = formData.get("poster");
     const releaseYear = Number(formData.get("releaseYear") ?? 0);
     const director = String(formData.get("director") ?? "").trim();
+    const streamingLink = String(formData.get("streamingLink") ?? "").trim();
     const castInput = String(formData.get("cast") ?? "").trim();
     const priceType = String(formData.get("priceType") ?? "PREMIUM").trim();
     const ageGroup = String(formData.get("ageGroup") ?? "AGE_13_PLUS").trim();
@@ -177,6 +178,9 @@ async function createSeriesAction(formData: FormData) {
     payload.append("priceType", priceType);
     payload.append("ageGroup", ageGroup);
     payload.append("userId", userId);
+    if (streamingLink) {
+        payload.append("streamingLink", streamingLink);
+    }
 
     for (const item of cast) {
         payload.append("cast", item);
@@ -308,6 +312,7 @@ export default async function AdminCreateSeriesPage({
                                     <div className="grid gap-3 md:grid-cols-3">
                                         <input name="director" required placeholder="Director" className="h-10 rounded-lg border border-slate-200 px-3 text-sm" />
                                         <input name="releaseYear" required type="number" placeholder="Release year" className="h-10 rounded-lg border border-slate-200 px-3 text-sm" />
+                                        <input name="streamingLink" type="url" placeholder="streaming link" className="h-10 rounded-lg border border-slate-200 px-3 text-sm" />
                                     </div>
 
                                     <input

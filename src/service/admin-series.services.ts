@@ -30,6 +30,7 @@ export type SeriesPayload = {
     poster: string;
     releaseYear: number;
     director: string;
+    streamingLink?: string;
     cast: string[];
     genres: string[];
     platforms: string[];

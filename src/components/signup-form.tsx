@@ -56,9 +56,9 @@ export function SignupForm({
                             </Field>
                             <Field>
                                 <Button type="submit">Create account</Button>
-                                <Button variant="outline" type="button">
+                                {/* <Button variant="outline" type="button">
                                     Continue with Google
-                                </Button>
+                                </Button> */}
                                 <FieldDescription className="text-center">
                                     Already have an account? <Link href="/login">Login</Link>
                                 </FieldDescription>
