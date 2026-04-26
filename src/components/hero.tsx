@@ -52,6 +52,12 @@ const Hero = ({
           >
             Explore Series
           </Link>
+          <Link
+            href="/subscription"
+            className="inline-flex h-12 items-center gap-2 rounded-full bg-slate-100/95 px-7 text-sm font-semibold text-slate-900 transition-all hover:bg-slate-200"
+          >
+            Upgrade
+          </Link>
         </div>
 
         <div className="mx-auto mt-14 grid w-fit grid-cols-3 gap-3 rounded-2xl border border-white/15 bg-white/5 p-3 backdrop-blur">

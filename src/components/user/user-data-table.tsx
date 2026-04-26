@@ -14,12 +14,12 @@ export function UserDataTable({ headers, rows, emptyMessage = "No records found.
     return (
         <div className="overflow-x-auto">
             <table className="w-full text-sm">
-                <thead>
-                    <tr className="border-b border-slate-200">
+                <thead className="bg-slate-50 text-slate-600">
+                    <tr>
                         {headers.map((header) => (
                             <th
                                 key={header}
-                                className="py-2 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500"
+                                className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider"
                             >
                                 {header}
                             </th>
@@ -28,9 +28,12 @@ export function UserDataTable({ headers, rows, emptyMessage = "No records found.
                 </thead>
                 <tbody>
                     {rows.map((row, rowIndex) => (
-                        <tr key={rowIndex} className="border-b border-slate-100 hover:bg-slate-50">
+                        <tr key={rowIndex} className="border-t border-slate-200 hover:bg-slate-50">
                             {row.map((cell, cellIndex) => (
-                                <td key={cellIndex} className="py-2.5 pr-4 text-slate-700">
+                                <td
+                                    key={cellIndex}
+                                    className={`px-4 py-4 text-slate-700 ${cellIndex === 0 ? "font-medium text-slate-900" : ""}`}
+                                >
                                     {cell}
                                 </td>
                             ))}

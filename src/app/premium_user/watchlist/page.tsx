@@ -46,9 +46,20 @@ export default async function PremiumWatchlistPage() {
             : "—";
 
         const year = parseString(findValue(movieObject ?? item, ["releaseYear", "year"]));
+        const streamingLink = parseString(findValue(movieObject ?? item, ["streamingLink", "streamingUrl"]));
+        const watchCell = streamingLink ? (
+            <a
+                href={streamingLink}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-sky-600 transition hover:border-slate-300 hover:bg-slate-100 hover:text-sky-700"
+            >
+                Watch
+            </a>
+        ) : "—";
         const addedAt = formatDate(findValue(item, ["addedAt", "createdAt", "date"]));
 
-        return [title || "—", genre || "—", year || "—", addedAt];
+        return [title || "—", genre || "—", year || "—", watchCell, addedAt];
     });
 
     // ── series items ──────────────────────────────────────────────────────────
@@ -87,7 +98,7 @@ export default async function PremiumWatchlistPage() {
                 </div>
 
                 <UserDataTable
-                    headers={["Title", "Genre", "Year", "Added"]}
+                    headers={["Title", "Genre", "Year", "Watch", "Added"]}
                     rows={allRows}
                     emptyMessage="No watchlist items found."
                 />

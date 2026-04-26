@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Check, Loader2 } from "lucide-react"
 import { createCheckoutSession } from "../_actions/paymentActions"
@@ -12,6 +13,7 @@ type PricingCardsProps = {
     hasActiveSubscription?: boolean
     pendingPlan?: Plan | null
     hasPendingSubscription?: boolean
+    isLoggedIn?: boolean
 }
 
 export function PricingCards({
@@ -20,14 +22,21 @@ export function PricingCards({
     hasActiveSubscription = false,
     pendingPlan = null,
     hasPendingSubscription = false,
+    isLoggedIn = true,
 }: PricingCardsProps) {
     const [loading, setLoading] = useState<Plan | null>(null)
     const [error, setError] = useState<string | null>(null)
+    const router = useRouter()
 
     const handlePurchase = async (plan: Plan) => {
         setError(null)
-        setLoading(plan)
 
+        if (!isLoggedIn) {
+            router.push(`/login?redirect=/subscription`)
+            return
+        }
+
+        setLoading(plan)
         const result = await createCheckoutSession(plan)
 
         if (!result.success) {
@@ -71,10 +80,12 @@ export function PricingCards({
                     </ul>
                     <button
                         onClick={() => handlePurchase("MONTHLY")}
-                        disabled={loading !== null || hasActiveSubscription || hasPendingSubscription}
+                        disabled={loading !== null || (isLoggedIn && (hasActiveSubscription || hasPendingSubscription))}
                         className="mt-auto flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-50 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 disabled:opacity-60"
                     >
-                        {loading === "MONTHLY" ? (
+                        {!isLoggedIn ? (
+                            "Login to purchase"
+                        ) : loading === "MONTHLY" ? (
                             <><Loader2 className="size-4 animate-spin" /> Redirecting…</>
                         ) : activePlan === "MONTHLY" ? (
                             "You are using this plan"
@@ -121,10 +132,12 @@ export function PricingCards({
                     </ul>
                     <button
                         onClick={() => handlePurchase("YEARLY")}
-                        disabled={loading !== null || hasActiveSubscription || hasPendingSubscription}
+                        disabled={loading !== null || (isLoggedIn && (hasActiveSubscription || hasPendingSubscription))}
                         className="mt-auto flex w-full items-center justify-center gap-2 rounded-lg bg-white py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-100 disabled:opacity-60"
                     >
-                        {loading === "YEARLY" ? (
+                        {!isLoggedIn ? (
+                            "Login to purchase"
+                        ) : loading === "YEARLY" ? (
                             <><Loader2 className="size-4 animate-spin" /> Redirecting…</>
                         ) : activePlan === "YEARLY" ? (
                             "You are using this plan"
@@ -139,6 +152,16 @@ export function PricingCards({
                         )}
                     </button>
                 </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                <p className="font-semibold text-slate-900">Premium membership includes:</p>
+                <ul className="mt-3 list-disc space-y-2 pl-5">
+                    <li>Unlock premium watchlist features and direct movie/series streaming links.</li>
+                    <li>Submit movie and series contribution requests for review.</li>
+                    <li>View active subscription details, plan status, and expiration info.</li>
+                    <li>Get unlimited movie access, priority support, and early feature access.</li>
+                </ul>
             </div>
 
             {error && <p className="text-sm text-red-600">{error}</p>}
