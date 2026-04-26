@@ -1,5 +1,5 @@
 import HeroSection from '@/components/ui/modules/home/heroSection'
-import JoinSection from '@/components/ui/modules/home/joinSection'
+// import JoinSection from '@/components/ui/modules/home/joinSection'
 import LeaderboardSection from '@/components/ui/modules/home/leaderboardSection'
 import PopularSection from '@/components/ui/modules/home/popularSection'
 import RecommendFeedSection from '@/components/ui/modules/home/recommendFeedSection'
@@ -35,7 +35,7 @@ export default async function HomePage() {
         <PopularSection />
         <RecommendFeedSection />
         <LeaderboardSection />
-        <JoinSection />
+        {/* <JoinSection /> */}
       </HydrationBoundary>
     </div>
   )

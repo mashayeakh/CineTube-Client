@@ -1,36 +1,150 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CineTube (Client)
 
-## Getting Started
+A feature-rich frontend for a movie and TV streaming community platform built with Next.js, React, TypeScript, Tailwind CSS, and React Query.
 
-First, run the development server:
+## Overview
+
+CineTube is a multi-role frontend application designed for:
+
+- Public visitors: discover trending movies, popular collections, TV series, and leaderboards.
+- Authenticated users: browse content, manage subscriptions, view profiles, and save watchlists.
+- Premium users: access subscription-specific pages, watch history, reviews, and contributions.
+- Admin users: manage movies, series, categories, users, subscriptions, and bookings.
+
+The project uses server actions, client-side React Query hydration, and a shared Axios HTTP client to interact with an external backend API.
+
+## Key Features
+
+- Next.js 16 app router
+- React 19 + TypeScript
+- Tailwind CSS v4 and shadcn-style component directories
+- MUI charts (`@mui/x-charts`) for analytics and dashboards
+- Global theme switching with `next-themes`
+- Axios-based API layer with cookie and bearer token forwarding
+- Remote image loading from Cloudinary via Next.js `remotePatterns`
+- Prefetch + hydration of movie data for the home page
+
+## Supported Routes
+
+### Public routes
+
+- `/` — main landing page
+- `/leaderboard` — leaderboard pages
+- `/movie/*` — movie detail pages
+- `/movies` — movie catalog
+- `/popular` — popular items
+- `/series` — TV series pages
+- `/tv` — TV listing pages
+- `/signup` — sign-up page
+- `/subscription` — subscription details
+- `/verify-email` — email verification flow
+
+### Auth and user routes
+
+- `/user` — authenticated user dashboard and profile
+- `/premium_user` — premium user experience pages
+- `/payment/success` and `/payment/cancel` — payment callbacks
+
+### Admin routes
+
+- `/admin` — admin dashboard
+- `/admin/movie-management` — manage movies
+- `/admin/series-management` — manage series
+- `/admin/category-management` — manage categories
+- `/admin/user-management` — manage users
+- `/admin/subscription-management` — manage subscriptions
+- `/admin/view-bookings` — booking overview
+
+## Project Structure
+
+- `src/app/` — Next.js app router pages, layouts, and route groups
+- `src/components/` — shared UI components and module sections
+- `src/lib/` — utilities, API helpers, auth helpers, and token utilities
+- `src/providers/` — React Query and theme provider wrappers
+- `src/service/` — feature-specific service wrappers and API wrappers
+- `src/types/` — shared TypeScript API and domain types
+- `src/zod/` — request validation schemas
+
+## Environment Variables
+
+The client requires one main environment variable to connect to the backend API:
+
+- `NEXT_PUBLIC_API_BASE_URL` or `NEXT_PUBLIC_BACKEND_URL` or `NEXT_PUBLIC_API_URL`
+
+Example:
+
+```bash
+NEXT_PUBLIC_API_BASE_URL=https://api.example.com
+```
+
+> `src/lib/axios/httpClient.ts` resolves the backend base URL and forwards cookies and bearer tokens with requests.
+
+## Setup
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the local development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open the app in your browser:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Build and Production
 
-## Learn More
+Build the application:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run build
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Start the production server:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm start
+```
 
-## Deploy on Vercel
+## Linting
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Run ESLint checks:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run lint
+```
+
+## Backend Integration Notes
+
+- `src/app/(public)/public/_actions.ts` fetches movies with `httpClient.get('/movies')`.
+- `src/lib/axios/httpClient.ts` builds requests from the configured API base URL and attaches stored cookies and `Authorization` headers.
+- `next.config.ts` rewrites `/api/auth/:path*` to the configured backend URL, enabling auth route forwarding.
+- Remote image loading is configured for Cloudinary domains.
+
+## Conventions
+
+- The project uses the App Router with route groups such as `(public)` and `(dashboard)`.
+- `QueryProviders` wraps the app to provide React Query and theme support.
+- Components follow a modular pattern under `src/components/ui/modules/`.
+
+## Notes
+
+- There is no `.env.example` file included in this repo, so create your own local environment config before running the app.
+- Ensure the backend API is reachable and supports the same route contract expected by the client.
+
+## Recommended Next Steps
+
+1. Add a local `.env` file with the backend URL.
+2. Confirm backend auth and movie endpoints match the frontend expectations.
+3. Use the admin and premium route groups to test role-based navigation.
+
+---
+
+If you want to improve this README further, we can add specific backend endpoint examples and user flow diagrams.
