@@ -139,12 +139,5 @@ npm run lint
 - There is no `.env.example` file included in this repo, so create your own local environment config before running the app.
 - Ensure the backend API is reachable and supports the same route contract expected by the client.
 
-## Recommended Next Steps
-
-1. Add a local `.env` file with the backend URL.
-2. Confirm backend auth and movie endpoints match the frontend expectations.
-3. Use the admin and premium route groups to test role-based navigation.
-
 ---
 
-If you want to improve this README further, we can add specific backend endpoint examples and user flow diagrams.
