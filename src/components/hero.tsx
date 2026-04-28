@@ -16,7 +16,7 @@ const Hero = ({
   return (
     <section
       className={cn(
-        "relative overflow-hidden py-24 lg:py-32",
+        "relative overflow-hidden py-20 lg:py-24",
         "bg-[radial-gradient(circle_at_top,#16375E_0%,#0e223b_42%,#090f1d_100%)]",
         className
       )}
@@ -27,7 +27,7 @@ const Hero = ({
 
       <div className="container relative text-center">
         <div className="mx-auto mb-8 inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-slate-100 backdrop-blur-sm">
-          <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-green-400" />
+          <span className="mr-2 inline-block h-1 w-1.5 rounded-full bg-green-400" />
           Now Streaming: Discover, rate, and review in one place
         </div>
 
@@ -39,7 +39,7 @@ const Hero = ({
         </div>
 
         {/* CTAs */}
-        <div className="mx-auto mt-10 flex flex-wrap items-center justify-center gap-4">
+        <div className="mx-auto mt-8 flex flex-wrap items-center justify-center gap-4">
           <Link
             href="/movies/all-movies"
             className="inline-flex h-12 items-center gap-2 rounded-full bg-white px-7 text-sm font-bold text-slate-900 shadow-lg transition-all hover:bg-white/90"
@@ -60,7 +60,7 @@ const Hero = ({
           </Link>
         </div>
 
-        <div className="mx-auto mt-14 grid w-fit grid-cols-3 gap-3 rounded-2xl border border-white/15 bg-white/5 p-3 backdrop-blur">
+        <div className="mx-auto mt-10 grid w-fit grid-cols-3 gap-3 rounded-2xl border border-white/15 bg-white/5 p-3 backdrop-blur">
           <div className="rounded-xl bg-black/20 px-6 py-4">
             <p className="text-xl font-bold text-white">10k+</p>
             <p className="text-xs text-slate-400">Reviews</p>
