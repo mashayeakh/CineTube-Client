@@ -90,7 +90,7 @@ function PodiumCard({
                     <AvatarImage src={user.image ?? undefined} alt={user.name} />
                     <AvatarFallback className={cn(
                         "text-lg font-bold",
-                        emphasized ? "bg-gradient-to-br from-amber-100 to-amber-200 text-amber-800" : "bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700"
+                        emphasized ? "bg-linear-to-br from-amber-100 to-amber-200 text-amber-800" : "bg-linear-to-br from-slate-100 to-slate-200 text-slate-700"
                     )}>
                         {getInitials(user.name)}
                     </AvatarFallback>

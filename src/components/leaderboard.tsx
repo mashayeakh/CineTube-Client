@@ -102,87 +102,89 @@ const Leaderboard = ({
 
   return (
     <section className={cn("w-full px-8", className)}>
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-2xl bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              {title}
-            </CardTitle>
-            <CardDescription>{description}</CardDescription>
-          </div>
-          {showRankIcons && (
-            <div className="flex items-center gap-1 px-3 py-1 bg-primary/10 rounded-full">
-              <Trophy className="size-4 text-yellow-500" />
-              <span className="text-sm font-medium">Top 7</span>
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-2xl bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                {title}
+              </CardTitle>
+              <CardDescription>{description}</CardDescription>
             </div>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        {items.map((item, index) => (
-          <div key={index} className="space-y-2 group">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {/* Rank Indicator */}
-                <div className="w-8 flex justify-center">
-                  {getRankIcon(index)}
-                </div>
-
-                {/* Avatar and Name */}
+            {showRankIcons && (
+              <div className="flex items-center gap-1 px-3 py-1 bg-primary/10 rounded-full">
+                <Trophy className="size-4 text-yellow-500" />
+                <span className="text-sm font-medium">Top 7</span>
+              </div>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {items.map((item, index) => (
+            <div key={index} className="space-y-2 group">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Avatar className="size-10 border-2 border-primary/20 group-hover:border-primary/50 transition-colors">
-                    <AvatarImage src={item.avatar} alt={item.name} />
-                    <AvatarFallback className="bg-primary/10">
-                      {item.name.split(' ').map(n => n[0]).join('')}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{item.name}</span>
-                      {index === 0 && (
-                        <span className="px-2 py-0.5 bg-yellow-500/10 text-yellow-500 text-xs font-medium rounded-full">
-                          #1
-                        </span>
+                  {/* Rank Indicator */}
+                  <div className="w-8 flex justify-center">
+                    {getRankIcon(index)}
+                  </div>
+
+                  {/* Avatar and Name */}
+                  <div className="flex items-center gap-3">
+                    <Avatar className="size-10 border-2 border-primary/20 group-hover:border-primary/50 transition-colors">
+                      <AvatarImage src={item.avatar} alt={item.name} />
+                      <AvatarFallback className="bg-primary/10">
+                        {item.name.split(' ').map(n => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{item.name}</span>
+                        {index === 0 && (
+                          <span className="px-2 py-0.5 bg-yellow-500/10 text-yellow-500 text-xs font-medium rounded-full">
+                            #1
+                          </span>
+                        )}
+                      </div>
+                      {item.username && (
+                        <p className="text-xs text-muted-foreground">{item.username}</p>
                       )}
                     </div>
-                    {item.username && (
-                      <p className="text-xs text-muted-foreground">{item.username}</p>
-                    )}
                   </div>
+                </div>
+
+                {/* Value */}
+                <div className="text-right">
+                  <span className="font-bold text-lg">
+                    {valuePrefix}{item.value.toLocaleString()}{valueSuffix}
+                  </span>
+                  {index === 0 && (
+                    <p className="text-xs text-green-500">+12% vs last week</p>
+                  )}
                 </div>
               </div>
 
-              {/* Value */}
-              <div className="text-right">
-                <span className="font-bold text-lg">
-                  {valuePrefix}{item.value.toLocaleString()}{valueSuffix}
-                </span>
-                {index === 0 && (
-                  <p className="text-xs text-green-500">+12% vs last week</p>
-                )}
+              {/* Progress Bar */}
+              <div className="relative pl-11">
+                <Progress
+                  value={(item.value / maxValue) * 100}
+                  className={cn(
+                    "h-2.5 transition-all",
+                    index === 0 ? "bg-primary/20" : "bg-muted"
+                  )}
+                />
               </div>
             </div>
+          ))}
 
-            {/* Progress Bar */}
-            <div className="relative pl-11">
-              <Progress
-                value={(item.value / maxValue) * 100}
-                className={cn(
-                  "h-2.5 transition-all",
-                  index === 0 ? "bg-primary/20" : "bg-muted"
-                )}
-              />
-            </div>
-          </div>
-        ))}
-
-        {/* Footer */}
-        {/* <div className="pt-4 text-center border-t border-border/50">
+          {/* Footer */}
+          {/* <div className="pt-4 text-center border-t border-border/50">
           <p className="text-sm text-muted-foreground">
             Updated daily • Based on contributions
           </p>
         </div> */}
-      </CardContent>
+        </CardContent>
+      </Card>
     </section>
   );
 };

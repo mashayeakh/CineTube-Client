@@ -1,6 +1,6 @@
 "use client";
 
-import { Clapperboard, Film, Home, LogOut, Menu, Search, Settings, Star, Trophy, Tv, X } from "lucide-react";
+import { Clapperboard, Film, Home, LogOut, Menu, MessageCircle, Search, Settings, Star, Trophy, Tv, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
@@ -130,19 +130,10 @@ const Navbar = ({ className }: { className?: string }) => {
   ];
 
   return (
-    <header
-      className={cn(
-        "sticky top-0 z-50 w-full border-b backdrop-blur-xl backdrop-saturate-150 transition-colors duration-300",
-        // Light mode: white glass  |  Dark mode: deep navy
-        "border-black/[0.06] bg-white/85",
-        "dark:border-white/[0.06] dark:bg-[rgba(6,6,20,0.92)]",
-        className
-      )}
-    >
-      {/* Search overlay */}
+    <header className={cn("sticky top-0 z-50 w-full border-b backdrop-blur-xl border-slate-200/80 bg-white/80 dark:border-white/[0.06] dark:bg-[rgba(6,6,20,0.85)]", className)}>
       {searchOpen && (
-        <div className="absolute inset-0 z-10 flex items-center gap-3 px-4 sm:px-6 lg:px-8 bg-white/96 dark:bg-[rgba(6,6,20,0.97)]">
-          <Search className="size-4 shrink-0 text-indigo-500 dark:text-indigo-400" />
+        <div className="absolute inset-x-0 top-0 z-10 flex h-14 items-center gap-3 px-4">
+          <Search className="size-4 shrink-0 text-slate-400" />
           <input
             autoFocus
             type="text"
@@ -167,7 +158,6 @@ const Navbar = ({ className }: { className?: string }) => {
         </div>
       )}
 
-      {/* Premium modal */}
       {isPremiumPromptOpen && (
         <div
           className="fixed inset-0 z-70 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
@@ -210,7 +200,6 @@ const Navbar = ({ className }: { className?: string }) => {
               <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 shadow-[0_0_18px_rgba(99,102,241,0.45)]">
                 <Clapperboard className="size-4 text-white" />
               </span>
-              {/* Light: indigo text  |  Dark: white→indigo gradient */}
               <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-500 bg-clip-text text-lg font-black tracking-tight text-transparent dark:from-white dark:via-indigo-200 dark:to-violet-300">
                 CineTube
               </span>
@@ -272,12 +261,6 @@ const Navbar = ({ className }: { className?: string }) => {
                   <DropdownMenuItem onClick={() => router.push("/user/dashboard")} className="cursor-pointer text-slate-600 focus:bg-indigo-50 focus:text-indigo-700 dark:text-slate-300 dark:focus:bg-indigo-500/15 dark:focus:text-indigo-200">
                     <Home className="mr-2 h-4 w-4 text-indigo-500 dark:text-indigo-400" />Dashboard
                   </DropdownMenuItem>
-                  {/* <DropdownMenuItem onClick={() => router.push("/change-password")} className="cursor-pointer text-slate-600 focus:bg-indigo-50 focus:text-indigo-700 dark:text-slate-300 dark:focus:bg-indigo-500/15 dark:focus:text-indigo-200">
-                    <Settings className="mr-2 h-4 w-4 text-indigo-500 dark:text-indigo-400" />Settings
-                  </DropdownMenuItem> */}
-                  {/* <DropdownMenuItem className="cursor-pointer text-slate-600 focus:bg-indigo-50 focus:text-indigo-700 dark:text-slate-300 dark:focus:bg-indigo-500/15 dark:focus:text-indigo-200">
-                    Earnings
-                  </DropdownMenuItem> */}
                   <DropdownMenuSeparator className="bg-slate-100 dark:bg-white/8" />
                   <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600 dark:text-red-400 dark:focus:bg-red-500/10 dark:focus:text-red-300">
                     <LogOut className="mr-2 h-4 w-4" />Sign out
@@ -401,11 +384,9 @@ const renderMenuItem = (item: MenuItem, pathname: string) => {
         <NavigationMenuTrigger
           className={cn(
             "h-9 rounded-full border bg-transparent px-4 text-sm font-semibold transition-all duration-200",
-            // Light
             "border-transparent text-slate-600",
             "hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700",
             "data-[state=open]:border-indigo-200 data-[state=open]:bg-indigo-50 data-[state=open]:text-indigo-700",
-            // Dark
             "dark:text-slate-400",
             "dark:hover:border-indigo-500/25 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-200",
             "dark:data-[state=open]:border-indigo-500/30 dark:data-[state=open]:bg-indigo-500/12 dark:data-[state=open]:text-indigo-200",
@@ -420,9 +401,7 @@ const renderMenuItem = (item: MenuItem, pathname: string) => {
         <NavigationMenuContent>
           <ul className={cn(
             "grid w-72 gap-1 p-2.5 rounded-xl border shadow-xl",
-            // Light: white panel
             "bg-white border-slate-200 shadow-slate-200/50",
-            // Dark: navy panel
             "dark:bg-[#0d0d26] dark:border-white/[0.07] dark:shadow-[0_8px_40px_rgba(0,0,0,0.6)]"
           )}>
             {item.items.map((sub) => (

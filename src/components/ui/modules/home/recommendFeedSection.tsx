@@ -6,6 +6,7 @@ import { Film, LogIn, Sparkles, SlidersHorizontal, X, Clapperboard, Check, Chevr
 import { cn } from "@/lib/utils";
 import { resolveMediaUrl } from "@/lib/media";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
 
 type OptionItem = {
     id: string;
@@ -373,13 +374,13 @@ export default function RecommendFeedSection() {
                         </div>
                         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                             {Array.from({ length: 4 }).map((_, i) => (
-                                <div key={`rec - skeleton - ${i} `} className="overflow-hidden rounded-xl border border-white/10 bg-card/50">
+                                <Card key={`rec-skeleton-${i}`} className="overflow-hidden border border-white/10 bg-card/50 p-0">
                                     <Skeleton className="aspect-[2/3] w-full" />
                                     <div className="space-y-2 p-4">
                                         <Skeleton className="h-4 w-4/5 rounded-full" />
                                         <Skeleton className="h-3 w-1/3 rounded-full" />
                                     </div>
-                                </div>
+                                </Card>
                             ))}
                         </div>
                     </div>
@@ -412,11 +413,11 @@ export default function RecommendFeedSection() {
                             {recommendedMovies.map((movie, index) => (
                                 <Link
                                     key={movie.id}
-                                    href={`/ movie / ${movie.id} `}
+                                    href={`/movie/${movie.id}`}
                                     className="group relative animate-in fade-in slide-in-from-bottom-3 duration-500"
-                                    style={{ animationDelay: `${index * 50} ms` }}
+                                    style={{ animationDelay: `${index * 50}ms` }}
                                 >
-                                    <div className="relative overflow-hidden rounded-xl border border-white/10 bg-card/60 shadow-lg backdrop-blur-sm transition-all duration-300 hover:-translate-y-2 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/10">
+                                    <Card className="relative overflow-hidden border border-white/10 bg-card/60 shadow-lg backdrop-blur-sm transition-all duration-300 hover:-translate-y-2 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/10 p-0">
                                         <div className="relative aspect-[2/3] overflow-hidden">
                                             <img
                                                 src={movie.poster}
@@ -460,7 +461,7 @@ export default function RecommendFeedSection() {
                                                 <Film className="size-5 text-white" />
                                             </div>
                                         </div>
-                                    </div>
+                                    </Card>
                                 </Link>
                             ))}
                         </div>

@@ -4,6 +4,7 @@ import { Funnel_Sans, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/navbar";
 import ConditionalFooter from "@/components/conditional-footer";
+import ChatWidget from "@/components/chat-widget";
 import QueryProviders from "@/providers/queryProvider";
 
 const geistMono = Geist_Mono({
@@ -42,6 +43,7 @@ export default function RootLayout({
           <main className="flex-1 flex flex-col">
             {children}
           </main>
+          <ChatWidget />
         </QueryProviders>
         <ConditionalFooter />
       </body>

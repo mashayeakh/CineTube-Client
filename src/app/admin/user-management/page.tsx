@@ -372,8 +372,8 @@ export default async function AdminUserManagementPage({
                                         <option value="ADMIN">Admin</option>
                                         <option value="USER">User</option>
                                         <option value="PREMIUM_USER">Premium User</option>
-                                        <option value="STUDENT">Student</option>
-                                        <option value="TUTOR">Tutor</option>
+                                        {/* <option value="STUDENT">Student</option>
+                                        <option value="TUTOR">Tutor</option> */}
                                     </select>
 
                                     <select name="status" defaultValue={statusFilter} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm">
@@ -461,8 +461,8 @@ export default async function AdminUserManagementPage({
                                                                         <option value="ADMIN">ADMIN</option>
                                                                         <option value="USER">USER</option>
                                                                         <option value="PREMIUM_USER">PREMIUM_USER</option>
-                                                                        <option value="STUDENT">STUDENT</option>
-                                                                        <option value="TUTOR">TUTOR</option>
+                                                                        {/* <option value="STUDENT">STUDENT</option> */}
+                                                                        {/* <option value="TUTOR">TUTOR</option> */}
                                                                     </select>
                                                                     <PendingSubmitButton
                                                                         pendingText="Saving..."
