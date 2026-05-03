@@ -106,7 +106,7 @@ export function LoginForm({
                       id={field.name}
                       name={field.name}
                       type="email"
-                      placeholder="m@example.com"
+                      placeholder="example@example.com"
                       value={field.state.value}
                       onBlur={field.handleBlur}
                       onChange={(e) => field.handleChange(e.target.value)}

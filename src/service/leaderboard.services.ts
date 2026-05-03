@@ -34,6 +34,13 @@ export interface LeaderboardResponse {
     message: string;
 }
 
+export interface Genre {
+    id: string;
+    name: string;
+    slug?: string;
+    isActive?: boolean;
+}
+
 export async function getLeaderboard(): Promise<LeaderboardResponse> {
     const response = await fetch("/api/leaderboard", {
         method: "GET",
@@ -48,6 +55,21 @@ export async function getLeaderboard(): Promise<LeaderboardResponse> {
 
     return {
         rows: payload.result ?? payload.data ?? [],
-        message: payload.message ?? "Leaderboard fetched successfully",
+        message: payload.message ?? "Leaderboard fetched successfully.",
     };
+}
+
+export async function getGenres(): Promise<Genre[]> {
+    const response = await fetch("/api/genres", {
+        method: "GET",
+        cache: "no-store",
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+        throw new Error(payload.message ?? "Failed to fetch genres.");
+    }
+
+    return payload.result ?? payload.data ?? [];
 }

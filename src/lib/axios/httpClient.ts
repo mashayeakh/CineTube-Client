@@ -8,7 +8,15 @@ function resolveApiBaseUrl() {
         process.env.NEXT_PUBLIC_BACKEND_URL ||
         process.env.NEXT_PUBLIC_API_URL;
 
-    return raw?.replace(/\/$/, '') || '';
+    if (!raw) {
+        return "";
+    }
+
+    return raw.replace(/\/+$|\/$/, "").replace(/\/$/, "") + "/";
+}
+
+function normalizeEndpoint(endpoint: string) {
+    return endpoint.replace(/^\/+/, "");
 }
 
 const axiosInstance = async () => {
@@ -104,7 +112,7 @@ const shouldLogHttpError = (error: unknown) => {
 const httpGet = async <TData>(endpoint: string, options?: ApiRequestOptions): Promise<ApiResponse<TData>> => {
     try {
         const instance = await axiosInstance();
-        const response = await instance.get<ApiResponse<TData>>(endpoint, {
+        const response = await instance.get<ApiResponse<TData>>(normalizeEndpoint(endpoint), {
             params: options?.params,
             headers: options?.headers,
         });
@@ -114,13 +122,13 @@ const httpGet = async <TData>(endpoint: string, options?: ApiRequestOptions): Pr
             console.error(`GET request to ${endpoint} failed:`, error);
         }
         throw error;
-}
     }
+}
 
 const httpPost = async <TData>(endpoint: string, data: unknown, options?: ApiRequestOptions): Promise<ApiResponse<TData>> => {
     try {
         const instance = await axiosInstance();
-        const response = await instance.post<ApiResponse<TData>>(endpoint, data, {
+        const response = await instance.post<ApiResponse<TData>>(normalizeEndpoint(endpoint), data, {
             params: options?.params,
             headers: getRequestHeaders(data, options?.headers),
         });
@@ -136,7 +144,7 @@ const httpPost = async <TData>(endpoint: string, data: unknown, options?: ApiReq
 const httpPut = async <TData>(endpoint: string, data: unknown, options?: ApiRequestOptions): Promise<ApiResponse<TData>> => {
     try {
         const instance = await axiosInstance();
-        const response = await instance.put<ApiResponse<TData>>(endpoint, data, {
+        const response = await instance.put<ApiResponse<TData>>(normalizeEndpoint(endpoint), data, {
             params: options?.params,
             headers: getRequestHeaders(data, options?.headers),
         });
@@ -152,7 +160,7 @@ const httpPut = async <TData>(endpoint: string, data: unknown, options?: ApiRequ
 const httpPatch = async <TData>(endpoint: string, data: unknown, options?: ApiRequestOptions): Promise<ApiResponse<TData>> => {
     try {
         const instance = await axiosInstance();
-        const response = await instance.patch<ApiResponse<TData>>(endpoint, data, {
+        const response = await instance.patch<ApiResponse<TData>>(normalizeEndpoint(endpoint), data, {
             params: options?.params,
             headers: getRequestHeaders(data, options?.headers),
         });
@@ -169,7 +177,7 @@ const httpPatch = async <TData>(endpoint: string, data: unknown, options?: ApiRe
 const httpDelete = async <TData>(endpoint: string, options?: ApiRequestOptions): Promise<ApiResponse<TData>> => {
     try {
         const instance = await axiosInstance();
-        const response = await instance.delete<ApiResponse<TData>>(endpoint, {
+        const response = await instance.delete<ApiResponse<TData>>(normalizeEndpoint(endpoint), {
             params: options?.params,
             headers: options?.headers,
         });

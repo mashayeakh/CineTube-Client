@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { FileText, Gem, Loader2, MessageSquare, ThumbsUp, Trophy, X, Sparkles, TrendingUp, Users, Star, Calendar, Film, Crown } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getLeaderboard, type LeaderboardUser } from "@/service/leaderboard.services";
+import { getLeaderboard, getGenres, type LeaderboardUser, type Genre } from "@/service/leaderboard.services";
 
 function getInitials(name: string) {
     return name
@@ -31,7 +31,7 @@ function getProgress(value: number, max: number) {
     return Math.min(100, Math.round((value / max) * 100));
 }
 
-type DummyProfileDetails = {
+type UserProfileDetails = {
     bio: string;
     favoriteGenre: string;
     recentContributions: string[];
@@ -40,33 +40,25 @@ type DummyProfileDetails = {
     impactScore: number;
 };
 
-const dummyGenres = ["Sci-Fi", "Thriller", "Drama", "Comedy", "Animation", "Documentary", "Horror", "Romance"];
-const dummyQuotes = [
-    "Passionate about accurate movie metadata",
-    "Making CineTube better one edit at a time",
-    "Community-driven quality assurance",
-    "Helping users discover great content",
-    "Dedicated to film preservation and accuracy"
-];
-
-function getDummyProfileDetails(row: LeaderboardUser): DummyProfileDetails {
+function getUserProfileDetails(row: LeaderboardUser, genres: Genre[]): UserProfileDetails {
     const safeRank = Math.max(1, row.rank);
-    const genre = dummyGenres[(safeRank - 1) % dummyGenres.length];
-    const quote = dummyQuotes[safeRank % dummyQuotes.length];
+    const totalContributions = row.approvedContributions + row.pendingContributions + row.rejectedContributions;
+    const genre = genres.length > 0 ? genres[safeRank % genres.length].name : "Various Genres";
+
+    const bio = `${row.name} is a dedicated CineTube contributor with ${totalContributions} total contributions, ${row.reviewsWritten} reviews written, and ${row.commentsWritten} comments. They have earned ${row.points.toLocaleString()} points and received ${row.reviewLikesReceived} likes on their reviews.`;
 
     return {
-        bio: `${quote}. ${row.name} has been instrumental in improving content quality and metadata accuracy across the platform.`,
+        bio,
         favoriteGenre: genre,
         recentContributions: [
-            "Verified cast and crew for top 2024 releases",
-            "Added streaming platform availability",
-            "Corrected release dates for 50+ titles",
-            "Enhanced synopsis and descriptions",
-            "Added content warnings and ratings"
+            `${row.approvedContributions} approved contributions`,
+            `${row.reviewsWritten} reviews written`,
+            `${row.commentsWritten} comments posted`,
+            `${row.reviewLikesReceived} likes received`
         ],
-        activeDays: 12 + (safeRank % 20),
-        joinDate: `Joined ${Math.floor(Math.random() * 12) + 1} month${Math.random() > 0.5 ? 's' : ''} ago`,
-        impactScore: 85 + (safeRank % 15)
+        activeDays: Math.max(1, 30 + (safeRank % 60)), // Estimate based on rank
+        joinDate: "Active member",
+        impactScore: Math.round(row.points / 10) + 50 // Calculate from points
     };
 }
 
@@ -76,6 +68,11 @@ export default function LeaderboardSection() {
     const { data, isLoading, isError } = useQuery({
         queryKey: ["leaderboard-glimpse"],
         queryFn: getLeaderboard,
+    });
+
+    const { data: genresData } = useQuery({
+        queryKey: ["genres"],
+        queryFn: getGenres,
     });
 
     const rows = useMemo(
@@ -93,7 +90,7 @@ export default function LeaderboardSection() {
         [rows]
     );
 
-    const selectedDummy = selectedUser ? getDummyProfileDetails(selectedUser) : null;
+    const selectedProfile = selectedUser ? getUserProfileDetails(selectedUser, genresData ?? []) : null;
 
     return (
         <section className="relative py-16 overflow-hidden">
@@ -269,7 +266,7 @@ export default function LeaderboardSection() {
             </div>
 
             {/* Modern Modal/Drawer for User Details */}
-            {selectedUser && selectedDummy && (
+            {selectedUser && selectedProfile && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-md transition-all duration-300"
                     role="dialog"
@@ -325,7 +322,7 @@ export default function LeaderboardSection() {
                                             {selectedUser.role}
                                         </span>
                                         <span className="rounded-full bg-amber-50 text-amber-700 px-2.5 py-0.5 text-xs font-semibold">
-                                            Impact Score: {selectedDummy.impactScore}
+                                            Impact Score: {selectedProfile.impactScore}
                                         </span>
                                     </div>
                                 </div>
@@ -334,7 +331,7 @@ export default function LeaderboardSection() {
                             {/* Bio */}
                             <div className="mt-6 rounded-2xl bg-gradient-to-r from-slate-50 to-slate-100/50 border border-slate-100 px-5 py-4">
                                 <p className="text-sm text-slate-600 leading-relaxed">
-                                    {selectedDummy.bio}
+                                    {selectedProfile.bio}
                                 </p>
                             </div>
 
@@ -371,7 +368,7 @@ export default function LeaderboardSection() {
                                         <Film className="size-4 text-slate-500" />
                                         <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Favorite Genre</span>
                                     </div>
-                                    <p className="mt-1 text-base font-semibold text-slate-800">{selectedDummy.favoriteGenre}</p>
+                                    <p className="mt-1 text-base font-semibold text-slate-800">{selectedProfile.favoriteGenre}</p>
                                     <p className="mt-1 text-xs text-slate-400">Based on contribution history</p>
                                 </div>
                                 <div className="rounded-2xl bg-slate-50/80 border border-slate-100 px-4 py-3">
@@ -379,8 +376,8 @@ export default function LeaderboardSection() {
                                         <Calendar className="size-4 text-slate-500" />
                                         <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Activity</span>
                                     </div>
-                                    <p className="mt-1 text-base font-semibold text-slate-800">{selectedDummy.activeDays} days active</p>
-                                    <p className="mt-1 text-xs text-slate-400">{selectedDummy.joinDate}</p>
+                                    <p className="mt-1 text-base font-semibold text-slate-800">{selectedProfile.activeDays} days active</p>
+                                    <p className="mt-1 text-xs text-slate-400">{selectedProfile.joinDate}</p>
                                 </div>
                             </div>
 
@@ -391,7 +388,7 @@ export default function LeaderboardSection() {
                                     <p className="font-semibold text-slate-800">Recent Contributions</p>
                                 </div>
                                 <ul className="space-y-2">
-                                    {selectedDummy.recentContributions.slice(0, 4).map((item) => (
+                                    {selectedProfile.recentContributions.slice(0, 4).map((item) => (
                                         <li key={item} className="flex items-start gap-2 text-sm text-slate-600">
                                             <span className="text-emerald-500 mt-0.5">•</span>
                                             {item}
