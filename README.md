@@ -99,6 +99,44 @@ Open the app in your browser:
 http://localhost:3000
 ```
 
+## Production Deployment
+
+### Using Docker
+
+1. Build the Docker image:
+
+```bash
+docker build -t cinetube-client .
+```
+
+2. Run the container:
+
+```bash
+docker run -p 3000:3000 -e NEXT_PUBLIC_API_BASE_URL=https://your-backend-api.com/api/v1 cinetube-client
+```
+
+### Environment Variables
+
+Copy `.env.example` to `.env.local` and set your production values:
+
+```bash
+cp .env.example .env.local
+```
+
+Required variables:
+
+- `NEXT_PUBLIC_API_BASE_URL`: Your backend API URL
+- `NEXT_PUBLIC_APP_URL`: Your frontend domain URL
+
+### Health Check
+
+The application includes a health check endpoint at `/api/health` for monitoring.
+
+### Build Commands
+
+- `npm run build`: Build the application for production
+- `npm run start`: Start the production server
+
 ## Build and Production
 
 Build the application:
@@ -140,4 +178,3 @@ npm run lint
 - Ensure the backend API is reachable and supports the same route contract expected by the client.
 
 ---
-

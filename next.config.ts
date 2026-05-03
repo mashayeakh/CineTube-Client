@@ -16,6 +16,12 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "10mb",
     },
   },
+  // Enable standalone output for Docker deployments
+  output: 'standalone',
+  // Enable compression for better performance
+  compress: true,
+  // Optimize for production
+  poweredByHeader: false,
   async rewrites() {
     const backendBaseUrl =
       process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_BASE_URL;

@@ -1,19 +1,12 @@
-const genres = [
-    "Action",
-    "Drama",
-    "Thriller",
-    "Sci-Fi",
-    "Romance",
-    "Comedy",
-    "Horror",
-    "Documentary",
-];
+import { getGenres } from "@/app/(public)/public/_actions/genres";
 
-export default function GenreSpotlightSection() {
+export default async function GenreSpotlightSection() {
+    const genres = await getGenres();
+
     return (
-        <section className="py-16 bg-background text-foreground">
-            <div className="container mx-auto px-4">
-                <div className="mb-10 max-w-3xl">
+        <section className="py-16 bg-background text-foreground overflow-hidden">
+            <div className="container mx-auto px-4 mb-10">
+                <div className="max-w-3xl">
                     <p className="text-sm font-semibold uppercase tracking-[0.32em] text-muted-foreground">
                         Genre Spotlight
                     </p>
@@ -24,14 +17,29 @@ export default function GenreSpotlightSection() {
                         Browse curated genre picks designed to help you find the perfect watch for every moment.
                     </p>
                 </div>
+            </div>
 
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
-                    {genres.map((genre) => (
+            <div className="relative flex w-full overflow-hidden group">
+                <div className="flex w-max min-w-full shrink-0 animate-marquee items-center gap-4 px-2 group-hover:[animation-play-state:paused]">
+                    {genres.map((genre: any) => (
                         <div
-                            key={genre}
-                            className="rounded-3xl border border-border bg-card p-5 text-center transition hover:-translate-y-1 hover:border-muted hover:bg-muted/20"
+                            key={genre._id || genre.id || genre.name}
+                            className="min-w-[200px] shrink-0 rounded-3xl border border-border bg-card p-5 text-center transition hover:-translate-y-1 hover:border-muted hover:bg-muted/20"
                         >
-                            <p className="text-lg font-semibold text-foreground">{genre}</p>
+                            <p className="text-lg font-semibold text-foreground">{genre.name || genre.title}</p>
+                            <p className="mt-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                                curated picks
+                            </p>
+                        </div>
+                    ))}
+                </div>
+                <div className="flex w-max min-w-full shrink-0 animate-marquee items-center gap-4 px-2 group-hover:[animation-play-state:paused]" aria-hidden="true">
+                    {genres.map((genre: any) => (
+                        <div
+                            key={`dup-${genre._id || genre.id || genre.name}`}
+                            className="min-w-[200px] shrink-0 rounded-3xl border border-border bg-card p-5 text-center transition hover:-translate-y-1 hover:border-muted hover:bg-muted/20"
+                        >
+                            <p className="text-lg font-semibold text-foreground">{genre.name || genre.title}</p>
                             <p className="mt-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
                                 curated picks
                             </p>

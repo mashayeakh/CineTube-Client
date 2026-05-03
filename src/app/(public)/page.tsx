@@ -9,6 +9,7 @@ import NewReleasesSection from '@/components/ui/modules/home/newReleasesSection'
 import GenreSpotlightSection from '@/components/ui/modules/home/genreSpotlightSection'
 import LatestReviewsSection from '@/components/ui/modules/home/latestReviewsSection'
 import CommunitySection from '@/components/ui/modules/home/communitySection'
+import ChatWidget from '@/components/chat-widget'
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query'
 import React from 'react'
 import { getMovies } from './public/_actions'
@@ -47,6 +48,7 @@ export default async function HomePage() {
         <CommunitySection />
         {/* <JoinSection /> */}
       </HydrationBoundary>
+      <ChatWidget />
     </div>
   )
 }

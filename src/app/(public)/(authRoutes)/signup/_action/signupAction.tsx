@@ -10,9 +10,18 @@ const extractSignupErrorMessage = (error: any): string => {
         return apiMessage;
     }
 
+    console.log("error", error);
+    console.log("error?.response", error?.response);
+    console.log("error?.response?.data", error?.response?.data);
+    console.log("error?.response?.data?.message", error?.response?.data?.message);
+
     const status = error?.response?.status;
     if (status === 409) {
         return "An account with this email already exists.";
+    }
+
+    if (error?.code === "ECONNABORTED" || error?.message?.includes("timeout")) {
+        return "The server is taking too long to respond. Please try again or check your email.";
     }
 
     return "Unable to create account right now. Please try again.";
