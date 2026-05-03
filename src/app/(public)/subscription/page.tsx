@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import Link from "next/link"
 import { UserDataTable } from "@/components/user/user-data-table"
 import { extractArray, findValue, formatDate, getPrimitiveEntries, parseString } from "@/lib/user-dashboard.utils"

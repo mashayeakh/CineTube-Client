@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { PremiumPageShell } from "@/components/premium/premium-page-shell";
 import { getGenres } from "@/app/(public)/public/_actions/genres";
 import { getStreamingPlatforms } from "@/app/(public)/public/_actions/platforms";
