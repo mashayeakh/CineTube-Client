@@ -1,3 +1,4 @@
+export const maxDuration = 60;
 import { AuthFlipShell } from "@/components/auth-flip-shell"
 
 interface LoginParams {

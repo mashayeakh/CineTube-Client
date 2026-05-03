@@ -45,7 +45,7 @@ const axiosInstance = async () => {
 
     const instance = axios.create({
         baseURL: apiBaseUrl,
-        timeout: 30000,
+        timeout: 60000,
         headers,
     });
 
