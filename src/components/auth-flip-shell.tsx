@@ -17,6 +17,7 @@ import {
     Play,
     ShieldCheck,
     User,
+    Zap,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -33,6 +34,9 @@ type AuthMode = "login" | "signup"
 interface LoginFormProps {
     redirectPath?: string;
 }
+
+const DEMO_EMAIL = "yt@gmail.com"
+const DEMO_PASSWORD = "Yt123456"
 
 export function AuthFlipShell({ initialMode, LoginFormProps = {} }: { initialMode: AuthMode; LoginFormProps?: LoginFormProps }) {
     const router = useRouter()
@@ -77,6 +81,8 @@ export function AuthFlipShell({ initialMode, LoginFormProps = {} }: { initialMod
     })
 
     const [serverError, setServerError] = useState<string | null>(null)
+    const [isDemoLoading, setIsDemoLoading] = useState(false)
+
     const form = useForm({
         defaultValues: {
             email: "",
@@ -111,6 +117,55 @@ export function AuthFlipShell({ initialMode, LoginFormProps = {} }: { initialMod
             }
         },
     })
+
+    const handleDemoLogin = async () => {
+        setIsDemoLoading(true)
+        setServerError(null)
+
+        // Switch to login mode if on signup
+        if (isSignup) {
+            setMode("login")
+            router.replace("/login", { scroll: false })
+        }
+
+        // Pre-fill the form fields visually
+        form.setFieldValue("email", DEMO_EMAIL)
+        form.setFieldValue("password", DEMO_PASSWORD)
+
+        try {
+            const parsedPayload = loginZodSchema.safeParse({
+                email: DEMO_EMAIL,
+                password: DEMO_PASSWORD,
+            })
+
+            if (!parsedPayload.success) {
+                setServerError("Demo credentials are invalid.")
+                setIsDemoLoading(false)
+                return
+            }
+
+            const result = (await mutateAsync(parsedPayload.data)) as any
+
+            if (!result.success) {
+                setServerError(result.message || "Demo login failed")
+                setIsDemoLoading(false)
+                return
+            }
+
+            queryClient.invalidateQueries({ queryKey: ["user"] })
+            const nextPath = result?.result?.redirectTo as string | undefined
+            if (nextPath) {
+                router.push(nextPath)
+                return
+            }
+            router.refresh()
+        } catch (error: any) {
+            console.error("Demo login failed:", error)
+            setServerError("Demo login failed. Please try again.")
+        } finally {
+            setIsDemoLoading(false)
+        }
+    }
 
     const switchMode = (nextMode: AuthMode) => {
         setMode(nextMode)
@@ -167,6 +222,27 @@ export function AuthFlipShell({ initialMode, LoginFormProps = {} }: { initialMod
                                         </p>
                                     </div>
                                 </div>
+
+                                {/* ── Demo login banner (login mode only) ── */}
+                                {!isSignup && (
+                                    <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                                        <div className="min-w-0">
+                                            <p className="text-xs font-semibold text-amber-800">Try the demo account</p>
+                                            <p className="mt-0.5 truncate text-[11px] text-amber-600">
+                                                {DEMO_EMAIL} · ••••••••
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={handleDemoLogin}
+                                            disabled={isDemoLoading || isPending}
+                                            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-amber-400 px-3.5 py-1.5 text-xs font-bold text-amber-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                            <Zap className="size-3.5" />
+                                            {isDemoLoading ? "Logging in…" : "Quick login"}
+                                        </button>
+                                    </div>
+                                )}
 
                                 <form
                                     className="space-y-3"
@@ -339,10 +415,6 @@ export function AuthFlipShell({ initialMode, LoginFormProps = {} }: { initialMod
 
                                     {!isSignup && (
                                         <div className="flex items-center justify-between gap-3 text-sm">
-                                            {/* <label className="flex items-center gap-2 text-slate-500">
-                                                <input type="checkbox" className="size-4 rounded border-slate-300" />
-                                                Keep me signed in
-                                            </label> */}
                                             <Link href="/forgetPassword" className="font-medium text-indigo-600 hover:text-indigo-500">
                                                 Forgot password?
                                             </Link>
@@ -380,7 +452,7 @@ export function AuthFlipShell({ initialMode, LoginFormProps = {} }: { initialMod
                                                 {([canSubmit, isSubmitting]) => (
                                                     <Button
                                                         type="submit"
-                                                        disabled={!canSubmit || isSubmitting || isPending}
+                                                        disabled={!canSubmit || isSubmitting || isPending || isDemoLoading}
                                                         className="h-10 rounded-full bg-linear-to-r from-indigo-600 via-indigo-500 to-blue-500 px-7 text-white shadow-[0_16px_30px_rgba(79,70,229,0.28)] hover:from-indigo-500 hover:via-indigo-500 hover:to-blue-400"
                                                     >
                                                         {isSubmitting || isPending ? "Logging in..." : "Sign In"}
@@ -391,22 +463,6 @@ export function AuthFlipShell({ initialMode, LoginFormProps = {} }: { initialMod
                                                 )}
                                             </form.Subscribe>
                                         )}
-
-                                        {/* <div className="flex items-center gap-2.5 text-sm text-slate-400">
-                                            <span>Or</span>
-                                            <button
-                                                type="button"
-                                                className="inline-flex size-9 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
-                                            >
-                                                f
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="inline-flex size-9 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
-                                            >
-                                                G
-                                            </button>
-                                        </div> */}
                                     </div>
                                 </form>
                             </motion.div>
