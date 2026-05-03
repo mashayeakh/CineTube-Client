@@ -4,6 +4,11 @@ import LeaderboardSection from '@/components/ui/modules/home/leaderboardSection'
 import PopularSection from '@/components/ui/modules/home/popularSection'
 import RecommendFeedSection from '@/components/ui/modules/home/recommendFeedSection'
 import TrendingSection from '@/components/ui/modules/home/trendingSection'
+import TopRatedSection from '@/components/ui/modules/home/topRatedSection'
+import NewReleasesSection from '@/components/ui/modules/home/newReleasesSection'
+import GenreSpotlightSection from '@/components/ui/modules/home/genreSpotlightSection'
+import LatestReviewsSection from '@/components/ui/modules/home/latestReviewsSection'
+import CommunitySection from '@/components/ui/modules/home/communitySection'
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query'
 import React from 'react'
 import { getMovies } from './public/_actions'
@@ -35,6 +40,11 @@ export default async function HomePage() {
         <PopularSection />
         <RecommendFeedSection />
         <LeaderboardSection />
+        <TopRatedSection />
+        <NewReleasesSection />
+        <GenreSpotlightSection />
+        <LatestReviewsSection />
+        <CommunitySection />
         {/* <JoinSection /> */}
       </HydrationBoundary>
     </div>

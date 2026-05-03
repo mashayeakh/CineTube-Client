@@ -100,7 +100,8 @@ function Carousel({
     api.on("select", onSelect)
 
     return () => {
-      api?.off("select", onSelect)
+      api.off("select", onSelect)
+      api.off("reInit", onSelect)
     }
   }, [api, onSelect])
 
@@ -119,10 +120,12 @@ function Carousel({
       }}
     >
       <div
+        tabIndex={0}
         onKeyDownCapture={handleKeyDown}
-        className={cn("relative", className)}
+        className={cn("relative outline-none focus-visible:ring-2 focus-visible:ring-primary/60", className)}
         role="region"
         aria-roledescription="carousel"
+        aria-label="Carousel"
         data-slot="carousel"
         {...props}
       >

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 
 
 
@@ -70,26 +71,28 @@ export default function TrendingSection() {
 
   if (isLoading) {
     return (
-      <section className="bg-linear-to-b from-background to-muted/20 py-8">
+      <section className="py-16 bg-background">
         <div className="container mx-auto px-4">
-          <div className="mb-8 flex items-center justify-between">
-            <div className="space-y-3">
-              <Skeleton className="h-5 w-24 rounded-full" />
-              <Skeleton className="h-10 w-40 rounded-full" />
-            </div>
-            <div className="flex gap-2 rounded-full bg-muted/50 p-1">
-              <Skeleton className="h-10 w-24 rounded-full" />
-              <Skeleton className="h-10 w-28 rounded-full" />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <div key={`trending-skeleton-${index}`} className="space-y-3">
-                <Skeleton className="aspect-5/6 w-full rounded-2xl" />
-                <Skeleton className="h-5 w-3/4 rounded-full" />
-                <Skeleton className="h-4 w-1/2 rounded-full" />
+          <div className="rounded-3xl border border-border bg-card/95 p-8 shadow-2xl backdrop-blur-sm">
+            <div className="mb-8 flex items-center justify-between">
+              <div className="space-y-3">
+                <Skeleton className="h-5 w-24 rounded-full" />
+                <Skeleton className="h-10 w-40 rounded-full" />
               </div>
-            ))}
+              <div className="flex gap-2 rounded-full bg-muted/50 p-1">
+                <Skeleton className="h-10 w-24 rounded-full" />
+                <Skeleton className="h-10 w-28 rounded-full" />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={`trending-skeleton-${index}`} className="space-y-3">
+                  <Skeleton className="aspect-5/6 w-full rounded-2xl" />
+                  <Skeleton className="h-5 w-3/4 rounded-full" />
+                  <Skeleton className="h-4 w-1/2 rounded-full" />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -130,126 +133,128 @@ export default function TrendingSection() {
   const visibleData = sortedData.slice(0, LANDING_TRENDING_LIMIT);
 
   return (
-    <section className="py-8 bg-linear-to-b from-background to-muted/20">
+    <section className="py-16 bg-background">
       <div className="container mx-auto px-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-primary/10 rounded-2xl">
-              <TrendingUp className="size-8 text-primary" />
+        <div className="rounded-3xl border border-border bg-card/95 p-8 shadow-2xl backdrop-blur-sm">
+          {/* Header */}
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between mb-10">
+            <div className="flex items-center gap-3">
+              <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-primary/10 text-primary shadow-sm">
+                <TrendingUp className="size-7" />
+              </div>
+              <div>
+                <h2 className="text-4xl font-bold text-foreground tracking-tight">
+                  Trending
+                </h2>
+                <p className="text-muted-foreground text-sm leading-6">
+                  Most popular movies and shows
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-3xl font-bold bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                Trending
-              </h2>
-              <p className="text-muted-foreground body-font">
-                Most popular movies and shows
-              </p>
-            </div>
-          </div>
 
-          {/* Tabs */}
-          <div className="flex gap-2 p-1 bg-muted/50 rounded-full">
-            <TabButton
-              active={activeTab === "today"}
-              onClick={() => setActiveTab("today")}
-              icon={<Clock className="size-4" />}
-              label="Today"
-            />
-            <TabButton
-              active={activeTab === "week"}
-              onClick={() => setActiveTab("week")}
-              icon={<Calendar className="size-4" />}
-              label="This Week"
-            />
-          </div>
-        </div>
-
-        <div className="mb-5 flex items-center justify-end">
-          {sortedData.length > LANDING_TRENDING_LIMIT ? (
-            <button
-              type="button"
-              onClick={() => setIsViewMoreOpen(true)}
-              className="inline-flex items-center rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
-            >
-              View More
-            </button>
-          ) : null}
-        </div>
-
-        {/* GRID (UNCHANGED DESIGN) */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 body-font"
-          >
-            {visibleData.map((item, index) => (
-              <TrendingCard
-                key={item.id}
-                item={item}
-                index={index}
-                isHovered={hoveredId === item.id}
-                onHover={() => setHoveredId(item.id)}
-                onLeave={() => setHoveredId(null)}
+            {/* Tabs */}
+            <div className="flex gap-2 p-1 bg-muted/50 rounded-full">
+              <TabButton
+                active={activeTab === "today"}
+                onClick={() => setActiveTab("today")}
+                icon={<Clock className="size-4" />}
+                label="Today"
               />
-            ))}
-          </motion.div>
+              <TabButton
+                active={activeTab === "week"}
+                onClick={() => setActiveTab("week")}
+                icon={<Calendar className="size-4" />}
+                label="This Week"
+              />
+            </div>
+          </div>
+
+          <div className="mb-5 flex items-center justify-end">
+            {sortedData.length > LANDING_TRENDING_LIMIT ? (
+              <button
+                type="button"
+                onClick={() => setIsViewMoreOpen(true)}
+                className="inline-flex items-center rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
+              >
+                View More
+              </button>
+            ) : null}
+          </div>
+
+          {/* GRID (UNCHANGED DESIGN) */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 body-font"
+            >
+              {visibleData.map((item, index) => (
+                <TrendingCard
+                  key={item.id}
+                  item={item}
+                  index={index}
+                  isHovered={hoveredId === item.id}
+                  onHover={() => setHoveredId(item.id)}
+                  onLeave={() => setHoveredId(null)}
+                />
+              ))}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        <AnimatePresence>
+          {isViewMoreOpen ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/60 p-4 backdrop-blur-sm"
+              onClick={() => setIsViewMoreOpen(false)}
+            >
+              <motion.div
+                initial={{ y: 24, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 24, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="mx-auto mt-8 max-h-[85vh] w-full max-w-6xl overflow-hidden rounded-2xl border border-border bg-background shadow-2xl"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="flex items-center justify-between border-b border-border px-5 py-4">
+                  <div>
+                    <h3 className="text-xl font-semibold">Trending {activeTab === "today" ? "Today" : "This Week"}</h3>
+                    <p className="text-sm text-muted-foreground">Showing all {sortedData.length} movies</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsViewMoreOpen(false)}
+                    className="rounded-full border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <div className="max-h-[calc(85vh-78px)] overflow-y-auto p-5">
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                    {sortedData.map((item, index) => (
+                      <TrendingCard
+                        key={`${activeTab}-all-${item.id}`}
+                        item={item}
+                        index={index}
+                        isHovered={hoveredId === item.id}
+                        onHover={() => setHoveredId(item.id)}
+                        onLeave={() => setHoveredId(null)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          ) : null}
         </AnimatePresence>
       </div>
-
-      <AnimatePresence>
-        {isViewMoreOpen ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/60 p-4 backdrop-blur-sm"
-            onClick={() => setIsViewMoreOpen(false)}
-          >
-            <motion.div
-              initial={{ y: 24, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 24, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="mx-auto mt-8 max-h-[85vh] w-full max-w-6xl overflow-hidden rounded-2xl border border-border bg-background shadow-2xl"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="flex items-center justify-between border-b border-border px-5 py-4">
-                <div>
-                  <h3 className="text-xl font-semibold">Trending {activeTab === "today" ? "Today" : "This Week"}</h3>
-                  <p className="text-sm text-muted-foreground">Showing all {sortedData.length} movies</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsViewMoreOpen(false)}
-                  className="rounded-full border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted"
-                >
-                  Close
-                </button>
-              </div>
-
-              <div className="max-h-[calc(85vh-78px)] overflow-y-auto p-5">
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                  {sortedData.map((item, index) => (
-                    <TrendingCard
-                      key={`${activeTab}-all-${item.id}`}
-                      item={item}
-                      index={index}
-                      isHovered={hoveredId === item.id}
-                      onHover={() => setHoveredId(item.id)}
-                      onLeave={() => setHoveredId(null)}
-                    />
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
     </section>
   );
 }
