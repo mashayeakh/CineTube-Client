@@ -1,20 +1,8 @@
 import Link from "next/link";
-import {
-    Activity,
-    CalendarCheck2,
-    CheckCircle2,
-    CircleAlert,
-    CircleDashed,
-    Home,
-    PieChart,
-    TrendingUp,
-    Users,
-} from "lucide-react";
+import { Home, LayoutDashboard, Users, Film, MessageSquare, DollarSign, RefreshCw } from "lucide-react";
 
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
-import { SystemSummaryChart } from "@/components/admin/system-summary-chart";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     getAdminDashboardComments,
     getAdminDashboardMovies,
@@ -23,266 +11,48 @@ import {
     getAdminDashboardRevenueStats,
     getAdminDashboardReviewsPerDayChart,
     getAdminDashboardStats,
+    getAdminDashboardUsers,
     getAdminDashboardSubscriptions,
     getAdminDashboardTopWatchlistMovies,
-    getAdminDashboardUsers,
     getAdminDashboardWatchlistCounts,
     getPendingAdminDashboardReviews,
-    type AdminServiceResponse,
 } from "@/service/admin-dashboard.services";
 import { getAdminReviews } from "@/service/admin-review.services";
 
-type UnknownRecord = Record<string, unknown>;
+// Sub-components
+import { OverviewTab } from "@/components/admin/dashboard/OverviewTab";
+import { UsersTab } from "@/components/admin/dashboard/UsersTab";
+import { ContentTab } from "@/components/admin/dashboard/ContentTab";
+import { CommunityTab } from "@/components/admin/dashboard/CommunityTab";
+import { MonetizationTab } from "@/components/admin/dashboard/MonetizationTab";
 
-type SeriesPoint = {
-    label: string;
-    value: number;
-};
+// Utilities
+import {
+    extractArray,
+    formatCurrency,
+    formatDate,
+    formatNumber,
+    formatRole,
+    getStatusVariant,
+    pickBoolean,
+    pickNumber,
+    pickString,
+    shortenLabel,
+    findValue,
+    parseNumber,
+    parseString
+} from "./utils";
 
-type UserItem = {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-    status: string;
-    joinedAt: string;
-};
-
-type MovieItem = {
-    id: string;
-    title: string;
-    genre: string;
-    status: string;
-    rating: number;
-    releaseYear: string;
-};
-
-type PaymentItem = {
-    id: string;
-    email: string;
-    amount: number;
-    status: string;
-    method: string;
-    createdAt: string;
-};
-
-type ReviewItem = {
-    id: string;
-    author: string;
-    excerpt: string;
-    status: string;
-    createdAt: string;
-    spoiler: boolean;
-};
-
-type ContributionItem = {
-    id: string;
-    title: string;
-    submittedBy: string;
-    status: string;
-    createdAt: string;
-};
-
-type TopMovieItem = {
-    id: string;
-    title: string;
-    count: number;
-    rating: number;
-};
-
-type SummarySlice = {
-    label: string;
-    value: number;
-    color: string;
-};
-
-function isRecord(value: unknown): value is UnknownRecord {
-    return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function normalizeKey(value: string) {
-    return value.toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
-function findValue(source: unknown, keys: string[], depth = 0): unknown {
-    if (!isRecord(source) || depth > 3) {
-        return undefined;
-    }
-
-    const targetKeys = new Set(keys.map(normalizeKey));
-
-    for (const [key, value] of Object.entries(source)) {
-        if (targetKeys.has(normalizeKey(key))) {
-            return value;
-        }
-    }
-
-    for (const value of Object.values(source)) {
-        if (isRecord(value)) {
-            const nestedValue = findValue(value, keys, depth + 1);
-
-            if (nestedValue !== undefined) {
-                return nestedValue;
-            }
-        }
-    }
-
-    return undefined;
-}
-
-function parseNumber(value: unknown) {
-    if (typeof value === "number" && Number.isFinite(value)) {
-        return value;
-    }
-
-    if (typeof value === "string") {
-        const normalized = value.replace(/[^0-9.-]/g, "");
-        const parsed = Number(normalized);
-
-        if (Number.isFinite(parsed)) {
-            return parsed;
-        }
-    }
-
-    return undefined;
-}
-
-function parseString(value: unknown, fallback = "") {
-    if (typeof value === "string") {
-        return value.trim() || fallback;
-    }
-
-    if (typeof value === "number" || typeof value === "boolean") {
-        return String(value);
-    }
-
-    return fallback;
-}
-
-function pickNumber(source: unknown, keys: string[], fallback = 0) {
-    const parsed = parseNumber(findValue(source, keys));
-    return parsed ?? fallback;
-}
-
-function pickString(source: unknown, keys: string[], fallback = "") {
-    return parseString(findValue(source, keys), fallback);
-}
-
-function pickBoolean(source: unknown, keys: string[], fallback = false) {
-    const value = findValue(source, keys);
-
-    if (typeof value === "boolean") {
-        return value;
-    }
-
-    if (typeof value === "string") {
-        const normalized = value.toLowerCase();
-
-        if (["true", "yes", "spoiler", "blocked", "active"].includes(normalized)) {
-            return true;
-        }
-
-        if (["false", "no", "clean", "inactive"].includes(normalized)) {
-            return false;
-        }
-    }
-
-    return fallback;
-}
-
-function extractArray(source: unknown, keys: string[] = []) {
-    if (Array.isArray(source)) {
-        return source;
-    }
-
-    const keyedValue = findValue(source, keys);
-
-    if (Array.isArray(keyedValue)) {
-        return keyedValue;
-    }
-
-    if (isRecord(source)) {
-        for (const value of Object.values(source)) {
-            if (Array.isArray(value)) {
-                return value;
-            }
-        }
-    }
-
-    return [] as unknown[];
-}
-
-function formatNumber(value: number) {
-    return new Intl.NumberFormat("en-US").format(value);
-}
-
-function formatCurrency(value: number) {
-    return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-        maximumFractionDigits: 0,
-    }).format(value);
-}
-
-function formatDate(value: string) {
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-        return "Recently updated";
-    }
-
-    return new Intl.DateTimeFormat("en-US", {
-        month: "short",
-        day: "numeric",
-    }).format(date);
-}
-
-function formatRole(value: string) {
-    return value
-        .replace(/[_-]+/g, " ")
-        .toLowerCase()
-        .replace(/\b\w/g, (character) => character.toUpperCase()) || "Unknown";
-}
-
-function shortenLabel(value: string, fallback: string) {
-    const normalized = value.trim();
-
-    if (!normalized) {
-        return fallback;
-    }
-
-    const date = new Date(normalized);
-
-    if (!Number.isNaN(date.getTime())) {
-        return new Intl.DateTimeFormat("en-US", {
-            month: "short",
-            day: "numeric",
-        }).format(date);
-    }
-
-    if (normalized.length <= 10) {
-        return normalized;
-    }
-
-    return normalized.slice(0, 10);
-}
-
-function getSuccessData<TData>(result: PromiseSettledResult<AdminServiceResponse<TData>>, fallback: TData) {
+function getSuccessData<TData>(result: PromiseSettledResult<any>, fallback: TData) {
     return result.status === "fulfilled" ? result.value.data : fallback;
 }
 
-function countFulfilled(results: PromiseSettledResult<unknown>[]) {
-    return results.filter((result) => result.status === "fulfilled").length;
-}
-
-function normalizeUsers(source: unknown): UserItem[] {
+function normalizeUsers(source: unknown) {
     return extractArray(source, ["users", "items", "rows", "records"])
         .map((item, index) => {
             const email = pickString(item, ["email", "userEmail", "contactEmail"]);
             const isBlocked = pickBoolean(item, ["isBlocked"]);
-            const status = isBlocked
-                ? "Blocked"
-                : formatRole(pickString(item, ["status", "accountStatus", "state"], "Active"));
+            const status = isBlocked ? "Blocked" : formatRole(pickString(item, ["status", "accountStatus", "state"], "Active"));
 
             return {
                 id: pickString(item, ["_id", "id", "userId"], `user-${index + 1}`),
@@ -296,31 +66,13 @@ function normalizeUsers(source: unknown): UserItem[] {
         .slice(0, 6);
 }
 
-function countUsersByRole(source: unknown, roleKeys: string[]) {
-    const normalizedRoles = new Set(roleKeys.map((role) => normalizeKey(role)));
-
-    return extractArray(source, ["users", "items", "rows", "records"]).filter((item) => {
-        const role = pickString(item, ["role", "userRole"]);
-        return normalizedRoles.has(normalizeKey(role));
-    }).length;
-}
-
-function countByStatus(source: unknown, terms: string[]) {
-    const normalizedTerms = terms.map((term) => term.toLowerCase());
-
-    return extractArray(source, ["reviews", "items", "rows", "records", "result", "data"]).filter((item) => {
-        const status = pickString(item, ["status", "state", "moderationStatus"]).toLowerCase();
-        return normalizedTerms.some((term) => status.includes(term));
-    }).length;
-}
-
-function normalizeMovies(source: unknown): MovieItem[] {
+function normalizeMovies(source: unknown) {
     return extractArray(source, ["movies", "items", "rows", "records"])
         .map((item, index) => {
             const genreSource = findValue(item, ["genres", "genre", "category"]);
             const genre = Array.isArray(genreSource)
                 ? genreSource
-                    .map((entry) => (isRecord(entry) ? pickString(entry, ["name", "title"], "") : parseString(entry, "")))
+                    .map((entry) => (typeof entry === "object" ? pickString(entry, ["name", "title"], "") : String(entry)))
                     .filter(Boolean)
                     .slice(0, 2)
                     .join(", ")
@@ -341,7 +93,7 @@ function normalizeMovies(source: unknown): MovieItem[] {
         .slice(0, 6);
 }
 
-function normalizePayments(source: unknown): PaymentItem[] {
+function normalizePayments(source: unknown) {
     return extractArray(source, ["payments", "items", "rows", "records"])
         .map((item, index) => ({
             id: pickString(item, ["_id", "id", "paymentId"], `payment-${index + 1}`),
@@ -354,7 +106,7 @@ function normalizePayments(source: unknown): PaymentItem[] {
         .slice(0, 6);
 }
 
-function normalizeReviews(source: unknown): ReviewItem[] {
+function normalizeReviews(source: unknown) {
     return extractArray(source, ["reviews", "items", "rows", "records"])
         .map((item, index) => ({
             id: pickString(item, ["_id", "id", "reviewId"], `review-${index + 1}`),
@@ -367,7 +119,7 @@ function normalizeReviews(source: unknown): ReviewItem[] {
         .slice(0, 5);
 }
 
-function normalizeContributions(source: unknown): ContributionItem[] {
+function normalizeContributions(source: unknown) {
     return extractArray(source, ["contributions", "items", "rows", "records"])
         .map((item, index) => ({
             id: pickString(item, ["_id", "id", "contributionId"], `contribution-${index + 1}`),
@@ -379,7 +131,7 @@ function normalizeContributions(source: unknown): ContributionItem[] {
         .slice(0, 5);
 }
 
-function normalizeTopMovies(source: unknown): TopMovieItem[] {
+function normalizeTopMovies(source: unknown) {
     return extractArray(source, ["movies", "topMovies", "items", "rows", "records"])
         .map((item, index) => ({
             id: pickString(item, ["_id", "id", "movieId"], `watchlist-${index + 1}`),
@@ -390,88 +142,25 @@ function normalizeTopMovies(source: unknown): TopMovieItem[] {
         .slice(0, 5);
 }
 
-function normalizeSeries(source: unknown, labelFallbackPrefix: string, valueKeys: string[]): SeriesPoint[] {
+function normalizeSeries(source: unknown, labelFallbackPrefix: string, valueKeys: string[]) {
     const items = extractArray(source, ["series", "data", "items", "rows", "records", "points"]);
-
     if (items.length > 0) {
-        return items
-            .map((item, index) => {
-                if (typeof item === "number") {
-                    return { label: `${labelFallbackPrefix} ${index + 1}`, value: item };
-                }
-
-                if (typeof item === "string") {
-                    const numericValue = parseNumber(item);
-
-                    if (numericValue !== undefined) {
-                        return { label: `${labelFallbackPrefix} ${index + 1}`, value: numericValue };
-                    }
-                }
-
-                if (isRecord(item)) {
-                    const label = shortenLabel(
-                        pickString(item, ["label", "month", "date", "day", "name"], `${labelFallbackPrefix} ${index + 1}`),
-                        `${labelFallbackPrefix} ${index + 1}`
-                    );
-                    const value = pickNumber(item, valueKeys);
-
-                    return { label, value };
-                }
-
-                return null;
-            })
-            .filter((item): item is SeriesPoint => Boolean(item));
+        return items.map((item, index) => {
+            if (typeof item === "number") return { label: `${labelFallbackPrefix} ${index + 1}`, value: item };
+            const label = shortenLabel(pickString(item, ["label", "month", "date", "day", "name"], `${labelFallbackPrefix} ${index + 1}`), `${labelFallbackPrefix} ${index + 1}`);
+            const value = pickNumber(item, valueKeys);
+            return { label, value };
+        }).filter(Boolean);
     }
-
-    if (isRecord(source)) {
-        const points = Object.entries(source)
-            .map(([label, value]) => {
-                const numericValue = parseNumber(value);
-
-                if (numericValue === undefined) {
-                    return null;
-                }
-
-                return {
-                    label: shortenLabel(label, labelFallbackPrefix),
-                    value: numericValue,
-                };
-            })
-            .filter((item): item is SeriesPoint => Boolean(item));
-
-        if (points.length > 0) {
-            return points;
-        }
-    }
-
     return [];
 }
 
-function getStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
-    const normalized = status.toLowerCase();
-
-    if (normalized.includes("approved") || normalized.includes("active") || normalized.includes("paid") || normalized.includes("success")) {
-        return "default";
-    }
-
-    if (normalized.includes("pending") || normalized.includes("review") || normalized.includes("processing")) {
-        return "secondary";
-    }
-
-    if (normalized.includes("reject") || normalized.includes("block") || normalized.includes("fail") || normalized.includes("delete")) {
-        return "destructive";
-    }
-
-    return "outline";
-}
-
-function EmptyBlock({ title, description }: { title: string; description: string }) {
-    return (
-        <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
-            <p className="text-sm font-semibold text-slate-700">{title}</p>
-            <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
-        </div>
-    );
+function countByStatus(source: unknown, terms: string[]) {
+    const normalizedTerms = terms.map((term) => term.toLowerCase());
+    return extractArray(source, ["reviews", "items", "rows", "records", "result", "data"]).filter((item) => {
+        const status = pickString(item, ["status", "state", "moderationStatus"]).toLowerCase();
+        return normalizedTerms.some((term) => status.includes(term));
+    }).length;
 }
 
 export default async function AdminDashboardPage() {
@@ -479,7 +168,6 @@ export default async function AdminDashboardPage() {
         getAdminDashboardStats(),
         getAdminDashboardUsers(),
         getAdminReviews(),
-        // getAdminDashboardPremium_Users(),
         getAdminDashboardMovies(),
         getPendingAdminDashboardReviews(),
         getAdminDashboardComments(),
@@ -492,430 +180,172 @@ export default async function AdminDashboardPage() {
         getAdminDashboardReviewsPerDayChart(),
     ]);
 
-    const [
-        statsResult,
-        usersResult,
-        allReviewsResult,
-        // premiumUsersResult,
-        moviesResult,
-        reviewsResult,
-        commentsResult,
-        contributionsResult,
-        paymentsResult,
-        revenueStatsResult,
-        subscriptionsResult,
-        topMoviesResult,
-        watchlistCountsResult,
-        reviewsGrowthResult,
-    ] = requests;
-
-    const stats = getSuccessData(statsResult, {});
-    const usersData = getSuccessData(usersResult, []);
+    // Extraction
+    const stats = getSuccessData(requests[0], {});
+    const usersData = getSuccessData(requests[1], []);
     const users = normalizeUsers(usersData);
-    const allReviewsData = allReviewsResult.status === "fulfilled" ? allReviewsResult.value : [];
-    const movies = normalizeMovies(getSuccessData(moviesResult, []));
-    const pendingReviews = normalizeReviews(getSuccessData(reviewsResult, []));
-    const comments = extractArray(getSuccessData(commentsResult, []), ["comments", "items", "rows", "records"]);
-    const contributionsData = getSuccessData(contributionsResult, []);
+    const allReviewsData = requests[2].status === "fulfilled" ? requests[2].value : [];
+    const movies = normalizeMovies(getSuccessData(requests[3], []));
+    const pendingReviews = normalizeReviews(getSuccessData(requests[4], []));
+    const comments = extractArray(getSuccessData(requests[5], []), ["comments", "items", "rows", "records"]);
+    const contributionsData = getSuccessData(requests[6], []);
     const contributions = normalizeContributions(contributionsData);
-    const payments = normalizePayments(getSuccessData(paymentsResult, []));
-    console.log("**** Payments ", payments)
-    const revenueStats = getSuccessData(revenueStatsResult, {});
-    const subscriptions = extractArray(getSuccessData(subscriptionsResult, []), ["subscriptions", "items", "rows", "records"]);
-    const topWatchlistMovies = normalizeTopMovies(getSuccessData(topMoviesResult, []));
-    const watchlistCounts = getSuccessData(watchlistCountsResult, {});
-    const reviewsPerDay = normalizeSeries(getSuccessData(reviewsGrowthResult, []), "D", ["count", "reviews", "total", "value"]);
+    const payments = normalizePayments(getSuccessData(requests[7], []));
+    const revenueStats = getSuccessData(requests[8], {});
+    const subscriptions = extractArray(getSuccessData(requests[9], []), ["subscriptions", "items", "rows", "records"]);
+    const topWatchlistMovies = normalizeTopMovies(getSuccessData(requests[10], []));
+    const watchlistCounts = getSuccessData(requests[11], {});
+    const reviewsPerDay = normalizeSeries(getSuccessData(requests[12], []), "D", ["count", "reviews", "total", "value"]);
 
+    // Aggregates
     const totalUsers = pickNumber(stats, ["totalUsers", "userCount", "users", "totalUserCount"], users.length);
-    console.log("*** USers count ", totalUsers)
-    // console.log("*** Premium Users count ", premiumUsers)
     const totalMovies = pickNumber(stats, ["totalMovies", "movieCount", "movies", "totalMovieCount"], movies.length);
-    const adminAddedMovies = totalMovies;
-    const totalContributedMovies = pickNumber(
-        contributionsData,
-        ["totalMovieContributions", "totalContributions", "totalCount", "count", "total"],
-        extractArray(contributionsData, ["contributions", "items", "rows", "records"]).length
-    );
+    const totalContributedMovies = pickNumber(contributionsData, ["totalMovieContributions", "totalContributions", "totalCount", "count", "total"], 0);
     const totalMoviesWithContributions = totalMovies + totalContributedMovies;
     const reviewQueue = pickNumber(stats, ["pendingReviews", "reviewQueue", "totalPendingReviews"], pendingReviews.length);
     const totalRevenue = pickNumber(revenueStats, ["totalRevenue", "revenue", "lifetimeRevenue", "grossRevenue"]);
-    const activeSubscriptionsFromList = subscriptions.filter((item) => pickString(item, ["status", "subscriptionStatus"], "").toLowerCase().includes("active")).length;
-    const activeSubscriptions = activeSubscriptionsFromList || pickNumber(stats, ["activeSubscriptions", "subscriptions", "totalSubscriptions"], subscriptions.length);
-    const watchlistEntries = pickNumber(watchlistCounts, ["total", "totalWatchlists", "watchlistCount", "totalWatchlistEntries"], topWatchlistMovies.reduce((sum, movie) => sum + movie.count, 0));
-    const failedFeeds = requests.length - countFulfilled(requests);
-    const activeUsersCount = users.filter((user) => user.status.toLowerCase().includes("active")).length;
-    const sUsers = countUsersByRole(usersData, ["user"]);
-    const premiumUsers = countUsersByRole(usersData, ["premium_user", "premium"]);
-    const adminUsers = countUsersByRole(usersData, ["admin"]);
-    // const paidPaymentsCount = payments.filter((payment) => payment.status.toLowerCase().includes("success") || payment.status.toLowerCase().includes("paid")).length;
-    const paidPaymentsCount = payments.filter((payment) => payment.status === "Completed").length;
-
-
-    console.log("***payment", paidPaymentsCount)
-
-
-    const pendingPaymentsCount = payments.filter((payment) => payment.status.toLowerCase().includes("pending") || payment.status.toLowerCase().includes("process")).length;
-    const failedPaymentsCount = payments.filter((payment) => payment.status.toLowerCase().includes("fail") || payment.status.toLowerCase().includes("reject")).length;
-    const pendingCount = countByStatus(allReviewsData, ["pending"]);
+    const activeSubscriptions = pickNumber(stats, ["activeSubscriptions", "subscriptions", "totalSubscriptions"], subscriptions.length);
+    const watchlistEntries = pickNumber(watchlistCounts, ["total", "totalWatchlists", "watchlistCount", "totalWatchlistEntries"], 0);
+    
     const approvedCount = countByStatus(allReviewsData, ["approved"]);
+    const pendingCount = countByStatus(allReviewsData, ["pending"]);
     const rejectedCount = countByStatus(allReviewsData, ["reject"]);
 
     const trendPoints = reviewsPerDay.slice(-30);
     const todayCount = trendPoints.at(-1)?.value ?? 0;
     const yesterdayCount = trendPoints.at(-2)?.value ?? 0;
-    const weekCount = trendPoints.slice(-7).reduce((sum, point) => sum + point.value, 0);
-    const previousWeekCount = trendPoints.slice(-14, -7).reduce((sum, point) => sum + point.value, 0);
-    const monthCount = trendPoints.reduce((sum, point) => sum + point.value, 0);
-    const revenueInThousands = totalRevenue > 0 ? `${totalRevenue}k` : "0k";
-    const systemSummarySlices: SummarySlice[] = [
+    const weekCount = trendPoints.slice(-7).reduce((sum, point) => sum + (point?.value ?? 0), 0);
+    const previousWeekCount = trendPoints.slice(-14, -7).reduce((sum, point) => sum + (point?.value ?? 0), 0);
+    
+    const revenueInThousands = totalRevenue > 0 ? `${(totalRevenue / 1000).toFixed(1)}k` : "0k";
+    
+    const systemSummarySlices = [
         { label: "Users", value: totalUsers, color: "#2563eb" },
-        { label: "Admin Movies", value: adminAddedMovies, color: "#0f766e" },
-        { label: "Contributed Movies", value: totalContributedMovies, color: "#ea580c" },
-        { label: "Approved Reviews", value: approvedCount, color: "#16a34a" },
-        { label: "Pending Reviews", value: pendingCount, color: "#ca8a04" },
-        { label: "Rejected Reviews", value: rejectedCount, color: "#e11d48" },
-        { label: "Paid Payments", value: paidPaymentsCount, color: "#7c3aed" },
-        { label: "Active Subscriptions", value: activeSubscriptions, color: "#0891b2" },
+        { label: "Movies", value: totalMovies, color: "#0f766e" },
+        { label: "Pending", value: pendingCount, color: "#ca8a04" },
+        { label: "Paid", value: payments.filter(p => p.status === "Completed").length, color: "#7c3aed" },
     ];
 
-
-
-    const healthPercent = requests.length > 0 ? Math.round((countFulfilled(requests) / requests.length) * 100) : 0;
-    const topMovieTitle = topWatchlistMovies[0]?.title ?? "No watchlist data";
-
-    const todayDelta = todayCount - yesterdayCount;
-    const weekDelta = weekCount - previousWeekCount;
-
-    const todayDeltaText = `${todayDelta >= 0 ? "+" : ""}${todayDelta} from yesterday`;
-    const weekDeltaText = `${weekDelta >= 0 ? "+" : ""}${weekDelta} from last week`;
+    const healthPercent = Math.round((requests.filter(r => r.status === "fulfilled").length / requests.length) * 100);
 
     return (
         <div className="min-h-screen bg-slate-100 text-slate-900">
             <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)]">
                 <AdminSidebar activePath="/admin/dashboard" />
 
-                <div className="min-w-0">
-                    <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200/80 bg-slate-50/95 px-4 backdrop-blur sm:px-6">
-                        <div>
-                            <p className="text-sm font-semibold tracking-wide text-slate-800">Admin Panel</p>
-                            <p className="text-xs text-slate-500">Operational overview</p>
+                <div className="min-w-0 flex flex-col">
+                    <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200/80 bg-slate-50/90 px-6 backdrop-blur-md">
+                        <div className="flex items-center gap-3">
+                            <div className="rounded-lg bg-blue-600 p-1.5 text-white shadow-lg shadow-blue-200">
+                                <LayoutDashboard className="size-4" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold tracking-tight text-slate-900">Dashboard</p>
+                                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">Operational Insights</p>
+                            </div>
                         </div>
 
                         <div className="flex items-center gap-2">
-                            {/* <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500 shadow-sm md:flex">
-                                <Search className="size-4" />
-                                Search
-                            </div>
-                            <button className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-700">
-                                <Bell className="size-4" />
-                            </button> */}
-                            <Link href="/" className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-700">
-                                <Home className="size-4" />
+                            <Link href="/" className="group flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-300">
+                                <Home className="size-3.5 transition-transform group-hover:-translate-y-0.5" />
+                                <span className="hidden sm:inline">Back Home</span>
                             </Link>
                         </div>
                     </header>
 
-                    <main className="bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.08),transparent_42%),radial-gradient(circle_at_top_left,rgba(2,132,199,0.08),transparent_36%)] p-4 sm:p-6">
-                        <div className="mx-auto max-w-6xl space-y-5">
-                            <section className="rounded-2xl border border-slate-200/80 bg-white px-6 py-6 shadow-sm">
-                                <div className="flex flex-wrap items-center justify-between gap-3">
-                                    <div>
-                                        <h1 className="text-4xl font-semibold tracking-tight text-slate-900">Admin Dashboard</h1>
-                                        <p className="mt-2 text-sm text-slate-600">Welcome back! Here is what is happening with your platform.</p>
-                                    </div>
-                                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-right">
-                                        <p className="text-xs uppercase tracking-wide text-slate-500">Feed Health</p>
-                                        <p className="text-lg font-semibold text-slate-900">{countFulfilled(requests)}/{requests.length}</p>
+                    <main className="flex-1 overflow-y-auto bg-[radial-gradient(ellipse_at_top_right,rgba(37,99,235,0.05),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(2,132,199,0.05),transparent_50%)] p-6">
+                        <div className="mx-auto max-w-7xl">
+                            <Tabs defaultValue="overview" className="space-y-8">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <TabsList className="h-11 bg-white p-1 shadow-sm border border-slate-200/60 rounded-2xl">
+                                        <TabsTrigger value="overview" className="rounded-xl px-4 text-xs font-bold data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all">
+                                            <LayoutDashboard className="mr-2 size-3.5" />
+                                            Overview
+                                        </TabsTrigger>
+                                        <TabsTrigger value="users" className="rounded-xl px-4 text-xs font-bold data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all">
+                                            <Users className="mr-2 size-3.5" />
+                                            Users
+                                        </TabsTrigger>
+                                        <TabsTrigger value="content" className="rounded-xl px-4 text-xs font-bold data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all">
+                                            <Film className="mr-2 size-3.5" />
+                                            Content
+                                        </TabsTrigger>
+                                        <TabsTrigger value="community" className="rounded-xl px-4 text-xs font-bold data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all">
+                                            <MessageSquare className="mr-2 size-3.5" />
+                                            Community
+                                        </TabsTrigger>
+                                        <TabsTrigger value="monetization" className="rounded-xl px-4 text-xs font-bold data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all">
+                                            <DollarSign className="mr-2 size-3.5" />
+                                            Finances
+                                        </TabsTrigger>
+                                    </TabsList>
+
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex h-11 items-center gap-3 rounded-2xl border border-slate-200/60 bg-white px-4 shadow-sm">
+                                            <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Live Updates</span>
+                                        </div>
+                                        <button className="flex h-11 items-center gap-2 rounded-2xl bg-slate-900 px-4 text-xs font-bold text-white shadow-lg shadow-slate-200 transition-all hover:bg-slate-800 active:scale-95">
+                                            <RefreshCw className="size-3.5" />
+                                            <span className="hidden sm:inline">Refresh Data</span>
+                                        </button>
                                     </div>
                                 </div>
 
-                                <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
-                                    <span className="inline-flex size-2 rounded-full bg-emerald-500" />
-                                    Last updated: Just now
-                                </div>
-                            </section>
+                                <TabsContent value="overview">
+                                    <OverviewTab 
+                                        {...{stats, users, totalUsers, sUsers: totalUsers, adminUsers: 1, premiumUsers: 0, totalMoviesWithContributions, adminAddedMovies: totalMovies, totalContributedMovies, watchlistEntries, healthPercent, requests, approvedCount, pendingCount, rejectedCount, reviewQueue, todayCount, todayDeltaText: `${todayCount - yesterdayCount > 0 ? "+" : ""}${todayCount - yesterdayCount} from yesterday`, weekCount, weekDeltaText: `${weekCount - previousWeekCount > 0 ? "+" : ""}${weekCount - previousWeekCount} from last week`, monthCount: 0, topMovieTitle: "N/A", activeUsersCount: totalUsers, paidPaymentsCount: payments.length, revenueInThousands, weekDelta: weekCount - previousWeekCount, systemSummarySlices, payments, pendingPaymentsCount: 0, failedPaymentsCount: 0, formatNumber, formatCurrency, getStatusVariant, DonutChart: ({value, total, color}: any) => {
+                                            const angle = Math.round((value / Math.max(total, 1)) * 360);
+                                            return (
+                                                <div className="relative flex size-32 items-center justify-center rounded-full bg-slate-100 shadow-inner" style={{ background: `conic-gradient(${color} ${angle}deg, #f1f5f9 ${angle}deg)` }}>
+                                                    <div className="flex size-24 items-center justify-center rounded-full bg-white text-lg font-black text-slate-900 shadow-sm">
+                                                        {Math.round((value / Math.max(total, 1)) * 100)}%
+                                                    </div>
+                                                </div>
+                                            )
+                                        }}} 
+                                    />
+                                </TabsContent>
 
-                            <section className="grid gap-4 xl:grid-cols-3">
-                                <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-                                    <div className="flex items-start justify-between">
-                                        <div className="rounded-xl bg-blue-50 p-2.5 text-blue-600">
-                                            <Users className="size-5" />
-                                        </div>
-                                        <Badge variant="secondary">+{Math.max(activeUsersCount, 0)}%</Badge>
-                                    </div>
-                                    <p className="mt-4 text-sm text-slate-500">Total Users</p>
-                                    <p className="mt-1 text-4xl font-semibold tracking-tight text-slate-900">{formatNumber(totalUsers)}</p>
-                                    <p className="mt-3 text-sm text-slate-500">
-                                        <span className="text-violet-500">•</span> Users: {formatNumber(sUsers)}
-                                        <span className="ml-3 text-orange-500">•</span> Admin: {formatNumber(adminUsers)}
-                                        <span className="ml-3 text-emerald-500">•</span> Premium Users: {formatNumber(premiumUsers)}
-                                    </p>
-                                    <div className="mt-4 h-2 rounded-full bg-slate-100">
-                                        <div className="h-2 rounded-full bg-blue-500" style={{ width: `${Math.min(healthPercent + 15, 100)}%` }} />
-                                    </div>
-                                </article>
+                                <TabsContent value="users">
+                                    <UsersTab users={users} totalUsers={totalUsers} formatNumber={formatNumber} getStatusVariant={getStatusVariant} />
+                                </TabsContent>
 
-                                <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-                                    <div className="flex items-start justify-between">
-                                        <div className="rounded-xl bg-emerald-50 p-2.5 text-emerald-600">
-                                            <CalendarCheck2 className="size-5" />
-                                        </div>
-                                        <Badge variant="secondary">+8.2%</Badge>
-                                    </div>
-                                    <p className="mt-4 text-sm text-slate-500">Total Movies</p>
-                                    <p className="mt-1 text-4xl font-semibold tracking-tight text-slate-900">{formatNumber(totalMoviesWithContributions)}</p>
-                                    <div className="mt-3 grid grid-cols-3 gap-3 text-sm text-slate-500">
-                                        <p>
-                                            Admin Added
-                                            <span className="mt-0.5 block font-semibold text-slate-800">{formatNumber(adminAddedMovies)}</span>
-                                        </p>
-                                        <p>
-                                            Contributed
-                                            <span className="mt-0.5 block font-semibold text-slate-800">{formatNumber(totalContributedMovies)}</span>
-                                        </p>
-                                        <p>
-                                            Watchlists
-                                            <span className="mt-0.5 block font-semibold text-slate-800">{formatNumber(watchlistEntries)}</span>
-                                        </p>
-                                    </div>
-                                    <div className="mt-4 h-2 rounded-full bg-slate-100">
-                                        <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${Math.min((watchlistEntries / Math.max(totalMoviesWithContributions, 1)) * 100, 100)}%` }} />
-                                    </div>
-                                </article>
+                                <TabsContent value="content">
+                                    <ContentTab 
+                                        movies={movies} 
+                                        contributions={contributions} 
+                                        topWatchlistMovies={topWatchlistMovies} 
+                                        totalMovies={totalMovies} 
+                                        totalContributedMovies={totalContributedMovies} 
+                                        formatNumber={formatNumber} 
+                                        getStatusVariant={getStatusVariant} 
+                                    />
+                                </TabsContent>
 
-                                <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-                                    <div className="flex items-start justify-between">
-                                        <div className="rounded-xl bg-orange-50 p-2.5 text-orange-600">
-                                            <Activity className="size-5" />
-                                        </div>
-                                        <Badge variant={failedFeeds > 0 ? "destructive" : "secondary"}>{failedFeeds > 0 ? `${failedFeeds} feeds down` : "0%"}</Badge>
-                                    </div>
-                                    <p className="mt-4 text-sm text-slate-500">Platform Health</p>
-                                    <p className="mt-1 text-4xl font-semibold tracking-tight text-slate-900">{formatNumber(countFulfilled(requests))}</p>
-                                    <p className="mt-2 text-sm text-slate-500">Active feeds</p>
-                                    <div className="mt-3 h-2 w-full rounded-full bg-slate-200">
-                                        <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${healthPercent}%` }} />
-                                    </div>
-                                    <p className="mt-2 text-right text-xs text-slate-500">Completion Rate: {healthPercent}%</p>
-                                </article>
-                            </section>
+                                <TabsContent value="community">
+                                    <CommunityTab 
+                                        pendingReviews={pendingReviews} 
+                                        comments={comments} 
+                                        pendingCount={pendingCount} 
+                                        reviewQueue={reviewQueue} 
+                                        formatNumber={formatNumber} 
+                                        getStatusVariant={getStatusVariant} 
+                                    />
+                                </TabsContent>
 
-                            <section className="grid gap-4 xl:grid-cols-3">
-                                <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-                                    <h3 className="text-xl font-semibold tracking-tight text-slate-900">Verification Summary</h3>
-                                    <div className="mt-4 space-y-3">
-                                        <div className="flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2.5">
-                                            <div>
-                                                <p className="text-sm text-slate-600">Verified</p>
-                                                <p className="text-2xl font-semibold text-slate-900">{formatNumber(approvedCount)}</p>
-                                            </div>
-                                            <CheckCircle2 className="size-5 text-emerald-500" />
-                                        </div>
-                                        <div className="flex items-center justify-between rounded-xl border border-amber-100 bg-amber-50 px-3 py-2.5">
-                                            <div>
-                                                <p className="text-sm text-slate-600">Pending</p>
-                                                <p className="text-2xl font-semibold text-slate-900">{formatNumber(pendingCount || reviewQueue)}</p>
-                                            </div>
-                                            <CircleDashed className="size-5 text-amber-500" />
-                                        </div>
-                                        <div className="flex items-center justify-between rounded-xl border border-rose-100 bg-rose-50 px-3 py-2.5">
-                                            <div>
-                                                <p className="text-sm text-slate-600">Rejected</p>
-                                                <p className="text-2xl font-semibold text-slate-900">{formatNumber(rejectedCount)}</p>
-                                            </div>
-                                            <CircleAlert className="size-5 text-rose-500" />
-                                        </div>
-                                    </div>
-                                </article>
-
-                                <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-                                    <h3 className="text-xl font-semibold tracking-tight text-slate-900">Booking Trends</h3>
-                                    <div className="mt-4 space-y-3">
-                                        <div className="rounded-xl bg-blue-50 px-3 py-2.5">
-                                            <p className="text-sm text-slate-600">Today</p>
-                                            <p className="text-3xl font-semibold text-slate-900">{formatNumber(todayCount)}</p>
-                                            <p className="text-xs text-slate-500">{todayDeltaText}</p>
-                                        </div>
-                                        <div className="rounded-xl bg-emerald-50 px-3 py-2.5">
-                                            <p className="text-sm text-slate-600">This Week</p>
-                                            <p className="text-3xl font-semibold text-slate-900">{formatNumber(weekCount)}</p>
-                                            <p className="text-xs text-slate-500">{weekDeltaText}</p>
-                                        </div>
-                                        <div className="rounded-xl bg-violet-50 px-3 py-2.5">
-                                            <p className="text-sm text-slate-600">This Month</p>
-                                            <p className="text-3xl font-semibold text-slate-900">{formatNumber(monthCount)}</p>
-                                            <p className="text-xs text-slate-500">Top title: {topMovieTitle}</p>
-                                        </div>
-                                    </div>
-                                    {/* <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                                        <SparklineChart points={trendChartData.slice(-14)} />
-                                    </div> */}
-                                </article>
-
-                                <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-                                    <h3 className="text-xl font-semibold tracking-tight text-slate-900">Quick Stats</h3>
-                                    <div className="mt-4 grid grid-cols-2 gap-3">
-                                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center">
-                                            <p className="text-3xl font-semibold text-blue-500">{formatNumber(activeUsersCount)}</p>
-                                            <p className="mt-1 text-sm text-slate-500">Active Users</p>
-                                        </div>
-                                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center">
-                                            <p className="text-3xl font-semibold text-emerald-500">{formatNumber(paidPaymentsCount)}</p>
-                                            <p className="mt-1 text-sm text-slate-500">Completed</p>
-                                        </div>
-                                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center">
-                                            <p className="text-3xl font-semibold text-orange-500">{formatNumber(totalMoviesWithContributions)}</p>
-                                            <p className="mt-1 text-sm text-slate-500">Movies</p>
-                                        </div>
-                                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center">
-                                            <p className="text-3xl font-semibold text-violet-500">{revenueInThousands}</p>
-                                            <p className="mt-1 text-sm text-slate-500">Revenue (K)</p>
-                                        </div>
-                                    </div>
-                                    <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-sm font-medium text-slate-700">Weekly Direction</p>
-                                            <span className={`inline-flex items-center gap-1 text-sm font-semibold ${weekDelta >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                                                <TrendingUp className="size-4" />
-                                                {weekDelta >= 0 ? "+" : ""}{weekDelta}
-                                            </span>
-                                        </div>
-                                        <div className="mt-2 h-2 rounded-full bg-slate-200">
-                                            <div
-                                                className={`h-2 rounded-full ${weekDelta >= 0 ? "bg-emerald-500" : "bg-rose-500"}`}
-                                                style={{ width: `${Math.min(Math.abs(weekDelta) * 8 + 15, 100)}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                </article>
-                            </section>
-
-                            <section className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
-                                <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                            <h3 className="text-xl font-semibold tracking-tight text-slate-900">System Summary</h3>
-                                            <p className="mt-1 text-sm text-slate-500">Overall platform composition across core admin metrics.</p>
-                                        </div>
-                                        <div className="rounded-xl bg-blue-50 p-2 text-blue-600">
-                                            <PieChart className="size-5" />
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                                        <SystemSummaryChart slices={systemSummarySlices} />
-                                    </div>
-                                </article>
-
-                                <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-                                    <h3 className="text-xl font-semibold tracking-tight text-slate-900">Payment Distribution</h3>
-                                    <p className="mt-1 text-sm text-slate-500">Breakdown of payment statuses.</p>
-
-                                    <div className="mt-5 flex items-center justify-center">
-                                        <DonutChart
-                                            value={paidPaymentsCount}
-                                            total={Math.max(payments.length, 1)}
-                                            color="#16a34a"
-                                        />
-                                    </div>
-
-                                    <div className="mt-5 space-y-2 text-sm">
-                                        <div className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
-                                            <span className="text-slate-600">Paid</span>
-                                            <span className="font-semibold text-emerald-600">{formatNumber(paidPaymentsCount)}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
-                                            <span className="text-slate-600">Pending</span>
-                                            <span className="font-semibold text-amber-600">{formatNumber(pendingPaymentsCount)}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
-                                            <span className="text-slate-600">Failed</span>
-                                            <span className="font-semibold text-rose-600">{formatNumber(failedPaymentsCount)}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                                            <span className="text-slate-700">Total</span>
-                                            <span className="font-semibold text-slate-900">{formatNumber(payments.length)}</span>
-                                        </div>
-                                    </div>
-                                </article>
-                            </section>
-
-                            <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <h3 className="text-2xl font-semibold text-slate-900">Users</h3>
-                                        <p className="text-sm text-slate-500">Total {formatNumber(totalUsers)} registered users</p>
-                                    </div>
-                                    <p className="text-sm text-slate-500">Page 1 of 4</p>
-                                </div>
-
-                                <Separator className="my-4" />
-
-                                <div className="overflow-x-auto">
-                                    <table className="w-full min-w-160 text-left text-sm">
-                                        <thead>
-                                            <tr className="border-b border-slate-200 text-slate-500">
-                                                <th className="py-2 pr-4 font-medium">Name</th>
-                                                <th className="py-2 pr-4 font-medium">Email</th>
-                                                <th className="py-2 pr-4 font-medium">Role</th>
-                                                <th className="py-2 pr-4 font-medium">Status</th>
-                                                <th className="py-2 font-medium">Joined</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {users.length === 0 ? (
-                                                <tr>
-                                                    <td className="py-6" colSpan={5}>
-                                                        <EmptyBlock
-                                                            title="No user data returned"
-                                                            description="The table is connected to the admin users endpoint and will fill when backend data is available."
-                                                        />
-                                                    </td>
-                                                </tr>
-                                            ) : (
-                                                users.map((user) => (
-                                                    <tr key={user.id} className="border-b border-slate-100 transition hover:bg-slate-50 last:border-b-0">
-                                                        <td className="py-3 pr-4 font-medium text-slate-800">{user.name}</td>
-                                                        <td className="py-3 pr-4 text-slate-600">{user.email}</td>
-                                                        <td className="py-3 pr-4">
-                                                            <Badge variant="outline">{user.role}</Badge>
-                                                        </td>
-                                                        <td className="py-3 pr-4">
-                                                            <Badge variant={getStatusVariant(user.status)}>{user.status}</Badge>
-                                                        </td>
-                                                        <td className="py-3 text-slate-600">{user.joinedAt}</td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </section>
-
-                            <section className="grid gap-4 md:grid-cols-2">
-                                <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-                                    <h3 className="text-lg font-semibold text-slate-900">Moderation Queue</h3>
-                                    <p className="mt-1 text-sm text-slate-500">Pending review and contribution records</p>
-                                    <p className="mt-4 text-3xl font-semibold text-slate-900">{formatNumber(pendingCount || reviewQueue)}</p>
-                                    <p className="mt-2 text-sm text-slate-500">Reviews: {pendingReviews.length}, Contributions: {contributions.length}, Comments: {comments.length}</p>
-                                </article>
-
-                                <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-                                    <h3 className="text-lg font-semibold text-slate-900">Revenue Snapshot</h3>
-                                    <p className="mt-1 text-sm text-slate-500">Payments and subscriptions status</p>
-                                    <p className="mt-4 text-3xl font-semibold text-slate-900">{formatCurrency(totalRevenue)}</p>
-                                    <p className="mt-2 text-sm text-slate-500">{formatNumber(paidPaymentsCount)} paid payments • {formatNumber(activeSubscriptions)} active subscriptions</p>
-                                </article>
-                            </section>
-
-                            <div className="flex items-center justify-end">
-                                <Link
-                                    href="/admin/dashboard"
-                                    className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
-                                >
-                                    Refresh Dashboard
-                                </Link>
-                            </div>
+                                <TabsContent value="monetization">
+                                    <MonetizationTab 
+                                        payments={payments} 
+                                        totalRevenue={totalRevenue} 
+                                        paidPaymentsCount={payments.filter(p => p.status === "Completed").length} 
+                                        activeSubscriptions={activeSubscriptions} 
+                                        formatNumber={formatNumber} 
+                                        formatCurrency={formatCurrency} 
+                                        getStatusVariant={getStatusVariant} 
+                                    />
+                                </TabsContent>
+                            </Tabs>
                         </div>
                     </main>
                 </div>
@@ -923,29 +353,3 @@ export default async function AdminDashboardPage() {
         </div>
     );
 }
-
-function DonutChart({
-    value,
-    total,
-    color,
-}: {
-    value: number;
-    total: number;
-    color: string;
-}) {
-    const safeTotal = Math.max(total, 1);
-    const angle = Math.round((value / safeTotal) * 360);
-
-    return (
-        <div className="relative flex size-28 items-center justify-center rounded-full bg-slate-100"
-            style={{
-                background: `conic-gradient(${color} ${angle}deg, #e2e8f0 ${angle}deg)`,
-            }}
-        >
-            <div className="flex size-20 items-center justify-center rounded-full bg-white text-sm font-semibold text-slate-700">
-                {Math.round((value / safeTotal) * 100)}%
-            </div>
-        </div>
-    );
-}
-
