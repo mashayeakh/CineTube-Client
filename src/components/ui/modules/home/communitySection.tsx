@@ -1,56 +1,44 @@
-import Link from "next/link";
-import { Sparkles, Users, Trophy } from "lucide-react";
+"use client";
 
-const stats = [
-    { label: "Members", value: "18K+", icon: Users },
-    { label: "Awards", value: "23", icon: Trophy },
-    { label: "Highlights", value: "120+", icon: Sparkles },
-];
+import React from "react";
+import Link from "next/link";
+import { ArrowRight, Shapes } from "lucide-react";
 
 export default function CommunitySection() {
     return (
-        <section className="py-16 bg-background text-foreground">
-            <div className="container mx-auto px-4">
-                <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr] lg:items-center">
-                    <div>
-                        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+        <section className="py-24 bg-background text-foreground relative overflow-hidden" id="community">
+            {/* Background elements */}
+            <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[100px]" />
+            <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-[100px]" />
+
+            <div className="container mx-auto px-4 relative z-10 text-center flex flex-col items-center">
+                <div className="max-w-4xl">
+                    <div className="flex items-center justify-center gap-2 mb-8">
+                        <Shapes className="size-5 text-primary" />
+                        <p className="text-[10px] font-black uppercase tracking-[0.5em] text-muted-foreground/60">
                             Community
                         </p>
-                        <h2 className="mt-3 text-3xl font-bold sm:text-4xl">
-                            Join a passionate audience of cinema lovers
-                        </h2>
-                        <p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-                            Get recommendations, share your reviews, and explore films together with a growing community of movie fans.
-                        </p>
-                        <div className="mt-8 flex flex-wrap gap-3">
-                            <Link
-                                href="/signup"
-                                className="inline-flex items-center rounded-full border border-border bg-muted px-6 py-3 text-sm font-semibold text-foreground transition hover:bg-muted/80"
-                            >
-                                Join now
-                            </Link>
-                            <Link
-                                href="/about"
-                                className="inline-flex items-center rounded-full border border-border bg-muted/50 px-6 py-3 text-sm font-semibold text-foreground transition hover:bg-muted/80"
-                            >
-                                About CineTube
-                            </Link>
-                        </div>
                     </div>
-
-                    <div className="grid gap-4 sm:grid-cols-3">
-                        {stats.map((item) => {
-                            const Icon = item.icon;
-                            return (
-                                <div key={item.label} className="rounded-[2rem] border border-border bg-card p-6">
-                                    <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-muted/40 text-foreground">
-                                        <Icon className="size-6" />
-                                    </div>
-                                    <p className="mt-5 text-3xl font-semibold">{item.value}</p>
-                                    <p className="mt-2 text-sm text-muted-foreground">{item.label}</p>
-                                </div>
-                            );
-                        })}
+                    <h2 className="text-5xl font-black tracking-tight sm:text-7xl text-foreground leading-[1.05]">
+                        Join a passionate audience of cinema lovers
+                    </h2>
+                    <p className="mt-10 mx-auto max-w-2xl text-lg leading-relaxed text-muted-foreground font-medium">
+                        Get personalized recommendations, share your deepest film insights, and connect with a global network of movie enthusiasts.
+                    </p>
+                    <div className="mt-12 flex flex-wrap items-center justify-center gap-6">
+                        <Link
+                            href="/signup"
+                            className="group inline-flex items-center gap-3 rounded-2xl bg-primary px-10 py-6 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-2xl shadow-primary/20 transition-all hover:scale-105 hover:shadow-primary/40 active:scale-95"
+                        >
+                            Join now
+                            <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
+                        </Link>
+                        <Link
+                            href="/about"
+                            className="inline-flex items-center rounded-2xl border border-border bg-card/50 backdrop-blur-sm px-10 py-6 text-sm font-black uppercase tracking-widest text-foreground transition-all hover:bg-muted hover:border-primary/20"
+                        >
+                            About CineTube
+                        </Link>
                     </div>
                 </div>
             </div>

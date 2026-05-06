@@ -7,3 +7,8 @@ export const getMovieById = async (id: string) => {
     // backend may return { success, message, result: {...} } or bare object
     return res?.result ?? res
 }
+
+export const getTopRatedMovies = async () => {
+    const res = await httpClient.get("/movies/top-rated")
+    return Array.isArray(res?.result) ? res.result : []
+}

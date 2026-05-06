@@ -60,20 +60,6 @@ const Hero = ({
           </Link>
         </div>
 
-        <div className="mx-auto mt-10 grid w-fit grid-cols-3 gap-3 rounded-3xl border border-border bg-card/90 p-3 backdrop-blur-sm">
-          <div className="rounded-3xl bg-muted/80 px-7 py-5 text-left shadow-sm border border-border">
-            <p className="text-xl font-bold text-foreground">10k+</p>
-            <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Reviews</p>
-          </div>
-          <div className="rounded-3xl bg-muted/80 px-7 py-5 text-left shadow-sm border border-border">
-            <p className="text-xl font-bold text-foreground">2k+</p>
-            <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Movies</p>
-          </div>
-          <div className="rounded-3xl bg-muted/80 px-7 py-5 text-left shadow-sm border border-border">
-            <p className="text-xl font-bold text-foreground">24/7</p>
-            <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Community</p>
-          </div>
-        </div>
       </div>
     </section>
   );
