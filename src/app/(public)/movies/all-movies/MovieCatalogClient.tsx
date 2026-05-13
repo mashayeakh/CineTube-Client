@@ -1,8 +1,8 @@
 // app/movies/all-movies/MovieCatalogClient.tsx
 "use client";
 
-import { useState, useMemo } from "react";
-import { Film, Search, Star, X } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Film, Search, Star, X, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { resolveMediaUrl } from "@/lib/media";
 import type { CatalogItem } from "./page";
@@ -13,18 +13,24 @@ function MovieCard({ item }: { item: CatalogItem }) {
     const posterUrl = resolveMediaUrl(item.poster);
 
     return (
-        <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg cursor-pointer">
+        <article className="group overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg cursor-pointer">
             <Link href={`/movies/all-movies/${item.id}`} className="block">
-                <div className="aspect-4/5 bg-slate-100">
+                <div className="relative aspect-4/5 bg-slate-100">
                     {posterUrl ? (
                         <img src={posterUrl} alt={item.title} className="h-full w-full object-cover" />
                     ) : (
                         <div className="flex h-full items-center justify-center text-sm text-slate-500">No poster available</div>
                     )}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 flex items-center justify-center">
+                        <button className="rounded-full bg-blue-600 px-6 py-2 text-sm font-bold text-white shadow-xl hover:bg-blue-500 transition-transform hover:scale-105">
+                            Watch Now
+                        </button>
+                    </div>
                 </div>
 
                 <div className="space-y-4 p-5">
-                    <p className="line-clamp-3 text-sm leading-6 text-slate-600">{item.description}</p>
+                    <h3 className="line-clamp-1 text-lg font-bold text-slate-900">{item.title}</h3>
+                    <p className="line-clamp-2 text-sm leading-6 text-slate-600">{item.description}</p>
 
                     <div className="grid grid-cols-2 gap-3 text-sm text-slate-600">
                         <div>
@@ -68,6 +74,9 @@ function MovieCard({ item }: { item: CatalogItem }) {
 export function MovieCatalogClient({ items }: { items: CatalogItem[] }) {
     const [search, setSearch] = useState("");
     const [accessFilter, setAccessFilter] = useState<string>("ALL");
+    const [sortBy, setSortBy] = useState<"newest" | "title" | "year" | "reviews">("newest");
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
 
     // Collect unique priceType values for the filter buttons
     const accessOptions = useMemo(() => {
@@ -75,13 +84,38 @@ export function MovieCatalogClient({ items }: { items: CatalogItem[] }) {
         return ["ALL", ...types];
     }, [items]);
 
-    const filtered = useMemo(() => {
-        return items.filter((item) => {
+    const filteredAndSorted = useMemo(() => {
+        const result = items.filter((item) => {
             const matchesSearch = item.title.toLowerCase().includes(search.toLowerCase());
             const matchesAccess = accessFilter === "ALL" || item.priceType.toUpperCase() === accessFilter;
             return matchesSearch && matchesAccess;
         });
-    }, [items, search, accessFilter]);
+
+        // Sorting logic
+        result.sort((a, b) => {
+            switch (sortBy) {
+                case "title":
+                    return a.title.localeCompare(b.title);
+                case "year":
+                    return (b.releaseYear || 0) - (a.releaseYear || 0);
+                case "reviews":
+                    return b.reviewCount - a.reviewCount;
+                case "newest":
+                default:
+                    const aTime = a.createdAt ? Date.parse(a.createdAt) : 0;
+                    const bTime = b.createdAt ? Date.parse(b.createdAt) : 0;
+                    return bTime - aTime;
+            }
+        });
+
+        return result;
+    }, [items, search, accessFilter, sortBy]);
+
+    const totalPages = Math.ceil(filteredAndSorted.length / itemsPerPage);
+    const paginatedItems = useMemo(() => {
+        const start = (currentPage - 1) * itemsPerPage;
+        return filteredAndSorted.slice(start, start + itemsPerPage);
+    }, [filteredAndSorted, currentPage, itemsPerPage]);
 
     return (
         <section className="space-y-5">
@@ -105,12 +139,18 @@ export function MovieCatalogClient({ items }: { items: CatalogItem[] }) {
                         type="text"
                         placeholder="Search by title…"
                         value={search}
-                        onChange={(e) => setSearch(e.target.value)}
+                        onChange={(e) => {
+                            setSearch(e.target.value);
+                            setCurrentPage(1);
+                        }}
                         className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-10 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 transition"
                     />
                     {search && (
                         <button
-                            onClick={() => setSearch("")}
+                            onClick={() => {
+                                setSearch("");
+                                setCurrentPage(1);
+                            }}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                         >
                             <X className="size-4" />
@@ -119,37 +159,99 @@ export function MovieCatalogClient({ items }: { items: CatalogItem[] }) {
                 </div>
 
                 {/* Access filter pills */}
-                <div className="flex flex-wrap gap-2">
-                    {accessOptions.map((option) => (
-                        <button
-                            key={option}
-                            onClick={() => setAccessFilter(option)}
-                            className={`rounded-full px-4 py-2 text-xs font-semibold tracking-wide transition ${accessFilter === option
-                                ? "bg-slate-950 text-white shadow"
-                                : "bg-white border border-slate-200 text-slate-600 hover:border-slate-400 hover:text-slate-900"
-                                }`}
+                <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap gap-2">
+                        {accessOptions.map((option) => (
+                            <button
+                                key={option}
+                                onClick={() => {
+                                setAccessFilter(option);
+                                setCurrentPage(1);
+                            }}
+                                className={`rounded-full px-4 py-2 text-xs font-semibold tracking-wide transition ${accessFilter === option
+                                    ? "bg-slate-950 text-white shadow"
+                                    : "bg-white border border-slate-200 text-slate-600 hover:border-slate-400 hover:text-slate-900"
+                                    }`}
+                            >
+                                {option}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Sort Dropdown */}
+                    <div className="relative ml-auto">
+                        <select
+                            value={sortBy}
+                            onChange={(e) => {
+                            setSortBy(e.target.value as any);
+                            setCurrentPage(1);
+                        }}
+                            className="appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-4 pr-10 text-sm font-medium text-slate-900 shadow-sm outline-none focus:border-sky-400 transition cursor-pointer"
                         >
-                            {option}
-                        </button>
-                    ))}
+                            <option value="newest">Newest First</option>
+                            <option value="title">Title (A-Z)</option>
+                            <option value="year">Release Year</option>
+                            <option value="reviews">Most Reviews</option>
+                        </select>
+                        <ArrowUpDown className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
                 </div>
             </div>
 
             {/* Result count */}
-            <p className="text-sm text-slate-500">
-                Showing <span className="font-medium text-slate-800">{filtered.length}</span> of {items.length} items
-            </p>
+            <div className="flex items-center justify-between">
+                <p className="text-sm text-slate-500">
+                    Showing <span className="font-medium text-slate-800">
+                        {Math.min((currentPage - 1) * itemsPerPage + 1, filteredAndSorted.length)}-
+                        {Math.min(currentPage * itemsPerPage, filteredAndSorted.length)}
+                    </span> of {filteredAndSorted.length} items
+                </p>
+            </div>
 
             {/* Grid */}
-            {filtered.length === 0 ? (
+            {paginatedItems.length === 0 ? (
                 <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center text-slate-500">
                     No items match your filters.
                 </div>
             ) : (
                 <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                    {filtered.map((item) => (
+                    {paginatedItems.map((item) => (
                         <MovieCard key={item.id} item={item} />
                     ))}
+                </div>
+            )}
+
+            {/* ── Pagination Controls ── */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-8">
+                    <button
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:opacity-30"
+                    >
+                        <ChevronLeft className="size-5" />
+                    </button>
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`flex h-10 w-10 items-center justify-center rounded-xl font-medium transition ${currentPage === page
+                                    ? "bg-slate-950 text-white shadow-lg"
+                                    : "bg-white border border-slate-200 text-slate-600 hover:border-slate-400"
+                                }`}
+                        >
+                            {page}
+                        </button>
+                    ))}
+
+                    <button
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:opacity-30"
+                    >
+                        <ChevronRight className="size-5" />
+                    </button>
                 </div>
             )}
         </section>

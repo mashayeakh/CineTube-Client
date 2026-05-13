@@ -25,6 +25,7 @@ interface TrendingApiMovie {
   updatedAt?: string;
   publishedAt?: string;
   reviews?: Array<{ rating?: number }>;
+  genres?: Array<{ id: string; name: string }>;
 }
 
 interface TrendingItem {
@@ -34,6 +35,7 @@ interface TrendingItem {
   rating: number;
   mediaType: "movie" | "tv";
   year: string;
+  genre: string;
   overview: string;
   score: number;
   timestamp: number;
@@ -123,6 +125,7 @@ export default function TrendingSection() {
         rating: averageRating,
         mediaType: "movie",
         year: movie.releaseYear ? String(movie.releaseYear) : "N/A",
+        genre: movie.genres?.map(g => g.name).join(", ") || "Action",
         overview: movie.description ?? "No description available",
         score: Number(movie.score ?? 0),
         timestamp: getMovieTimestamp(movie),
@@ -372,19 +375,32 @@ const TrendingCard = ({
           </div>
         </div>
 
-        {/* TITLE */}
-        <div className="mt-3 px-1">
-          <h3 className="font-semibold text-lg line-clamp-1 group-hover:text-primary transition-colors">
-            {item.title}
-          </h3>
-
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>{item.year}</span>
-            <span>•</span>
-            <span className="flex items-center gap-1">
-              <Star className="size-3 fill-yellow-400 text-yellow-400" />
+        {/* INFO */}
+        <div className="mt-4 px-1 space-y-2">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="font-bold text-lg leading-tight line-clamp-1 group-hover:text-primary transition-colors">
+              {item.title}
+            </h3>
+            <div className="flex items-center gap-1 shrink-0 px-1.5 py-0.5 bg-yellow-400/10 rounded text-yellow-500 font-bold text-xs">
+              <Star className="size-3 fill-yellow-500" />
               {item.rating}
-            </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <span>{item.year}</span>
+            <span className="size-1 rounded-full bg-muted-foreground/30" />
+            <span className="line-clamp-1">{item.genre}</span>
+          </div>
+
+          <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px]">
+            {item.overview}
+          </p>
+
+          <div className="pt-2">
+            <button className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 hover:bg-primary/90 hover:scale-[1.02] transition-all active:scale-[0.98]">
+              Watch Now
+            </button>
           </div>
         </div>
       </Link>

@@ -1,18 +1,20 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import React, { useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Play, Star } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Play, Star, Search, ArrowUpDown, X } from 'lucide-react'
 
 import { getFeaturedSeries, getSeries } from '@/app/(public)/public/_actions/series'
+import { getGenres } from '@/app/(public)/public/_actions/genres'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { resolveMediaUrl } from '@/lib/media'
 
-const ITEMS_PER_PAGE = 12
+const ITEMS_PER_PAGE = 8
 
 type SeriesItem = {
     id: string
@@ -26,6 +28,7 @@ type SeriesItem = {
     language?: string
     rating?: number
     score?: number
+    genres?: string[]
 }
 
 function normalizeSeriesItem(input: unknown): SeriesItem | null {
@@ -52,26 +55,73 @@ function normalizeSeriesItem(input: unknown): SeriesItem | null {
         language: typeof item.language === 'string' ? item.language : undefined,
         rating: typeof item.rating === 'number' ? item.rating : undefined,
         score: typeof item.score === 'number' ? item.score : undefined,
+        genres: Array.isArray(item.genres) 
+            ? item.genres.map((g: any) => typeof g === 'string' ? g : g.name).filter(Boolean)
+            : []
     }
 }
 
 export default function SeriesPage() {
     const [searchQuery, setSearchQuery] = useState('')
+    const [selectedGenre, setSelectedGenre] = useState<string>('All')
     const [currentPage, setCurrentPage] = useState(1)
+    const [sortBy, setSortBy] = useState<'newest' | 'title' | 'rating'>('newest')
 
-    const { data: allSeries = [], isLoading } = useQuery({
-        queryKey: ['all-series'],
+    const { data: genresData = [] } = useQuery({
+        queryKey: ['genres'],
+        queryFn: () => getGenres(),
+    })
+
+    const { data, isLoading } = useQuery({
+        queryKey: ['all-series', searchQuery, sortBy, currentPage, selectedGenre],
         queryFn: async () => {
-            const result = await getSeries()
-            if (!Array.isArray(result)) {
-                return []
+            const params: Record<string, any> = {
+                page: currentPage,
+                limit: ITEMS_PER_PAGE,
+            };
+
+            if (searchQuery) {
+                params.searchTerm = searchQuery;
             }
 
-            return result
-                .map(normalizeSeriesItem)
-                .filter((item): item is SeriesItem => item !== null)
+            if (selectedGenre !== 'All') {
+                params['genres.name'] = selectedGenre;
+            }
+
+            // Sort mapping
+            if (sortBy === 'title') {
+                params.sortBy = 'title';
+                params.sortOrder = 'asc';
+            } else if (sortBy === 'rating') {
+                params.sortBy = 'releaseYear'; // Proxy for rating if not available
+                params.sortOrder = 'desc';
+            } else {
+                params.sortBy = 'createdAt';
+                params.sortOrder = 'desc';
+            }
+
+            const result = await getSeries(params)
+
+            // Handle paginated response
+            if (result && typeof result === 'object' && 'data' in result) {
+                return {
+                    meta: result.meta,
+                    items: (result.data as unknown[]).map(normalizeSeriesItem).filter((item): item is SeriesItem => item !== null)
+                }
+            }
+
+            // Handle array response (legacy/fallback)
+            return {
+                meta: { totalPages: 1, total: Array.isArray(result) ? result.length : 0 },
+                items: (Array.isArray(result) ? result : []).map(normalizeSeriesItem).filter((item): item is SeriesItem => item !== null)
+            }
         },
     })
+
+    const allSeries = data?.items ?? [];
+    const meta = data?.meta as { totalPages?: number; total?: number } | undefined;
+    const totalPages = meta?.totalPages ?? 1;
+    const totalItems = meta?.total ?? 0;
 
     const { data: featuredSeries } = useQuery({
         queryKey: ['featured-series'],
@@ -89,21 +139,12 @@ export default function SeriesPage() {
 
     const filteredSeries = useMemo(() => {
         return allSeries
-            .filter((item) => item.id !== featuredId)
-            .filter((item) => {
-                const title = (item.title || item.name || '').toLowerCase()
-                return title.includes(searchQuery.toLowerCase())
-            })
-    }, [allSeries, searchQuery, featuredId])
+    }, [allSeries])
 
     const featuredRail = useMemo(() => allSeries.slice(0, 5), [allSeries])
 
-    const totalPages = Math.ceil(filteredSeries.length / ITEMS_PER_PAGE)
     const safePage = Math.min(currentPage, totalPages || 1)
-    const paginatedSeries = filteredSeries.slice(
-        (safePage - 1) * ITEMS_PER_PAGE,
-        safePage * ITEMS_PER_PAGE
-    )
+    const paginatedSeries = filteredSeries; // Already paginated by server
 
     if (isLoading) {
         return (
@@ -217,17 +258,69 @@ export default function SeriesPage() {
                     <p className="mt-1 text-slate-300">Discover all available series</p>
                 </div>
 
-                <div className="mb-8">
-                    <Input
-                        type="text"
-                        placeholder="Search series by name..."
-                        value={searchQuery}
-                        onChange={(event) => {
-                            setSearchQuery(event.target.value)
-                            setCurrentPage(1)
-                        }}
-                        className="max-w-md border-white/20 bg-white/10 text-white placeholder-slate-300"
-                    />
+                <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center">
+                    {/* Search */}
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                        <Input
+                            type="text"
+                            placeholder="Search series by name..."
+                            value={searchQuery}
+                            onChange={(event) => {
+                                setSearchQuery(event.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="w-full rounded-xl border border-white/20 bg-white/10 py-2.5 pl-10 pr-10 text-white placeholder-slate-400 focus:bg-white/20 transition"
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => {
+                                    setSearchQuery('');
+                                    setCurrentPage(1);
+                                }}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                            >
+                                <X className="size-4" />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Genre Filter */}
+                    <div className="relative">
+                        <select
+                            value={selectedGenre}
+                            onChange={(e) => {
+                                setSelectedGenre(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="appearance-none h-10 min-w-[140px] rounded-xl border border-white/20 bg-white/10 pl-4 pr-10 text-sm font-medium text-white shadow-sm outline-none focus:bg-white/20 transition cursor-pointer"
+                        >
+                            <option value="All" className="bg-[#050816]">All Genres</option>
+                            {genresData.map((genre: any) => (
+                                <option key={genre.id} value={genre.name} className="bg-[#050816]">
+                                    {genre.name}
+                                </option>
+                            ))}
+                        </select>
+                        <ArrowUpDown className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
+
+                    {/* Sort Dropdown */}
+                    <div className="relative">
+                        <select
+                            value={sortBy}
+                            onChange={(e) => {
+                                setSortBy(e.target.value as any);
+                                setCurrentPage(1);
+                            }}
+                            className="appearance-none h-10 rounded-xl border border-white/20 bg-white/10 pl-4 pr-10 text-sm font-medium text-white shadow-sm outline-none focus:bg-white/20 transition cursor-pointer"
+                        >
+                            <option value="newest" className="bg-[#050816]">Newest First</option>
+                            <option value="title" className="bg-[#050816]">Title (A-Z)</option>
+                            <option value="rating" className="bg-[#050816]">Top Rated</option>
+                        </select>
+                        <ArrowUpDown className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
                 </div>
 
                 {filteredSeries.length === 0 ? (
@@ -236,75 +329,99 @@ export default function SeriesPage() {
                     </div>
                 ) : (
                     <>
-                        <p className="mb-6 text-slate-400">
-                            Showing {paginatedSeries.length} of {filteredSeries.length} series
+                        <p className="mb-6 text-sm text-slate-400">
+                            Showing <span className="font-medium text-white">
+                                {Math.min((safePage - 1) * ITEMS_PER_PAGE + 1, totalItems)}-
+                                {Math.min(safePage * ITEMS_PER_PAGE, totalItems)}
+                            </span> of {totalItems} series
                         </p>
 
-                        <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+                        <div className="mb-8 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
                             {paginatedSeries.map((item) => (
                                 <Link
                                     key={item.id}
                                     href={`/series/${item.id}`}
-                                    className="group cursor-pointer"
+                                    className="group relative flex flex-col rounded-2xl bg-slate-900/50 border border-white/5 p-3 transition-all duration-300 hover:bg-slate-800/80 hover:border-white/10 hover:shadow-2xl hover:shadow-blue-500/10"
                                 >
-                                    <div className="relative mb-3 h-64 overflow-hidden rounded-lg bg-slate-800 transition-opacity duration-200 group-hover:opacity-75">
+                                    <div className="relative mb-4 aspect-4/5 overflow-hidden rounded-xl bg-slate-800">
                                         <Image
                                             src={resolveMediaUrl(item.poster ?? item.image)}
                                             alt={item.title || item.name || 'Series'}
                                             fill
-                                            className="object-cover"
+                                            className="object-cover transition-transform duration-500 group-hover:scale-110"
                                         />
+                                        <div className="absolute inset-0 bg-linear-to-t from-slate-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                        
+                                        <div className="absolute bottom-3 left-3 right-3 translate-y-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                                            <Button className="w-full bg-blue-600 hover:bg-blue-500 text-white border-none h-10 rounded-lg font-semibold shadow-lg">
+                                                <Play className="mr-2 size-4 fill-current" />
+                                                Watch Now
+                                            </Button>
+                                        </div>
+
+                                        {(item.rating || item.score) && (
+                                            <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-slate-950/60 px-2 py-1 text-xs font-bold text-amber-400 backdrop-blur-md border border-white/10">
+                                                <Star className="size-3 fill-current" />
+                                                {item.rating || item.score}
+                                            </div>
+                                        )}
                                     </div>
-                                    <h3 className="truncate font-semibold text-white transition-colors group-hover:text-blue-400">
-                                        {item.title || item.name}
-                                    </h3>
-                                    {item.releaseYear || item.year ? (
-                                        <p className="text-sm text-slate-400">
-                                            {item.releaseYear || item.year}
+
+                                    <div className="flex flex-1 flex-col px-1">
+                                        <h3 className="mb-1 truncate text-lg font-bold text-white transition-colors group-hover:text-blue-400">
+                                            {item.title || item.name}
+                                        </h3>
+                                        
+                                        <div className="flex items-center gap-2 text-xs text-slate-400 mb-3">
+                                            <span>{item.releaseYear || item.year || 'N/A'}</span>
+                                            {item.genres && item.genres.length > 0 && (
+                                                <>
+                                                    <span className="size-1 rounded-full bg-slate-600" />
+                                                    <span className="truncate">{item.genres[0]}</span>
+                                                </>
+                                            )}
+                                        </div>
+
+                                        <p className="mt-auto line-clamp-2 text-xs leading-relaxed text-slate-500">
+                                            {item.description || 'No description available for this series.'}
                                         </p>
-                                    ) : null}
+                                    </div>
                                 </Link>
                             ))}
                         </div>
 
                         {totalPages > 1 && (
-                            <div className="mb-8 flex items-center justify-center gap-4">
+                            <div className="mb-8 flex items-center justify-center gap-2">
                                 <Button
                                     onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                                     disabled={safePage === 1}
                                     variant="outline"
-                                    size="icon"
+                                    className="h-10 w-10 border-white/10 bg-white/5 p-0 text-white hover:bg-white/10 disabled:opacity-30"
                                 >
-                                    <ChevronLeft className="h-4 w-4" />
+                                    <ChevronLeft className="h-5 w-5" />
                                 </Button>
 
                                 <div className="flex items-center gap-2">
                                     {Array.from({ length: totalPages }).map((_, index) => {
                                         const page = index + 1
-                                        const isNearCurrent = Math.abs(page - safePage) <= 1
-                                        const isFirst = page === 1
-                                        const isLast = page === totalPages
-
-                                        if (!isNearCurrent && !isFirst && !isLast) {
-                                            return null
+                                        if (totalPages > 5) {
+                                            if (page !== 1 && page !== totalPages && Math.abs(page - safePage) > 1) {
+                                                if (page === 2 || page === totalPages - 1) return <span key={page} className="text-white/30 px-1">...</span>
+                                                return null
+                                            }
                                         }
 
                                         return (
-                                            <React.Fragment key={page}>
-                                                {page > 2 && index === 0 ? (
-                                                    <span className="text-slate-500">...</span>
-                                                ) : null}
-                                                <Button
-                                                    onClick={() => setCurrentPage(page)}
-                                                    variant={page === safePage ? 'default' : 'outline'}
-                                                    size="sm"
-                                                >
-                                                    {page}
-                                                </Button>
-                                                {page < totalPages - 1 && isNearCurrent && index === 1 ? (
-                                                    <span className="text-slate-500">...</span>
-                                                ) : null}
-                                            </React.Fragment>
+                                            <Button
+                                                key={page}
+                                                onClick={() => setCurrentPage(page)}
+                                                className={`h-10 w-10 border-white/10 transition ${page === safePage
+                                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                                                    : 'bg-white/5 text-white hover:bg-white/10'
+                                                    }`}
+                                            >
+                                                {page}
+                                            </Button>
                                         )
                                     })}
                                 </div>
@@ -313,9 +430,9 @@ export default function SeriesPage() {
                                     onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                                     disabled={safePage === totalPages}
                                     variant="outline"
-                                    size="icon"
+                                    className="h-10 w-10 border-white/10 bg-white/5 p-0 text-white hover:bg-white/10 disabled:opacity-30"
                                 >
-                                    <ChevronRight className="h-4 w-4" />
+                                    <ChevronRight className="h-5 w-5" />
                                 </Button>
                             </div>
                         )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Clapperboard, Film, Home, LogOut, Menu, MessageCircle, Search, Settings, Star, Trophy, Tv, X } from "lucide-react";
+import { Clapperboard, Film, Home, LogOut, Menu, Search, Settings, Star, Trophy, Tv, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
@@ -323,7 +323,7 @@ const Navbar = ({ className }: { className?: string }) => {
                 </SheetHeader>
 
                 <div className="flex flex-col gap-1 px-3 py-4">
-                  <Accordion>
+                  <Accordion openMultiple>
                     {menu.map((item) => renderMobileMenuItem(item, pathname))}
                   </Accordion>
                 </div>
@@ -479,7 +479,7 @@ const renderMobileMenuItem = (item: MenuItem, pathname: string) => {
   if (item.items) {
     return (
       <AccordionItem key={item.title} value={item.title} className="border-b border-slate-100 dark:border-white/[0.05]">
-        <AccordionTrigger className="px-2 py-2.5 text-sm font-semibold text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-200 data-[state=open]:text-indigo-600 dark:data-[state=open]:text-indigo-300">
+        <AccordionTrigger className="px-2 py-2.5 text-sm font-semibold text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-200 aria-expanded:text-indigo-600 dark:aria-expanded:text-indigo-300">
           {item.title}
         </AccordionTrigger>
         <AccordionContent className="pb-1">

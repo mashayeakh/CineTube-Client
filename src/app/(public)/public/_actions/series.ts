@@ -39,11 +39,16 @@ function extractFeaturedSeries(res: SeriesResponse) {
     return null
 }
 
-export const getSeries = async (isFeatured?: boolean) => {
+export const getSeries = async (params?: Record<string, any>) => {
     try {
         const res = await httpClient.get("/series", {
-            params: typeof isFeatured === "boolean" ? { isFeatured } : undefined,
+            params,
         }) as SeriesResponse
+
+        // If it's a paginated result from QueryBuilder
+        if (res?.result && typeof res.result === 'object' && 'meta' in res.result) {
+            return res.result;
+        }
 
         return extractSeriesArray(res)
     } catch (error) {
