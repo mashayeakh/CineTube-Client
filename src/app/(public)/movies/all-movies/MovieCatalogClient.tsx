@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // app/movies/all-movies/MovieCatalogClient.tsx
 "use client";
 

@@ -323,7 +323,7 @@ const Navbar = ({ className }: { className?: string }) => {
                 </SheetHeader>
 
                 <div className="flex flex-col gap-1 px-3 py-4">
-                  <Accordion openMultiple>
+                  <Accordion multiple>
                     {menu.map((item) => renderMobileMenuItem(item, pathname))}
                   </Accordion>
                 </div>
