@@ -5,6 +5,7 @@ import "./globals.css";
 import { Navbar } from "@/components/navbar";
 import ConditionalFooter from "@/components/conditional-footer";
 import QueryProviders from "@/providers/queryProvider";
+import { BackendWarmer } from "@/components/BackendWarmer";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -40,6 +41,7 @@ export default function RootLayout({
         {/* <Navbar /> */}
         <QueryProviders>
           <main className="flex-1 flex flex-col">
+            <BackendWarmer />
             {children}
           </main>
         </QueryProviders>
